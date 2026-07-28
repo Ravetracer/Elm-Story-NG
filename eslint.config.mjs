@@ -69,7 +69,7 @@ export default tseslint.config(
       //
       //   no-useless-catch                301  `catch (error) { throw error }`
       //   react-hooks/exhaustive-deps     148
-      //   react-hooks/rules-of-hooks       89  see the note below
+      //   no-explicit-any                  57
       //   react-hooks/set-state-in-effect  55
       //   ban-ts-comment                   43
       //   no-case-declarations             26
@@ -94,12 +94,14 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'warn',
       '@typescript-eslint/no-require-imports': 'warn',
 
-      // These are real correctness risks, not style. rules-of-hooks in
-      // particular flags 89 sites across 21 files, nearly all of them an early
-      // `return null` placed above the component's hook calls, which changes
-      // hook order between renders. Fixing them means restructuring those
-      // components, so they are warnings for now rather than being switched off.
-      'react-hooks/rules-of-hooks': 'warn',
+      // rules-of-hooks once flagged 89 sites across 21 files, nearly all of them
+      // an early `return null` placed above a component's hook calls, which
+      // changes hook order between renders. All of them are fixed, so this is an
+      // error rather than a warning: it now gates against reintroducing the
+      // pattern instead of cataloguing it. The two below are still real
+      // correctness risks, not style, but remain too widespread to gate on.
+      'react-hooks/rules-of-hooks': 'error',
+
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/refs': 'warn',

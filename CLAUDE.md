@@ -90,18 +90,19 @@ includes anything that ends in a file picker.
 
 ## Bug classes that have already bitten
 
-Most breakage since the revival is one of these four. Check them first.
+Most breakage since the revival is one of these five. Check them first.
 
 **1. rc-dock's light-theme colour leaking in.** `rc-dock.css` sets
 `.dock-panel { color: rgba(0, 0, 0, 0.85) }`. Anything inside a dock panel that
 does not set its own colour inherits black against this dark UI. It has caused
-this three times already:
+this four times already:
 
 | symptom | fixed in |
 | --- | --- |
 | invisible storyteller body copy | `#runtime` colour in `engine-editor.less` |
 | invisible inactive dock tab labels | `routes/Composer/styles.module.less` |
 | invisible SceneMap event node previews | `.EventSnippet` in `SceneMap/styles.module.less` |
+| invisible event content while editing | `.EventContent` in `EventContent/styles.module.less` |
 
 Headings often escape because antd's dark theme colours `h1`–`h6` explicitly,
 which makes the symptom masquerade as a heading-versus-paragraph problem. It bites
@@ -133,6 +134,29 @@ packaged, so a filesystem path cannot be used as a URL. `GET_ASSET` returns an
 blank, check the computed `background-image`: a `http://localhost:5173/home/...`
 value means something reintroduced a raw path.
 
+That handler also honours byte ranges, which is not decoration: **media served
+without `Accept-Ranges`, `Content-Length` and a 206 for `Range` requests is not
+seekable.** Chromium treats it as a stream of unknown length, `seekable` comes
+back empty and assigning to an `<audio>` element's `currentTime` silently does
+nothing, which is how imported MP3s came to play but refuse to scrub. `net.fetch`
+does forward a `range` header to `file://`, so the slicing is delegated to it.
+Verify with a `fetch(url, { headers: { Range: 'bytes=0-99' } })` from the
+renderer and check for a 206 with 100 bytes, not by listening.
+
+**5. The shared AudioContext going silent.** Chromium suspends it on its own,
+under the autoplay policy and whenever the renderer is backgrounded or the
+preview sits behind another dock tab. Howler tracks only its own `Howler.state`
+and never observes the context, so the two desync; because
+`Howler._autoResume()` resumes only when `Howler.state` itself reads
+`'suspended'`, that desync is permanent. The tell is that `play()` succeeds and
+`playing()` returns **true** while `seek()` stays at **0** — gain ramps scheduled
+by `fade()` are pinned to a clock that never advances. `useAudioMixer.ts` mirrors
+the context's state onto Howler, disables Howler's idle suspension and awaits a
+resume before any play or fade. Diagnose it by reading
+`Howler.state`, `Howler.ctx.state` and `_howls[0].seek()` together; either one
+alone is misleading. Note also that the preview's mute defaults to **on**
+(`devTools.muted`), which is a far more common reason for hearing nothing.
+
 ## The PWA export contract
 
 `src/main.ts` post-processes the built engine when exporting a storyworld. It is
@@ -159,11 +183,15 @@ that path.
   the editor is at 39 errors, down from 127. Vite strips types without checking
   them, so nothing here blocks a build. Do not add `tsc` to `build` until the
   editor is clean too.
-- `npm run lint` exits 0 with ~800 catalogued warnings, counts recorded in
-  `eslint.config.mjs`. The one that matters is `react-hooks/rules-of-hooks`:
-  **89 sites across 21 files**, nearly all an early `return null` above a
-  component's hooks, which changes hook order between renders. Mostly
-  `engine/src`. Treat it as real, not as lint noise.
+- `npm run lint` exits 0 with ~730 catalogued warnings, counts recorded in
+  `eslint.config.mjs`. `react-hooks/rules-of-hooks` was 89 sites across 21
+  files and is now **0 and set to `error`**, so it gates. The pattern it caught
+  was an early `return null` above a component's hooks, which changes hook order
+  between renders. If you need a guard, put it *below* every hook and let the
+  hook bodies tolerate the absent value — the data hooks in `src/hooks` and the
+  engine's `useLiveQuery` callbacks all take optional ids and return `undefined`
+  for exactly this reason. `exhaustive-deps` (148) and `set-state-in-effect`
+  (55) are still real risks, just too widespread to gate on.
 - `npm test` runs Vitest. `vitest.config.ts` mirrors the renderer's `electron`
   alias onto a stub in `src/__tests__/stubs/`, and `setup.ts` supplies the
   browser APIs jsdom lacks but antd, rc-dock and react-flow touch on mount.
