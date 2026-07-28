@@ -129,6 +129,24 @@ export default tseslint.config(
   },
 
   {
+    // Plain-JavaScript tooling does not pick up the TypeScript block's rules,
+    // so the same allowances are repeated here.
+    files: ['scripts/**/*.{js,mjs}', '*.config.{js,mjs}'],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: { ecmaVersion: 'latest', sourceType: 'module' }
+    },
+    rules: {
+      // typescript-eslint's recommended set applies to every file and replaces
+      // the core rule, so the plugin's name is the one that has to be set.
+      '@typescript-eslint/no-unused-expressions': [
+        'error',
+        { allowShortCircuit: true, allowTernary: true, allowTaggedTemplates: true }
+      ]
+    }
+  },
+
+  {
     files: ['src/**/*.{test,spec}.{ts,tsx}', 'src/__tests__/**'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } }
   },
