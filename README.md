@@ -54,6 +54,10 @@ main process.
 | `npm run preview` | Run the production build |
 | `npm run package` | Build and package a distributable into `release/` |
 | `npm run typecheck` | Type-check without emitting (see [Known issues](#known-issues)) |
+| `npm test` | Run the Vitest suite once |
+| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run lint` | ESLint; exits non-zero on errors, not on warnings |
+| `npm run lint:fix` | ESLint with autofix |
 | `npm run format` | Format with Prettier |
 
 ### Linux: Chromium sandbox
@@ -158,16 +162,30 @@ React 17: v8 declares `react@^16.8.0` and v9 declares `^18.2.0`.
 
 ## Known issues
 
-- `npm run typecheck` currently reports errors and is not part of `npm run
-  build`. Most are unused locals and third-party typing drift; the upstream
-  engine build already failed at its `tsc` step before this revival, so the
-  project was released in this state. Vite strips types without checking them,
-  so this does not affect the build.
-- There is no test runner. The previous Jest and Enzyme setup was removed rather
-  than left reporting success without running: the Enzyme adapters never
-  supported anything past React 16. `src/__tests__/App.test.tsx` is retained for
-  whatever replaces it.
-- There is no linter. `eslint-config-erb` went with the Electron React
-  Boilerplate toolchain and has not been replaced.
+- The `engine/` workspace type-checks cleanly. The editor is down from 127 errors
+  to 39, so `npm run typecheck` still reports and is deliberately not part of
+  `npm run build`. What remains is mostly nullability and third-party type
+  drift. Vite strips types without checking them, so none of it affects the
+  build. For context, the upstream engine build ran `tsc &&` before `vite build`
+  and was already failing at that step, so the project was released in a state
+  where its own build could not complete.
+- `npm run lint` exits 0 with roughly 800 warnings. They are catalogued rather
+  than switched off, with counts recorded in `eslint.config.mjs`. The one worth
+  attention is **`react-hooks/rules-of-hooks`: 89 sites across 21 files**, nearly
+  all an early `return null` placed above a component's hook calls, which changes
+  hook order between renders and can crash React. Most are in `engine/src`.
+  Fixing them means restructuring those components.
+- `GHSA-mh99-v99m-4gvg` (brace-expansion) is knowingly accepted and is the only
+  distinct advisory in either workspace. The fix landed in 5.0.8 and was never
+  backported, so no 1.x or 2.x release is clean. Forcing 5.0.8 through
+  `overrides` does not work: minimatch 3 and 4 call the module's default export,
+  while 5.0.8's CommonJS build exports a named `expand`, which breaks ESLint
+  with `expand is not a function`. The affected copies reach the tree only
+  through minimatch and glob in build tooling, which never sees anything but
+  glob patterns from this repository.
+- **Do not run `npm audit fix --force`.** Every remaining fix it proposes is a
+  downgrade.
 - `engine/assets/*.less` references a `Literata.ttf` that is absent from the
   repository, so that font silently falls back.
+- `useAudioMixer` accepts no `onEnd` callback any more; nothing consumed it and
+  nothing passed it.

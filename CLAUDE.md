@@ -71,18 +71,43 @@ the sampled region is indistinguishable from bright text. One query for a
 computed `color` settled in seconds what two rounds of pixel measurement got
 wrong. When a harness disagrees with the running app, believe the app.
 
+### Reaching the interesting screens
+
+The app opens on the dashboard with nothing selected. To get to the Composer:
+
+1. **Select studio…** → **Ravetracer**
+2. Click the storyworld (**Archiv der Erinnerungen**)
+3. Click the first entry in the left-hand outline
+
+That last click lands on a SceneMap with event nodes, which is where rc-dock,
+react-flow-renderer and slate are all exercised at once. Characters open as a
+modal from the bottom-left panel; character mask images are changed by
+**right-clicking** a mask tile, not from a visible button.
+
+`element.click()` from `Runtime.evaluate` is enough for most of this.
+`Input.dispatchMouseEvent` is needed wherever user activation matters, which
+includes anything that ends in a file picker.
+
 ## Bug classes that have already bitten
 
 Most breakage since the revival is one of these four. Check them first.
 
 **1. rc-dock's light-theme colour leaking in.** `rc-dock.css` sets
 `.dock-panel { color: rgba(0, 0, 0, 0.85) }`. Anything inside a dock panel that
-does not set its own colour inherits black against this dark UI. It has already
-caused invisible storyteller body copy (fixed by giving `#runtime` a colour in
-`engine-editor.less`) and invisible inactive dock tab labels (fixed in
-`routes/Composer/styles.module.less`). Headings often escape because antd's dark
-theme colours `h1`–`h6` explicitly, which makes the symptom masquerade as a
-heading-versus-paragraph problem. **A black-on-black report is probably this.**
+does not set its own colour inherits black against this dark UI. It has caused
+this three times already:
+
+| symptom | fixed in |
+| --- | --- |
+| invisible storyteller body copy | `#runtime` colour in `engine-editor.less` |
+| invisible inactive dock tab labels | `routes/Composer/styles.module.less` |
+| invisible SceneMap event node previews | `.EventSnippet` in `SceneMap/styles.module.less` |
+
+Headings often escape because antd's dark theme colours `h1`–`h6` explicitly,
+which makes the symptom masquerade as a heading-versus-paragraph problem. It bites
+hardest where the markup is generated without classes, as `lib/serialization.ts`
+does for node previews. **A black-on-black report is probably this**: check the
+computed `color` and walk the ancestor chain to find where it turns black.
 
 **2. antd 4 class components that became forwardRef components.** `Input` was a
 class holding `state.focused`; it is now built on `rc-input` and its ref exposes
@@ -130,12 +155,24 @@ that path.
 
 ## Housekeeping
 
-- Type checking reports ~127 errors and is deliberately **not** in the build
-  path. Most are unused locals and third-party typing drift; the upstream engine
-  build already failed its own `tsc` step before abandonment. Vite strips types
-  without checking them. Do not add `tsc` to `build` without fixing them first.
-- There is no linter and no test runner. Both were removed rather than left
-  reporting success without running.
+- Type checking is deliberately **not** in the build path. `engine/` is clean;
+  the editor is at 39 errors, down from 127. Vite strips types without checking
+  them, so nothing here blocks a build. Do not add `tsc` to `build` until the
+  editor is clean too.
+- `npm run lint` exits 0 with ~800 catalogued warnings, counts recorded in
+  `eslint.config.mjs`. The one that matters is `react-hooks/rules-of-hooks`:
+  **89 sites across 21 files**, nearly all an early `return null` above a
+  component's hooks, which changes hook order between renders. Mostly
+  `engine/src`. Treat it as real, not as lint noise.
+- `npm test` runs Vitest. `vitest.config.ts` mirrors the renderer's `electron`
+  alias onto a stub in `src/__tests__/stubs/`, and `setup.ts` supplies the
+  browser APIs jsdom lacks but antd, rc-dock and react-flow touch on mount.
+- Never run `npm audit fix --force`; every remaining fix it offers is a
+  downgrade. `GHSA-mh99-v99m-4gvg` (brace-expansion) is knowingly accepted and
+  documented in both package.json files. Do **not** try to fix it with an
+  `overrides` entry: 5.0.8's CommonJS build exports a named `expand` while
+  minimatch 3 and 4 call the default export, which breaks ESLint outright. That
+  was tried and reverted.
 - No native modules, so no `electron-rebuild`.
 - Electron 43 declares no install script, so `scripts/ensure-electron.mjs`
   fetches its binary from `postinstall`. npm 11 also gates dependency install
