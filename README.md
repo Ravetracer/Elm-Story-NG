@@ -24,8 +24,15 @@ is required.
 npm install
 ```
 
-`postinstall` installs the `engine/` workspace as well. Electron downloads its
-platform binary on first use, which can take a moment.
+`postinstall` also installs the `engine/` workspace and downloads Electron's
+platform binary, which can take a moment on a first install. The binary step is
+needed because Electron no longer ships an install script of its own; see
+`scripts/ensure-electron.mjs`.
+
+npm 11 refuses to run dependency install scripts until they are listed in
+`allowScripts` in `package.json`. The decisions there are deliberate and
+annotated, so a warning about pending install scripts means a new dependency
+arrived and needs a decision.
 
 ## Running
 
