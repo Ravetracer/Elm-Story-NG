@@ -83,7 +83,8 @@ export interface NodeData {
   onEditEvent?: (eventId: ElementId) => void
   onChoiceSelect?: (eventId: ElementId, choiceId: ElementId | null) => void
   inputId?: ElementId
-  totalChoices: number
+  // Only event nodes carry this; jump nodes have no choices.
+  totalChoices?: number
   type: ELEMENT_TYPE
 }
 
@@ -563,7 +564,7 @@ const SceneMap: React.FC<{
           originId: connection.source,
           choiceId:
             foundSourceNode?.data.eventType === EVENT_TYPE.CHOICE &&
-            foundSourceNode?.data.totalChoices > 0
+            (foundSourceNode?.data.totalChoices ?? 0) > 0
               ? connection.sourceHandle
               : undefined,
           inputId:
@@ -1331,6 +1332,11 @@ const SceneMap: React.FC<{
                           elementId
                         )
 
+                        // getEvent resolves to undefined for a missing event.
+                        // The sibling 'Switch to Input/Choice' handler above
+                        // already guards on this; this one did not.
+                        if (!foundEvent?.id) return
+
                         const jumpId = await api().events.switchEventFromChoiceOrInputToJumpType(
                           studioId,
                           foundEvent
@@ -1629,7 +1635,7 @@ const SceneMap: React.FC<{
                         : nodeId,
                     choiceId:
                       foundSourceNode?.data?.eventType === EVENT_TYPE.CHOICE &&
-                      foundSourceNode?.data.totalChoices > 0 &&
+                      (foundSourceNode?.data.totalChoices ?? 0) > 0 &&
                       composer.selectedSceneMapConnectStartData.handleType ===
                         'source'
                         ? composer.selectedSceneMapConnectStartData.handleId ||
@@ -1751,7 +1757,7 @@ const SceneMap: React.FC<{
                       choiceId:
                         foundSourceNode?.data?.eventType ===
                           EVENT_TYPE.CHOICE &&
-                        foundSourceNode?.data.totalChoices > 0 &&
+                        (foundSourceNode?.data.totalChoices ?? 0) > 0 &&
                         composer.selectedSceneMapConnectStartData
                           ?.handleType === 'source'
                           ? composer.selectedSceneMapConnectStartData?.handleId

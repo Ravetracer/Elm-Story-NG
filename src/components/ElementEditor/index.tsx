@@ -333,7 +333,10 @@ const ElementEditor: React.FC<{ studioId: StudioId; world: World }> = ({
       if (dockLayout.current && selectedElement.id && activePanelId) {
         const event: Event | null =
             selectedElement.type === ELEMENT_TYPE.EVENT
-              ? await api().events.getEvent(studioId, selectedElement.id)
+              ? // getEvent resolves to undefined for a missing event, which the
+                // checks below already treat the same as the non-event case.
+                (await api().events.getEvent(studioId, selectedElement.id)) ??
+                null
               : null,
           sceneFromEvent: Scene | null = event
             ? await api().scenes.getScene(studioId, event.sceneId)

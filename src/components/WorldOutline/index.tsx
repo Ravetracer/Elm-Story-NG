@@ -1247,7 +1247,9 @@ const WorldOutline: React.FC<{ studioId: StudioId; world: World }> = ({
           case ELEMENT_TYPE.EVENT:
             const event = await api().events.getEvent(studioId, id)
 
-            if (event.id) {
+            // getEvent resolves to undefined for an event that is missing or
+            // failed to load, which this guard was already written to skip.
+            if (event?.id) {
               const sceneChildRefs = await api().scenes.getChildRefsBySceneRef(
                 studioId,
                 event.sceneId

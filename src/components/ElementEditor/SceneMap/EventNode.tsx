@@ -57,8 +57,12 @@ import styles from './styles.module.less'
 import api from '../../../api'
 import { NodeData } from '.'
 
+// Mirrors the part of rc-menu's MenuInfo this file uses. domEvent is a keyboard
+// event when the item is activated from the keyboard rather than clicked, which
+// the original mouse-only declaration did not allow. Only stopPropagation is
+// called on it, and both event types provide that.
 interface MenuInfo {
-  domEvent: React.MouseEvent<HTMLElement>
+  domEvent: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>
 }
 
 export const isConnectionValid = (

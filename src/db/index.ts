@@ -1580,7 +1580,12 @@ export class LibraryDatabase extends Dexie {
         return undefined
       }
     } catch (error) {
+      // Unlike its siblings this method logs and swallows rather than
+      // rethrowing, so the absent event is reported the same way as a missing
+      // one. Returning explicitly is what the declared type already promised.
       logger.error(`Unable to get event with ID: ${eventId}. ${error}.`)
+
+      return undefined
     }
   }
 
