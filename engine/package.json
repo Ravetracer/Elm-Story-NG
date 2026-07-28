@@ -22,6 +22,15 @@
   "bugs": {
     "url": "https://gitlab.com/elmstorygames/storyteller/issues"
   },
+  "_overridesNote": [
+    "Mirrors the root package. GHSA-mh99-v99m-4gvg covers brace-expansion up to",
+    "5.0.7 and was not backported, so the newest 1.x and 2.x are still affected",
+    "and only 5.0.8+ is clean. It arrives transitively through minimatch and glob",
+    "in build tooling, which only sees glob patterns from this repository."
+  ],
+  "overrides": {
+    "brace-expansion": "^5.0.8"
+  },
   "homepage": "https://gitlab.com/elmstorygames/storyteller",
   "devDependencies": {
     "@types/howler": "^2.2.13",

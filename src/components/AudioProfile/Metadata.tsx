@@ -1,7 +1,7 @@
 import logger from '../../lib/logger'
 
 import { values } from 'lodash'
-import * as mm from 'music-metadata-browser'
+import { parseBlob, selectCover } from 'music-metadata'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Marquee from 'react-fast-marquee'
@@ -10,6 +10,32 @@ import { Spin } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons'
 
 import styles from './styles.module.less'
+
+/**
+ * Encodes cover art for a data URL.
+ *
+ * music-metadata hands back a Uint8Array. This previously called
+ * Buffer.prototype.toString('base64'), which music-metadata-browser's polyfilled
+ * Buffer provided. On a plain Uint8Array that returns the comma-separated
+ * digits of every byte, so it would have produced a broken data URL rather than
+ * failing outright.
+ *
+ * Encoded in chunks because String.fromCharCode is applied to the bytes as
+ * arguments, and cover art is large enough to exceed the argument limit.
+ */
+const toBase64 = (data: Uint8Array): string => {
+  const CHUNK_SIZE = 0x8000
+
+  let binary = ''
+
+  for (let offset = 0; offset < data.length; offset += CHUNK_SIZE) {
+    binary += String.fromCharCode(
+      ...data.subarray(offset, offset + CHUNK_SIZE)
+    )
+  }
+
+  return btoa(binary)
+}
 
 const positionProgressBar = (
   waveformElement: HTMLCanvasElement,
@@ -75,8 +101,8 @@ const Metadata: React.FC<{
         try {
           const audioBlob = new Blob([_audioArrayBuffer])
 
-          const { format, common } = await mm.parseBlob(audioBlob),
-            cover = mm.selectCover(common.picture)
+          const { format, common } = await parseBlob(audioBlob),
+            cover = selectCover(common.picture)
 
           // TODO: we shouldn't get this unless the designer expands the info box
           setMetadata({
@@ -85,7 +111,7 @@ const Metadata: React.FC<{
             bitrate: format.bitrate,
             codecProfile: format.codecProfile,
             cover: cover
-              ? `data:${cover.format};base64,${cover.data.toString('base64')}`
+              ? `data:${cover.format};base64,${toBase64(cover.data)}`
               : undefined,
             sampleRate: format.sampleRate,
             title: common.title
