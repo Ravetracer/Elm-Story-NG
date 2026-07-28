@@ -29,6 +29,36 @@ Two editor modules also import from `engine/src` directly
 (`ElementEditor/SceneMap/EventSnippet.tsx`, `lib/serialization.ts`), which is
 inconsistent with the embedded copy but works.
 
+## Template expressions
+
+`{ ... }` inside event content is parsed with acorn and evaluated by
+`lib/templates.ts`. Four expression forms are supported: an identifier
+(`{ name }`), a method call (`{ name.upper() }`, from `gameMethods`), a
+conditional (`{ health > 50 ? "ok" : "hurt" }`) and arithmetic
+(`{ health + bonus * 2 }`, operators `+ - * / %`, nesting and parentheses
+included). Anything else resolves to the string `esg-error`, which
+`EventSnippet` and the engine's `decorate()` render as an ERROR span.
+
+Two things to know before changing it:
+
+- **`templates.ts` exists twice**, at `src/lib/` and `engine/src/lib/`, as separate
+  files rather than one generated from the other. They differ only in `logger`
+  calls, the `VARIABLE_TYPE` import path and "game" versus "world" wording. A fix
+  applied to one and not the other means node previews and the storyteller
+  disagree about the same text.
+- **`getProcessedTemplate` drops any falsy substitution**
+  (`value = value ? `{${value}}` : ''`). A value that is legitimately `0` has to
+  reach it already stringified or it vanishes from the rendered prose instead of
+  appearing. This is why the arithmetic branch stringifies its result.
+
+Variable values are always stored as strings whatever the declared type, so a
+NUMBER arrives as `"10"`. Changing a variable's type resets its initial value in
+`db/index.ts` — `'false'`, `'0'` or `''` — which is why a blank NUMBER is treated as
+an authoring error while an empty STRING is treated as ordinary data.
+
+`src/__tests__/templates.test.ts` covers the arithmetic evaluator, including the
+zero-result case above.
+
 ## Do not upgrade React
 
 The renderer is on **React 17** deliberately. `antd` 4, `rc-dock` 3,
