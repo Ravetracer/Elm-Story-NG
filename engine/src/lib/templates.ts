@@ -14,10 +14,10 @@ interface AcornNode extends acorn.Node {
   property?: AcornNode
   // ConditionalExpression
   test?: AcornNode
-  argument?: {
-    type: NODE_TYPES.IDENTIFIER
-    name: string
-  }
+  // Widened from an identifier-only shape so that unary minus on a literal, as
+  // in `{ -1 * count }`, can be folded; the conditional code below still reads
+  // `argument.name` and `argument.type`, which remain available.
+  argument?: AcornNode
   left?: AcornNode
   right?: AcornNode
   operator?: string
@@ -95,6 +95,25 @@ interface ConditionalExpression extends ExpressionBase {
     value?: boolean | string | number
   }
 }
+
+/**
+ * An operand of an arithmetic expression. Recursive, so `{ (a + b) * 2 }` and
+ * `{ a + b + c }` both parse: acorn nests BinaryExpressions on the left, and
+ * parentheses simply change where the nesting falls.
+ */
+type BinaryOperand =
+  | { type: NODE_TYPES.IDENTIFIER; variableName: string }
+  | { type: NODE_TYPES.LITERAL; value: boolean | string | number }
+  | BinaryExpression
+
+interface BinaryExpression extends ExpressionBase {
+  type: NODE_TYPES.BINARY_EXPRESSION
+  operator: string
+  left: BinaryOperand
+  right: BinaryOperand
+}
+
+export const SUPPORTED_BINARY_OPERATORS = ['+', '-', '*', '/', '%']
 
 interface ExpressionError extends ExpressionBase {
   type: NODE_TYPES.EXPRESSION_ERROR
@@ -188,6 +207,92 @@ function processCallExpression(
       type: NODE_TYPES.EXPRESSION_ERROR,
       message: `Unable to process call expression. Example format: '{ variableName.upper() }`
     }
+  }
+}
+
+/**
+ * Folds a unary plus or minus applied to a numeric literal into that literal, so
+ * `-1` reaches the evaluator as a value rather than as a node it would have to
+ * understand. Anything else is left alone for the caller to reject.
+ */
+function foldNumericUnary(node: AcornNode): AcornNode {
+  if (
+    node.type === NODE_TYPES.UNARY_EXPRESSION &&
+    (node.operator === '-' || node.operator === '+') &&
+    node.argument?.type === NODE_TYPES.LITERAL &&
+    typeof node.argument.value === 'number'
+  ) {
+    return {
+      ...node.argument,
+      type: NODE_TYPES.LITERAL,
+      value: node.operator === '-' ? -node.argument.value : node.argument.value
+    } as AcornNode
+  }
+
+  return node
+}
+
+function processBinaryOperand(
+  node: AcornNode,
+  variables: GameVariables
+): BinaryOperand | ExpressionError {
+  const operand = foldNumericUnary(node)
+
+  if (operand.type === NODE_TYPES.IDENTIFIER && operand.name) {
+    return variables[operand.name]
+      ? { type: NODE_TYPES.IDENTIFIER, variableName: operand.name }
+      : {
+          type: NODE_TYPES.EXPRESSION_ERROR,
+          message: `Unable to process arithmetic expression. '${operand.name}' is an unknown variable.`
+        }
+  }
+
+  if (operand.type === NODE_TYPES.LITERAL && operand.value !== undefined) {
+    return { type: NODE_TYPES.LITERAL, value: operand.value }
+  }
+
+  if (operand.type === NODE_TYPES.BINARY_EXPRESSION) {
+    return processBinaryExpression(operand, variables)
+  }
+
+  return {
+    type: NODE_TYPES.EXPRESSION_ERROR,
+    message: `Unable to process arithmetic expression. Example format: '{ variableName + 1 }'`
+  }
+}
+
+function processBinaryExpression(
+  expression: AcornNode,
+  variables: GameVariables
+): BinaryExpression | ExpressionError {
+  const { left, right, operator } = expression
+
+  if (!left || !right || !operator)
+    return {
+      type: NODE_TYPES.EXPRESSION_ERROR,
+      message: `Unable to process arithmetic expression. Example format: '{ variableName + 1 }'`
+    }
+
+  if (!SUPPORTED_BINARY_OPERATORS.includes(operator))
+    return {
+      type: NODE_TYPES.EXPRESSION_ERROR,
+      message: `Unable to process arithmetic expression. Operator '${operator}' is not supported. Supported operators: ${SUPPORTED_BINARY_OPERATORS.join(
+        ' '
+      )}`
+    }
+
+  const processedLeft = processBinaryOperand(left, variables),
+    processedRight = processBinaryOperand(right, variables)
+
+  // Report the offending side rather than a generic failure.
+  if (processedLeft.type === NODE_TYPES.EXPRESSION_ERROR) return processedLeft
+  if (processedRight.type === NODE_TYPES.EXPRESSION_ERROR) return processedRight
+
+  return {
+    type: NODE_TYPES.BINARY_EXPRESSION,
+    operator,
+    left: processedLeft,
+    right: processedRight
   }
 }
 
@@ -342,6 +447,104 @@ function processConditionalExpression(
   }
 }
 
+/**
+ * Resolves an arithmetic operand to a plain value.
+ *
+ * Variable values are stored as strings regardless of declared type, so a NUMBER
+ * variable arrives as "10". Returns undefined for anything unusable — an unknown
+ * variable, an unset value, or a nested expression that itself failed — which the
+ * caller turns into the 'esg-error' sentinel.
+ */
+function resolveBinaryOperand(
+  operand: BinaryOperand,
+  variables: GameVariables
+): number | string | undefined {
+  if (operand.type === NODE_TYPES.BINARY_EXPRESSION)
+    return evaluateBinaryExpression(operand, variables)
+
+  if (operand.type === NODE_TYPES.LITERAL) {
+    if (typeof operand.value === 'boolean') return undefined
+
+    return operand.value
+  }
+
+  const variable = variables[operand.variableName]
+
+  if (!variable || variable.value === undefined) return undefined
+
+  if (variable.type === VARIABLE_TYPE.NUMBER) {
+    // A blank number is not treated as zero: silently reading it as 0 would hide
+    // an authoring mistake. Changing a variable's type resets a NUMBER's initial
+    // value to '0', so this is only reachable for values written another way.
+    if (variable.value === '') return undefined
+
+    const asNumber = Number(variable.value)
+
+    return Number.isFinite(asNumber) ? asNumber : undefined
+  }
+
+  // An empty string, unlike a blank number, is a legitimate value: changing a
+  // variable's type resets a STRING's initial value to exactly that.
+  if (variable.type === VARIABLE_TYPE.STRING) return variable.value
+
+  // Booleans, images and urls have no meaningful arithmetic.
+  return undefined
+}
+
+/**
+ * Evaluates a parsed arithmetic expression, or returns undefined if it cannot be
+ * evaluated.
+ *
+ * `+` concatenates when either side resolves to a string, matching what an author
+ * writing `{ "Level " + level }` expects; the other operators require numbers on
+ * both sides. Division and modulo by zero, and any non-finite result, are refused
+ * rather than rendered as Infinity or NaN.
+ */
+function evaluateBinaryExpression(
+  expression: BinaryExpression,
+  variables: GameVariables
+): number | string | undefined {
+  const left = resolveBinaryOperand(expression.left, variables),
+    right = resolveBinaryOperand(expression.right, variables)
+
+  if (left === undefined || right === undefined) return undefined
+
+  if (expression.operator === '+') {
+    if (typeof left === 'string' || typeof right === 'string')
+      return `${left}${right}`
+
+    return left + right
+  }
+
+  // Every remaining operator is numeric.
+  if (typeof left !== 'number' || typeof right !== 'number') return undefined
+
+  let result: number
+
+  switch (expression.operator) {
+    case '-':
+      result = left - right
+      break
+    case '*':
+      result = left * right
+      break
+    case '/':
+      if (right === 0) return undefined
+
+      result = left / right
+      break
+    case '%':
+      if (right === 0) return undefined
+
+      result = left % right
+      break
+    default:
+      return undefined
+  }
+
+  return Number.isFinite(result) ? result : undefined
+}
+
 export function parseTemplateExpressions(
   templateExpressions: string[],
   variables: GameVariables,
@@ -349,12 +552,14 @@ export function parseTemplateExpressions(
 ): (
   | IdentifierExpression
   | CallExpression
+  | BinaryExpression
   | ConditionalExpression
   | ExpressionError
 )[] {
   const parsedExpressions: (
     | IdentifierExpression
     | CallExpression
+    | BinaryExpression
     | ConditionalExpression
     | ExpressionError
   )[] = []
@@ -389,10 +594,9 @@ export function parseTemplateExpressions(
             parsedExpressions.push(processConditionalExpression(expression))
             break
           case NODE_TYPES.BINARY_EXPRESSION:
-            parsedExpressions.push({
-              type: NODE_TYPES.EXPRESSION_ERROR,
-              message: `Unable to parse template expression. '${templateExpression}' is not supported, but is planned for a future release.`
-            })
+            parsedExpressions.push(
+              processBinaryExpression(expression, variables)
+            )
             break
           default:
             parsedExpressions.push({
@@ -424,6 +628,7 @@ export function getProcessedTemplate(
   parsedExpressions: (
     | IdentifierExpression
     | CallExpression
+    | BinaryExpression
     | ConditionalExpression
     | ExpressionError
   )[],
@@ -445,6 +650,16 @@ export function getProcessedTemplate(
         value = methods[parsedExpression.methodName]?.(
           variables[parsedExpression.variableName].value
         )
+        break
+      case NODE_TYPES.BINARY_EXPRESSION:
+        const arithmetic = evaluateBinaryExpression(parsedExpression, variables)
+
+        // Stringified deliberately: the substitution below drops any falsy
+        // value, so a numeric result of 0 would disappear from the rendered text
+        // rather than appear. "0" is truthy. A concatenation that yields an empty
+        // string still renders as nothing, which matches what an identifier
+        // holding an empty value already does.
+        value = arithmetic === undefined ? 'esg-error' : `${arithmetic}`
         break
       case NODE_TYPES.CONDITIONAL_EXPRESSION:
         const leftVariable = parsedExpression.left,
