@@ -1,4 +1,14 @@
 #runtime {
+  // The storyteller's root establishes its own text colour, which base.less
+  // does with `body { color: var(--text-color) }` when the engine runs
+  // standalone. There is no engine-owned body inside the editor: the preview is
+  // mounted in an rc-dock panel, and rc-dock.css styles `.dock-panel` for a
+  // light theme with `color: rgba(0, 0, 0, 0.85)`. engine.less sets no colour on
+  // p, ol, ul or blockquote, so all body copy inherited that black and rendered
+  // near-invisibly against the preview's near-black background. Headings were
+  // unaffected only because antd's dark theme colours h1-h6 explicitly.
+  color: var(--text-color);
+
   --text-size: 62.5%;
 
   --primary-color: hsl(262, 100%, 60%);
@@ -42,16 +52,17 @@
   --event-content-bottom-border: 0.1rem solid hsl(0, 0%, 12%);
   --event-character-mask-border: 0.1rem solid hsl(0, 0%, 20%);
   --event-character-reference-text-color: hsl(0, 0%, 50%);
-  // Lightened from 30%/30%/10%. These apply to events the reader has already
-  // resolved, and engine.less additionally renders those at 40% opacity, so the
-  // values above composited to roughly the background's own luminance against
-  // the editor's near-black preview: the disabled choice text measured 14 on a
-  // background of 8, which is invisible. See the opacity override below.
-  --event-character-reference-past-text-color: hsl(0, 0%, 45%);
-  --event-past-text-color: hsl(0, 0%, 45%);
+  --event-character-reference-past-text-color: hsl(0, 0%, 30%);
+  --event-past-text-color: hsl(0, 0%, 30%);
   --event-past-choice-background-color: none;
   --event-past-choice-border: 1px solid hsl(0, 0%, 10%);
   --event-past-text-hover-color: hsl(0, 0%, 70%);
+  // Lightened from hsl(0, 0%, 10%), which is luminance 26 against this
+  // preview's luminance-20 background, a contrast ratio near 1.05:1. Resolved
+  // events are additionally drawn at 40% opacity by engine.less, taking it
+  // lower still. This one is arithmetic on two known values rather than an
+  // observation: it applies to answered choices, which were not on screen while
+  // this was being checked.
   --event-past-choice-text-color: hsl(0, 0%, 55%);
   --event-past-choice-result-background-color: var(
     --event-past-choice-background-color
@@ -61,17 +72,6 @@
 
   * {
     font-family: 'Roboto Serif' !important;
-  }
-
-  // engine.less fades resolved events out with `opacity: 0.4` and
-  // `grayscale(100%)`. That reads well in the published storyteller, where
-  // earlier events are meant to recede as the reader moves on, but the editor's
-  // preview is an authoring surface: earlier events have to stay legible while
-  // writing. Relaxed here rather than in engine.less so the published runtime
-  // keeps its original presentation. This file is only loaded by the editor.
-  .live-event.live-event-past {
-    opacity: 0.65;
-    filter: grayscale(70%);
   }
 
   // ES reset
