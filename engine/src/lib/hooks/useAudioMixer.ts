@@ -1,4 +1,4 @@
-import { Howl } from 'howler'
+import { Howl, Howler } from 'howler'
 
 import { useCallback, useContext, useEffect, useState } from 'react'
 import { EngineContext } from '../../contexts/EngineContext'
@@ -13,6 +13,69 @@ export type AudioMixerProfiles = { scene?: AudioProfile; event?: AudioProfile }
 export type AudioTrackType = 'SCENE' | 'EVENT'
 export type AudioTrack = [AudioSubTrack, AudioSubTrack]
 export type AudioSubTrack = { source?: string; audio?: Howl; primary: boolean }
+
+/**
+ * Chromium suspends the shared AudioContext on its own: under the autoplay
+ * policy before the first gesture, and again whenever the renderer is
+ * backgrounded or the preview is hidden behind another dock tab. Howler tracks
+ * only its own `Howler.state` and never observes the context, so the two
+ * desync, leaving `Howler.state === 'running'` while the context is actually
+ * `'suspended'`.
+ *
+ * That desync is silent and permanent. `Howl.play()` calls
+ * `Howler._autoResume()`, which resumes only when `Howler.state` itself reads
+ * `'suspended'`; in the desynced state it takes the other branch and returns
+ * without touching the context. `play()` then reports success and `playing()`
+ * returns true, but `Howler.ctx.currentTime` never advances, so the gain ramps
+ * that `fade()` schedules never progress and `seek()` stays at 0. No audio is
+ * ever heard.
+ *
+ * `state` is absent from @types/howler, hence the cast. Keeping it in step with
+ * the real context also repairs Howler's own internal `_autoResume()` calls.
+ */
+const observeAudioContextState = (ctx: AudioContext) => {
+  const observed = ctx as AudioContext & { esgStateObserved?: boolean }
+
+  if (observed.esgStateObserved) return
+
+  observed.esgStateObserved = true
+
+  ctx.addEventListener('statechange', () => {
+    ;(Howler as unknown as { state: AudioContextState }).state = ctx.state
+  })
+}
+
+/**
+ * Resolves once the context is running, so callers can schedule playback and
+ * gain ramps against a clock that is actually advancing. `resume()` is
+ * asynchronous, which is why the fade cannot simply follow `play()` on the same
+ * tick.
+ */
+const resumeAudioContext = async () => {
+  const ctx = Howler.ctx
+
+  // Howler falls back to HTML5 Audio where Web Audio is unavailable, and then
+  // has no context to resume.
+  if (!ctx || !Howler.usingWebAudio) return
+
+  observeAudioContextState(ctx)
+
+  // Howler otherwise suspends the context itself after a spell with nothing
+  // playing, which is a second way to arrive at the desync above.
+  Howler.autoSuspend = false
+
+  if (ctx.state === 'running') return
+
+  try {
+    await ctx.resume()
+  } catch (error) {
+    // A resume before the first user gesture is rejected by the autoplay
+    // policy. The next call, driven by a gesture, succeeds.
+    return
+  }
+
+  ;(Howler as unknown as { state: AudioContextState }).state = ctx.state
+}
 
 const useAudioTrack = ({
   source,
@@ -83,8 +146,10 @@ const useAudioTrack = ({
 
   const play = useCallback(() => {
     // elmstorygames/feedback#268
-    track[0].primary && track[0].audio?.play()
-    track[1].primary && track[1].audio?.play()
+    resumeAudioContext().then(() => {
+      track[0].primary && track[0].audio?.play()
+      track[1].primary && track[1].audio?.play()
+    })
   }, [track])
 
   useEffect(() => updateTrack(source), [source])
@@ -118,9 +183,15 @@ const useAudioTrack = ({
     }
 
     if (subTrackToFadeIn?.audio) {
-      subTrackToFadeIn.audio.volume(0)
-      subTrackToFadeIn.audio.play()
-      subTrackToFadeIn.audio.fade(0, volume || 1, 1000)
+      const audioToFadeIn = subTrackToFadeIn.audio
+
+      // The ramp below is scheduled against Howler.ctx.currentTime, so the
+      // context has to be running before any of this is issued.
+      resumeAudioContext().then(() => {
+        audioToFadeIn.volume(0)
+        audioToFadeIn.play()
+        audioToFadeIn.fade(0, volume || 1, 1000)
+      })
     }
 
     return () => {
@@ -129,14 +200,14 @@ const useAudioTrack = ({
   }, [track])
 
   useEffect(() => {
-    const subTrackVolumeToChange = track.find((subTrack) => subTrack.primary)
+    const audioToChange = track.find((subTrack) => subTrack.primary)?.audio
 
-    subTrackVolumeToChange?.audio &&
-      subTrackVolumeToChange.audio.fade(
-        subTrackVolumeToChange.audio.volume(),
-        volume || 1,
-        1000
-      )
+    if (!audioToChange) return
+
+    // As above: a ramp issued against a suspended context never progresses.
+    resumeAudioContext().then(() =>
+      audioToChange.fade(audioToChange.volume(), volume || 1, 1000)
+    )
   }, [volume])
 
   // elmstorygames/feedback#268

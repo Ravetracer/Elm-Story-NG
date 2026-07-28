@@ -141,18 +141,96 @@ const registerAssetProtocol = () => {
       return new Response('Not found', { status: 404 })
     }
 
-    const response = await net.fetch(pathToFileURL(requested).toString())
+    const { size } = await fs.stat(requested),
+      range = parseRange(request.headers.get('range'), size)
+
+    if (range === 'unsatisfiable') {
+      return new Response(null, {
+        status: 416,
+        headers: {
+          'access-control-allow-origin': '*',
+          'accept-ranges': 'bytes',
+          'content-range': `bytes */${size}`
+        }
+      })
+    }
+
+    const response = await net.fetch(pathToFileURL(requested).toString(), {
+      headers: range
+        ? { range: `bytes=${range.start}-${range.end}` }
+        : undefined
+    })
 
     // Pass the file through with a permissive CORS header. Only paths under the
     // roots above are reachable, and the scheme is not exposed outside the app.
+    //
+    // Accept-Ranges and Content-Length are what make a media resource
+    // seekable. Without them Chromium treats the response as a stream of
+    // unknown length, and assigning to an <audio> element's currentTime does
+    // nothing, so imported MP3s played but could not be scrubbed.
+    const headers: Record<string, string> = {
+      ...Object.fromEntries(response.headers.entries()),
+      'access-control-allow-origin': '*',
+      'accept-ranges': 'bytes'
+    }
+
+    if (range) {
+      headers['content-length'] = String(range.end - range.start + 1)
+      headers['content-range'] = `bytes ${range.start}-${range.end}/${size}`
+    } else {
+      headers['content-length'] = String(size)
+    }
+
     return new Response(response.body, {
-      status: response.status,
-      headers: {
-        ...Object.fromEntries(response.headers.entries()),
-        'access-control-allow-origin': '*'
-      }
+      status: range ? 206 : 200,
+      headers
     })
   })
+}
+
+/**
+ * Resolves a single byte range against a known file size.
+ *
+ * Returns undefined when there is no range to honour, so the caller answers
+ * with a whole-body 200, and 'unsatisfiable' when the range lies outside the
+ * file, which requires a 416. Only the single-range forms media elements
+ * actually send are supported: `bytes=a-b`, `bytes=a-` and `bytes=-n`.
+ */
+const parseRange = (
+  header: string | null,
+  size: number
+): { start: number; end: number } | 'unsatisfiable' | undefined => {
+  if (!header) return undefined
+
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim())
+
+  if (!match) return undefined
+
+  const [, rawStart, rawEnd] = match
+
+  if (!rawStart && !rawEnd) return undefined
+
+  // An empty file cannot satisfy any range.
+  if (size === 0) return 'unsatisfiable'
+
+  let start: number, end: number
+
+  if (!rawStart) {
+    // bytes=-n, the trailing n bytes.
+    const suffixLength = Number(rawEnd)
+
+    if (suffixLength === 0) return 'unsatisfiable'
+
+    start = Math.max(0, size - suffixLength)
+    end = size - 1
+  } else {
+    start = Number(rawStart)
+    end = rawEnd ? Math.min(Number(rawEnd), size - 1) : size - 1
+  }
+
+  if (start >= size || start > end) return 'unsatisfiable'
+
+  return { start, end }
 }
 
 logger.info(`ENV: ${process.env.NODE_ENV}`)

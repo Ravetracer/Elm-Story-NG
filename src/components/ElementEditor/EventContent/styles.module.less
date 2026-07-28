@@ -18,6 +18,13 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0 10px;
+  // Slate renders the event body as unclassed paragraphs, and neither this
+  // panel nor .contentContainer nor .editable set a colour, so all of it
+  // inherited rc-dock's light-theme `.dock-panel { color: rgba(0, 0, 0, 0.85) }`
+  // and rendered black against this near-black editor. Set one level up so
+  // every element inherits it, while the explicit rules for expressions,
+  // links and character references below still win.
+  color: hsl(0, 0%, 85%);
 
   .contentContainer {
     // width: clamp(45ch, 50%, 75ch);
