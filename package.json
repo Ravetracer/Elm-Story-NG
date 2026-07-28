@@ -16,7 +16,8 @@
   "scripts": {
     "dev": "npm run engine:sync && electron-vite dev",
     "dev:noengine": "electron-vite dev",
-    "dev:nosandbox": "ELECTRON_DISABLE_SANDBOX=1 npm run dev",
+    "dev:nosandbox": "npm run engine:sync && electron-vite dev --noSandbox",
+    "dev:debug": "electron-vite dev --noSandbox --remoteDebuggingPort 9222",
     "build": "npm run engine:sync && electron-vite build",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder build --publish never",

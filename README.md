@@ -49,6 +49,7 @@ main process.
 | `npm run dev` | Sync the engine, then start with hot reloading |
 | `npm run dev:noengine` | Start without rebuilding the engine (faster iteration on the editor) |
 | `npm run dev:nosandbox` | As `dev`, with the Chromium sandbox disabled (see [Linux](#linux-chromium-sandbox)) |
+| `npm run dev:debug` | As `dev:nosandbox`, with a DevTools protocol endpoint on port 9222 (see [Inspecting a running instance](#inspecting-a-running-instance)) |
 | `npm run build` | Production build into `out/` |
 | `npm run preview` | Run the production build |
 | `npm run package` | Build and package a distributable into `release/` |
@@ -77,6 +78,31 @@ sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
 Note that the renderer already runs with `nodeIntegration: true` and
 `contextIsolation: false`, so the Chromium sandbox is not what isolates this
 application in either case. Packaged builds are unaffected.
+
+### Inspecting a running instance
+
+The developer tools no longer open on startup; use F12 or Ctrl/Cmd+Shift+I, or
+set `OPEN_DEVTOOLS=true`.
+
+For anything to do with why an element is styled or behaving a particular way,
+driving the app over the DevTools protocol is considerably faster than reading
+stylesheets. Start it with `npm run dev:debug`, then:
+
+```bash
+# find the renderer target
+curl -s http://localhost:9222/json | grep webSocketDebuggerUrl
+```
+
+From there a WebSocket client can call `Runtime.evaluate` to read computed
+styles and walk ancestor chains, `Input.dispatchMouseEvent` to click and hover
+with real user activation (which `element.click()` does not provide, and which
+file inputs require), and `Page.captureScreenshot` to capture the window
+independently of which desktop window happens to be in front.
+
+Reading a computed value this way is worth more than inferring one from the
+stylesheets. Two of the styling bugs in this repository's history were
+misdiagnosed by sampling pixel colours, because a bright emoji or icon inside
+the sampled region is indistinguishable from bright text.
 
 ## Architecture
 
