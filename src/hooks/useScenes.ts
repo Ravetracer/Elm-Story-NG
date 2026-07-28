@@ -3,13 +3,21 @@ import { useLiveQuery } from 'dexie-react-hooks'
 
 import { StudioId, Scene, WorldId, ElementId } from '../data/types'
 
+// See the note on useWorld: the ids are optional so callers never have to guard
+// the call itself, which would change hook order between renders.
 const useScenes = (
-  studioId: StudioId,
-  worldId: WorldId,
+  studioId: StudioId | undefined,
+  worldId: WorldId | undefined,
   deps?: any[]
 ): Scene[] | undefined => {
   const scenes = useLiveQuery(
-    () => new LibraryDatabase(studioId).scenes.where({ worldId }).toArray(),
+    async () => {
+      if (!studioId || !worldId) return undefined
+
+      return await new LibraryDatabase(studioId).scenes
+        .where({ worldId })
+        .toArray()
+    },
     deps || [],
     undefined
   )
@@ -22,13 +30,18 @@ const useScenes = (
 }
 
 const useScene = (
-  studioId: StudioId,
+  studioId: StudioId | undefined,
   sceneId: ElementId | undefined | null,
   deps?: any[]
 ): Scene | undefined =>
   useLiveQuery(
-    () =>
-      new LibraryDatabase(studioId).scenes.where({ id: sceneId || '' }).first(),
+    async () => {
+      if (!studioId) return undefined
+
+      return await new LibraryDatabase(studioId).scenes
+        .where({ id: sceneId || '' })
+        .first()
+    },
     deps || [],
     undefined
   )

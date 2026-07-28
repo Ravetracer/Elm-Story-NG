@@ -35,13 +35,22 @@ const useWorlds = (
   return worlds
 }
 
+// The ids are optional so that callers with nothing selected yet can still call
+// this unconditionally. Guarding the call instead changes hook order between
+// renders, which is what react-hooks/rules-of-hooks reports.
 const useWorld = (
-  studioId: StudioId,
-  worldId: WorldId,
+  studioId: StudioId | undefined,
+  worldId: WorldId | undefined,
   deps?: any[]
 ): World | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).worlds.where({ id: worldId }).first(),
+    async () => {
+      if (!studioId || !worldId) return undefined
+
+      return await new LibraryDatabase(studioId).worlds
+        .where({ id: worldId })
+        .first()
+    },
     deps || [],
     undefined
   )

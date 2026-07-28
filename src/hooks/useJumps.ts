@@ -17,13 +17,21 @@ const useJumps = (
   return jumps
 }
 
+// See the note on useWorld: the ids are optional so callers never have to guard
+// the call itself, which would change hook order between renders.
 const useJump = (
-  studioId: StudioId,
-  jumpId: ElementId,
+  studioId: StudioId | undefined,
+  jumpId: ElementId | undefined | null,
   deps?: any[]
 ): Jump | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).jumps.where({ id: jumpId }).first(),
+    async () => {
+      if (!studioId || !jumpId) return undefined
+
+      return await new LibraryDatabase(studioId).jumps
+        .where({ id: jumpId })
+        .first()
+    },
     deps || [],
     undefined
   )

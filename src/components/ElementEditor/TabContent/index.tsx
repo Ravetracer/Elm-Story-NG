@@ -33,12 +33,25 @@ const TabContent: React.FC<{
     height: tabContentViewHeight
   } = useDebouncedResizeObserver(1000)
 
+  // Both run on every render and only one is given an id, because selecting
+  // between them inside the switch below made hook order depend on `type`.
+  const world = useWorld(
+      studioId,
+      type === ELEMENT_TYPE.WORLD ? id : undefined,
+      [studioId, id, type]
+    ),
+    scene = useScene(
+      studioId,
+      type === ELEMENT_TYPE.SCENE ? id : undefined,
+      [studioId, id, type]
+    )
+
   switch (type) {
     case ELEMENT_TYPE.WORLD:
-      component = { type: ELEMENT_TYPE.WORLD, data: useWorld(studioId, id) }
+      component = { type: ELEMENT_TYPE.WORLD, data: world }
       break
     case ELEMENT_TYPE.SCENE:
-      component = { type: ELEMENT_TYPE.SCENE, data: useScene(studioId, id) }
+      component = { type: ELEMENT_TYPE.SCENE, data: scene }
       break
     default:
       throw 'Unable to render TabContent. Unknown component type.'

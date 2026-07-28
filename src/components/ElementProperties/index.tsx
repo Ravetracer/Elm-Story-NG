@@ -18,9 +18,10 @@ const ElementProperties: React.FC<{
 }> = ({ studioId, worldId = undefined }) => {
   const { composer } = useContext(ComposerContext)
 
-  const selectedWorld: World | undefined = worldId
-    ? useWorld(studioId, worldId)
-    : undefined
+  const selectedWorld: World | undefined = useWorld(studioId, worldId, [
+    studioId,
+    worldId
+  ])
 
   useEffect(() => {
     logger.info(

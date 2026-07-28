@@ -89,19 +89,15 @@ export default memo(
     data
   }: EdgeProps<PathEdgeData>) => {
     const conditionsCount =
-        (data &&
-          usePathConditionsCountByPathRef(data.studioId, data.pathId, [
-            data.studioId,
-            data.pathId
-          ])) ||
-        undefined,
+        usePathConditionsCountByPathRef(data?.studioId, data?.pathId, [
+          data?.studioId,
+          data?.pathId
+        ]) || undefined,
       effectsCount =
-        (data &&
-          usePathEffectsCountByPathRef(data.studioId, data.pathId, [
-            data.studioId,
-            data.pathId
-          ])) ||
-        undefined
+        usePathEffectsCountByPathRef(data?.studioId, data?.pathId, [
+          data?.studioId,
+          data?.pathId
+        ]) || undefined
 
     const [centerX, centerY] = getEdgeCenter({
       sourceX,

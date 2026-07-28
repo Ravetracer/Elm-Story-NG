@@ -21,13 +21,21 @@ const useEvents = (
   return events
 }
 
+// See the note on useWorld: the ids are optional so callers never have to guard
+// the call itself, which would change hook order between renders.
 const useEventsBySceneRef = (
-  studioId: StudioId,
-  sceneId: ElementId,
+  studioId: StudioId | undefined,
+  sceneId: ElementId | undefined | null,
   deps?: any[]
 ): Event[] | undefined => {
   const events = useLiveQuery(
-    () => new LibraryDatabase(studioId).events.where({ sceneId }).toArray(),
+    async () => {
+      if (!studioId || !sceneId) return undefined
+
+      return await new LibraryDatabase(studioId).events
+        .where({ sceneId })
+        .toArray()
+    },
     deps || [],
     undefined
   )
@@ -36,13 +44,18 @@ const useEventsBySceneRef = (
 }
 
 const useEvent = (
-  studioId: StudioId,
+  studioId: StudioId | undefined,
   eventId: ElementId | undefined | null,
   deps?: any[]
 ): Event | undefined =>
   useLiveQuery(
-    () =>
-      new LibraryDatabase(studioId).events.where({ id: eventId || '' }).first(),
+    async () => {
+      if (!studioId) return undefined
+
+      return await new LibraryDatabase(studioId).events
+        .where({ id: eventId || '' })
+        .first()
+    },
     deps || [],
     undefined
   )

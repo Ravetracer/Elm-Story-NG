@@ -39,13 +39,21 @@ const usePathEffectsByPathRef = (
     undefined
   )
 
+// See the note on useWorld: the ids are optional so callers never have to guard
+// the call itself, which would change hook order between renders.
 const usePathEffectsCountByPathRef = (
-  studioId: StudioId,
-  pathId: ElementId,
+  studioId: StudioId | undefined,
+  pathId: ElementId | undefined,
   deps?: any[]
 ): number | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).effects.where({ pathId }).count(),
+    async () => {
+      if (!studioId || !pathId) return undefined
+
+      return await new LibraryDatabase(studioId).effects
+        .where({ pathId })
+        .count()
+    },
     deps || [],
     undefined
   )

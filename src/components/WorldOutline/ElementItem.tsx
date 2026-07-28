@@ -44,9 +44,12 @@ const EventBadge: React.FC<{ eventId: ElementId }> = React.memo(
   ({ eventId }) => {
     const { app } = useContext(AppContext)
 
-    if (!app.selectedStudioId) return null
+    const event = useEvent(app.selectedStudioId, eventId, [
+      app.selectedStudioId,
+      eventId
+    ])
 
-    const event = useEvent(app.selectedStudioId, eventId, [eventId])
+    if (!app.selectedStudioId) return null
 
     return (
       <Badge
@@ -84,9 +87,12 @@ const SceneBadge: React.FC<{
 }> = React.memo(({ sceneId }) => {
   const { app } = useContext(AppContext)
 
-  if (!app.selectedStudioId) return null
+  const scene = useScene(app.selectedStudioId, sceneId, [
+    app.selectedStudioId,
+    sceneId
+  ])
 
-  const scene = useScene(app.selectedStudioId, sceneId, [sceneId])
+  if (!app.selectedStudioId) return null
 
   return (
     <div className={`${styles.extraInfo} ${styles.scene}`}>
@@ -111,11 +117,12 @@ const JumpBadge: React.FC<{
 }> = React.memo(({ jumpId }) => {
   const { app } = useContext(AppContext)
 
-  if (!app.selectedStudioId) return null
-
   const { composerDispatch } = useContext(ComposerContext)
 
-  const jump = useJump(app.selectedStudioId, jumpId, [jumpId])
+  const jump = useJump(app.selectedStudioId, jumpId, [
+    app.selectedStudioId,
+    jumpId
+  ])
 
   const jumpTo = async (
     event: React.MouseEvent<HTMLSpanElement, MouseEvent>
@@ -151,6 +158,8 @@ const JumpBadge: React.FC<{
         )
     }
   }
+
+  if (!app.selectedStudioId) return null
 
   return (
     <Badge

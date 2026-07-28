@@ -29,10 +29,10 @@ const Composer: React.FC = () => {
   const { app } = useContext(AppContext),
     { composer, composerDispatch } = useContext(ComposerContext)
 
-  const selectedWorld =
-    app.selectedStudioId && app.selectedWorldId
-      ? useWorld(app.selectedStudioId, app.selectedWorldId)
-      : undefined
+  const selectedWorld = useWorld(app.selectedStudioId, app.selectedWorldId, [
+    app.selectedStudioId,
+    app.selectedWorldId
+  ])
 
   function closeActiveTab() {
     if (composer.selectedWorldOutlineElement.type !== ELEMENT_TYPE.WORLD) {
