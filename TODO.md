@@ -44,11 +44,18 @@ without being consumed.
       takeable or static, combineable
 - [ ] Quantity model — see the note below; this is the one decision that most
       changes the amount of code
-- [ ] Scene placement: which scenes an object starts in
+- [ ] Scene placement: which scenes an object starts in, and an optional condition
+      gating whether it is there at all — see the note on containers below
 - [ ] Recipes: inputs each flagged consumed or retained, outputs each destined for
       the inventory or the current scene
+- [ ] Whether a recipe can also set a variable. Not required if conditions can
+      read object presence, but convenient.
+- [ ] What the storyteller says when two objects have no matching recipe. Silence
+      reads as broken; a default message, overridable per object, reads as
+      deliberate.
 - [ ] Inventory state on live events, so rewind, save and load stay correct
-- [ ] Conditions on inventory: "player has X", "scene contains X"
+- [ ] Conditions on inventory and scene contents: "player has X",
+      "scene contains X"
 - [ ] Storyworld cover image field
 - [ ] Character relationship data
 - [ ] Variable scope field
@@ -162,10 +169,47 @@ definitions. No instance ids to allocate, and the live-event snapshot stays a
 small map of definition to count, which keeps rewind and save/load trivially
 correct.
 
+A charged battery and an empty one are two definitions, not one battery in two
+states. That is why you can hold three charged and two empty as two stacks with
+two counts, and why using the wrong one in the flashlight does nothing unless a
+recipe says otherwise — recipes are keyed to specific definitions, so behaviour is
+authored rather than simulated. The cost is authoring effort: several battery
+states across several devices means several recipes, which is what makes filtering
+in the recipe editor worth building properly.
+
+**No timing, and not only for simplicity.** The engine stores a complete state
+snapshot on every live event, which is what keeps rewind and save/load correct.
+Anything time-based would need a clock the engine does not have and would desync
+from those snapshots. Depletion would also mean two batteries of one definition
+holding different charge, which is exactly what forces true instances. Keeping the
+model monotonic — objects change only by explicit player action — avoids both.
+
 True instances are only needed if two objects of the same definition must hold
 *different* mutable state. Nothing in the spec asks for that. If it ever does,
 that is the moment to add instances — and it would be a third migration, so it is
 worth being sure.
+
+## Note on containers, and why conditional placement is better
+
+Objects inside objects — a battery in a locked drawer — is tempting but expensive:
+a recursive data model, a recursive UI, and a new "locked" concept. Gating an
+object's placement on a condition costs one field and reuses the existing
+`Condition` model.
+
+The drawer works completely without containers:
+
+- the drawer is a static object in the scene, with its own description
+- `Key + Drawer → Unlocked Drawer`, with the key retained or consumed as authored
+- the battery's placement condition is "scene contains Unlocked Drawer"
+- until then the battery is not in the world at all, rather than visible and
+  refused
+
+This needs conditions that can read scene contents, which section 4 already
+requires for gating a path on a held object. Same mechanism, used twice.
+
+It also generalises well past drawers: objects that appear after an event, only on
+a second visit, or only after a conversation. Containers model containers;
+conditional placement models revelation, which is the actual goal.
 
 ## Not included
 
