@@ -362,9 +362,18 @@ export function parseTemplateExpressions(
 
   templateExpressions.map((templateExpression) => {
     try {
-      const parsedExpression: AcornNode = acorn.parse(templateExpression, {
+      // acorn.parse returns a precisely typed Program whose body holds acorn's
+      // own discriminated Statement types. AcornNode above is this file's
+      // deliberately loose view of a node, with every field optional, and those
+      // precise types cannot satisfy it structurally: Program['body'] is
+      // (Statement | ModuleDeclaration)[], and ExpressionStatement['expression']
+      // is Expression rather than AcornNode | undefined. Reinterpret once here
+      // rather than narrowing acorn's unions throughout; the walk below is
+      // driven by explicit `type` comparisons against NODE_TYPES, which is what
+      // keeps it sound.
+      const parsedExpression = acorn.parse(templateExpression, {
           ecmaVersion: 2020
-        }),
+        }) as unknown as AcornNode,
         statement = parsedExpression.body && parsedExpression.body[0],
         expression = statement?.expression
 

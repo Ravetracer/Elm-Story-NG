@@ -25,14 +25,26 @@ import { WINDOW_EVENT_TYPE } from './events'
 
 import api from '../api'
 
+/**
+ * Any single storyworld export is of exactly one engine version, so this is a
+ * union. It was an intersection, which asked for a value satisfying every
+ * schema at once: no real file can, and none of the call sites could type-check.
+ * The body dispatches on `_.engine` and casts to the matching era before handing
+ * off to the upgrade chain.
+ */
+export type IncomingWorldData =
+  | GameDataJSON_013
+  | GameDataJSON_020
+  | GameDataJSON_030
+  | GameDataJSON_031
+  | GameDataJSON_040
+  | GameDataJSON_050
+  | GameDataJSON_051
+  | WorldDataJSON_060
+  | WorldDataJSON_070
+
 export default (
-  worldData: GameDataJSON_013 &
-    GameDataJSON_020 &
-    GameDataJSON_040 &
-    GameDataJSON_050 &
-    GameDataJSON_051 &
-    WorldDataJSON_060 &
-    WorldDataJSON_070,
+  worldData: IncomingWorldData,
   jsonPath: string | undefined,
   skipValidation?: boolean
 ): {
@@ -58,10 +70,11 @@ export default (
     errors,
     finish: async (): Promise<string[]> => {
       if (errors.length === 0) {
-        let upgradedWorldData:
-          | GameDataJSON_020
-          | GameDataJSON_040
-          | undefined = undefined
+        // Holds whatever the most recent stage of the chain produced, so it
+        // spans the same set of shapes as the input. It was declared as only
+        // 0.2.0 or 0.4.0, which is what several of the @ts-ignore comments below
+        // were suppressing.
+        let upgradedWorldData: IncomingWorldData | undefined = undefined
 
         // Upgrade from 0.1.3 to 0.6.0
         if (engineVersion === '0.1.3') {

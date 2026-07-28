@@ -114,14 +114,15 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
   useEffect(() => {
     incomingError &&
       setImportingGameDataErrors([
-        'Unable to import storyworld. JSON is corrupt or empty.'
+        // The list below renders error.message, so a bare string showed nothing
+        // at all for this case.
+        { message: 'Unable to import storyworld. JSON is corrupt or empty.' }
       ])
   }, [incomingError])
 
   useEffect(() => {
     async function importGameData() {
       if (worldData) {
-        // TODO: ts errors
         const { errors, finish } = importWorldData(worldData, incomingJSONPath)
 
         if (errors.length > 0) {

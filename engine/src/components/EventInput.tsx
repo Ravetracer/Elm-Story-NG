@@ -91,6 +91,10 @@ const EventInput: React.FC<{
 
         return variable
       }
+
+      // The input exists but names no variable yet, which the caller treats as
+      // still loading rather than as the null "input variable required" case.
+      return undefined
     },
     [studioId, input],
     undefined

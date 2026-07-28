@@ -147,6 +147,11 @@ export type EventContentLeaf = {
   em?: boolean
   u?: boolean
   s?: boolean
+  // Reachable: HOTKEYS binds mod+` to LEAF_FORMATS.CODE, so toggleLeaf can write
+  // this mark. EventContentLeaf.tsx does not render it, which makes the mark
+  // invisible rather than absent. Declared here because the editor can store it;
+  // wiring up the rendering is a separate, unfinished piece of work.
+  code?: boolean
   expression?: boolean
   expressionStart?: boolean
   expressionEnd?: boolean

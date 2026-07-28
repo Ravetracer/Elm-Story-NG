@@ -32,7 +32,9 @@ import {
   ImageElement,
   LEAF_FORMATS,
   LinkElement,
-  LIST_TYPES
+  LIST_TYPES,
+  OrderedListElement,
+  UnorderedListElement
 } from '../../data/eventContentTypes'
 
 import api from '../../api'
@@ -56,12 +58,20 @@ export const isElementActive = (
   return !!match
 }
 
+// LIST_TYPES.includes() tells the compiler nothing about `format`, so the wrapper
+// built below cannot be matched against a member of the EventContentElement
+// union. A predicate carries the narrowing that the array check already implies.
+const isListFormat = (
+  format: ELEMENT_FORMATS
+): format is ELEMENT_FORMATS.OL | ELEMENT_FORMATS.UL =>
+  LIST_TYPES.includes(format)
+
 export const toggleElement = (
   editor: EditorType,
   format: ELEMENT_FORMATS,
   isActive: boolean
 ) => {
-  const isList = LIST_TYPES.includes(format)
+  const isList = isListFormat(format)
 
   Transforms.unwrapNodes(editor, {
     match: (node) =>
@@ -79,9 +89,10 @@ export const toggleElement = (
   Transforms.setNodes<SlateElement>(editor, newProperties)
 
   if (!isActive && isList) {
-    const block = {
+    // Unlike the block elements, the list wrappers carry no align of their own;
+    // alignment stays on the items set by Transforms.setNodes above.
+    const block: OrderedListElement | UnorderedListElement = {
       type: format,
-      align: undefined,
       children: []
     }
 
