@@ -22,6 +22,7 @@ import electronDebug from 'electron-debug'
 import fs, { outputFile } from 'fs-extra'
 import format from './lib/compiler/format'
 import md5 from 'md5'
+import { addPrecacheEntries, setPrecacheRevision } from './lib/precache'
 
 import { WINDOW_EVENT_TYPE } from './lib/events'
 
@@ -33,7 +34,9 @@ import {
 } from './data/types'
 import { WorldDataJSON } from './lib/transport/types/0.7.0'
 
-export default class AppUpdater {
+// A named rather than default export: the main entry otherwise mixes named and
+// default exports, which Rollup warns about.
+export class AppUpdater {
   constructor() {
     log.transports.file.level = 'info'
     autoUpdater.logger = log
@@ -554,78 +557,54 @@ const createWindow = async () => {
                     .replace('___worldDescription___', worldDescription)
 
                   // #379, #373
-                  const swIndexRevSearchString = `index.html",revision:"`,
-                    startingIndexRevReplacePosition =
-                      sw.indexOf(swIndexRevSearchString) +
-                      swIndexRevSearchString.length,
-                    newIndexHash = md5(html)
+                  //
+                  // index.html and the entry chunk were both rewritten above,
+                  // so their precache revisions no longer describe their
+                  // contents. Failures here are reported and skipped rather
+                  // than thrown: a stale cache for returning visitors is a far
+                  // smaller problem than a damaged service worker or an export
+                  // that never completes.
+                  try {
+                    sw = setPrecacheRevision(sw, 'index.html', md5(html))
+                    sw = setPrecacheRevision(
+                      sw,
+                      manifest['index.html'].file,
+                      md5(js)
+                    )
+                  } catch (error) {
+                    logger.error(
+                      `Unable to update service worker precache revisions. The ` +
+                        `exported storyworld may be served from a stale cache ` +
+                        `on update. ${error}`
+                    )
+                  }
 
-                  // update index revision
-                  sw = `${sw.substr(
-                    0,
-                    startingIndexRevReplacePosition
-                  )}${newIndexHash}${sw.substr(
-                    startingIndexRevReplacePosition + newIndexHash.length
-                  )}`
-
-                  const swJSRevSearchString = `${manifest['index.html'].file}",revision:"`,
-                    startingJSRevReplacePosition =
-                      sw.indexOf(swJSRevSearchString) +
-                      swJSRevSearchString.length,
-                    newJSHash = md5(js)
-
-                  // update js revision
-                  sw = `${sw.substr(
-                    0,
-                    startingJSRevReplacePosition
-                  )}${newJSHash}${sw.substr(
-                    startingJSRevReplacePosition + newJSHash.length
-                  )}`
-
-                  // update content assets
+                  // Content assets are copied in after the engine was built, so
+                  // they are absent from the generated precache manifest.
                   try {
                     const contentAssetsList = await fs.readdir(
                       `${savePathFull}/assets/content`
                     )
 
                     if (contentAssetsList.length > 0) {
-                      const swManifestRevSearchString = `manifest.webmanifest",revision:"`,
-                        startingAssetInsertPosition =
-                          sw.indexOf(swManifestRevSearchString) +
-                          swManifestRevSearchString.length +
-                          34
-
-                      let assets: { filename: string; md5: string }[] = []
-
-                      await Promise.all(
-                        contentAssetsList.map(async (assetFilename) => {
-                          assets.push({
-                            filename: assetFilename,
-                            md5: md5(
-                              await fs.readFile(
-                                `${savePathFull}/assets/content/${assetFilename}`
-                              )
+                      const assets = await Promise.all(
+                        contentAssetsList.map(async (assetFilename) => ({
+                          url: `assets/content/${assetFilename}`,
+                          revision: md5(
+                            await fs.readFile(
+                              `${savePathFull}/assets/content/${assetFilename}`
                             )
-                          })
-                        })
+                          )
+                        }))
                       )
 
-                      let assetDataToInsert = ''
-
-                      assets.map((asset) => {
-                        assetDataToInsert =
-                          assetDataToInsert +
-                          `,{url:"assets/content/${asset.filename}",revision:"${asset.md5}"}`
-                      })
-
-                      sw = [
-                        sw.slice(0, startingAssetInsertPosition),
-                        assetDataToInsert,
-                        sw.slice(startingAssetInsertPosition)
-                      ].join('')
+                      sw = addPrecacheEntries(sw, 'manifest.webmanifest', assets)
                     }
                   } catch (error) {
-                    logger.info('Asset content does not exist. Skipping...')
+                    logger.info(
+                      `Skipping content asset precaching. Asset content does ` +
+                        `not exist or could not be added. ${error}`
+                    )
                   }
 
                   await Promise.all([

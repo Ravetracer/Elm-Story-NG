@@ -16,6 +16,7 @@
   "scripts": {
     "dev": "npm run engine:sync && electron-vite dev",
     "dev:noengine": "electron-vite dev",
+    "dev:nosandbox": "ELECTRON_DISABLE_SANDBOX=1 npm run dev",
     "build": "npm run engine:sync && electron-vite build",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder build --publish never",

@@ -14,6 +14,17 @@ export default defineConfig({
       sourcemap: true,
       lib: {
         entry: resolve(__dirname, 'src/main.ts')
+      },
+      rollupOptions: {
+        output: {
+          // Vite's library mode names the entry after its source file, which
+          // would emit main.js. electron-vite resolves the app entry from
+          // package.json's "main" field and expects out/main/index.js, so the
+          // name is set explicitly rather than moving the source to
+          // src/main/index.ts, which would break the relative imports it
+          // shares with the renderer under src/lib and src/data.
+          entryFileNames: 'index.js'
+        }
       }
     },
     plugins: [externalizeDepsPlugin({ exclude: ESM_ONLY_MAIN_DEPS })]
