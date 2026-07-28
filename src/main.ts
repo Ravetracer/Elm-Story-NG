@@ -13,7 +13,16 @@ import logger from './lib/logger'
 
 import os from 'os'
 import path from 'path'
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { pathToFileURL } from 'url'
+import {
+  app,
+  BrowserWindow,
+  shell,
+  ipcMain,
+  dialog,
+  protocol,
+  net
+} from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
@@ -65,6 +74,86 @@ let mainWindow: BrowserWindow | null = null
 const userDataPath = app.getPath('userData'),
   userCachePath = `${userDataPath}/.cache`,
   userTrashPath = `${userDataPath}/.trash`
+
+/**
+ * User assets live outside the application bundle, under userData, and are
+ * referenced by the renderer in url(), img src and audio src.
+ *
+ * GET_ASSET used to hand back a bare filesystem path. That worked while the
+ * renderer was loaded from a file:// URL, because an absolute path resolves
+ * against the file:// origin. The development renderer is now served over http
+ * by Vite, where the same path resolves against localhost and 404s, leaving
+ * images blank. Prefixing with file:// does not help either: a file://
+ * subresource is not permitted from an http:// document.
+ *
+ * A custom scheme sidesteps both problems and behaves identically in
+ * development and in a packaged build, without relaxing webSecurity.
+ */
+const ASSET_SCHEME = 'esg-asset'
+
+// The roots this scheme is allowed to serve, keyed by URL host.
+const ASSET_ROOTS: Record<string, string> = {
+  asset: path.join(userDataPath, 'assets'),
+  cache: userCachePath
+}
+
+// Registration has to happen before the app is ready.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: ASSET_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      // The renderer's origin is http://localhost during development, so
+      // requests to this scheme are cross-origin. Images and audio elements do
+      // not care, but anything going through fetch or XHR does, and Howler
+      // loads audio that way.
+      corsEnabled: true
+    }
+  }
+])
+
+const assetUrl = (root: keyof typeof ASSET_ROOTS, ...segments: string[]) =>
+  `${ASSET_SCHEME}://${root}/${segments.map(encodeURIComponent).join('/')}`
+
+const registerAssetProtocol = () => {
+  protocol.handle(ASSET_SCHEME, async (request) => {
+    const { host, pathname } = new URL(request.url),
+      root = ASSET_ROOTS[host]
+
+    if (!root) return new Response('Unknown asset root', { status: 404 })
+
+    const requested = path.resolve(
+      root,
+      decodeURIComponent(pathname).replace(/^\/+/, '')
+    )
+
+    // Refuse anything that resolves outside its root.
+    if (requested !== root && !requested.startsWith(root + path.sep)) {
+      logger.error(`Refused asset outside of ${host}: ${request.url}`)
+
+      return new Response('Forbidden', { status: 403 })
+    }
+
+    if (!(await fs.pathExists(requested))) {
+      return new Response('Not found', { status: 404 })
+    }
+
+    const response = await net.fetch(pathToFileURL(requested).toString())
+
+    // Pass the file through with a permissive CORS header. Only paths under the
+    // roots above are reachable, and the scheme is not exposed outside the app.
+    return new Response(response.body, {
+      status: response.status,
+      headers: {
+        ...Object.fromEntries(response.headers.entries()),
+        'access-control-allow-origin': '*'
+      }
+    })
+  })
+}
 
 logger.info(`ENV: ${process.env.NODE_ENV}`)
 
@@ -373,12 +462,20 @@ const createWindow = async () => {
 
           const exists = await fs.pathExists(platformAssetPath)
 
-          if (!exists) return [`"${platformAssetPath}"`, false]
+          // Callers embed this value in url(), img src and audio src, so it is
+          // an esg-asset:// URL rather than a filesystem path. See ASSET_SCHEME.
+          // The surrounding quotes are kept because consumers interpolate the
+          // result directly into CSS url(), where they matter for any path
+          // containing spaces.
+          const assetFile = `${id}.${ext}`
+
+          if (!exists)
+            return [`"${assetUrl('asset', studioId, worldId, assetFile)}"`, false]
 
           // elmstorygames/feedback#238
           // copy asset to cache if asset is mp3 and return url
           if (ext === 'mp3') {
-            const platformAssetCopyPath = `${userCachePath}/${id}.${ext}`
+            const platformAssetCopyPath = `${userCachePath}/${assetFile}`
 
             try {
               // elmstorygames/feedback#243
@@ -386,17 +483,20 @@ const createWindow = async () => {
                 platformAssetCopyPath
               )
 
-              if (assetCacheExists) return [`"${platformAssetCopyPath}"`, true]
+              if (!assetCacheExists) {
+                await fs.copy(platformAssetPath, platformAssetCopyPath)
+              }
 
-              await fs.copy(platformAssetPath, platformAssetCopyPath)
-
-              return [`"${platformAssetCopyPath}"`, true]
+              return [`"${assetUrl('cache', assetFile)}"`, true]
             } catch (error) {
               throw error
             }
           }
 
-          return [`"${platformAssetPath}"`, exists]
+          return [
+            `"${assetUrl('asset', studioId, worldId, assetFile)}"`,
+            exists
+          ]
         }
       )
 
@@ -687,7 +787,11 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.whenReady().then(createWindow).catch(logger.info)
+app
+  .whenReady()
+  .then(registerAssetProtocol)
+  .then(createWindow)
+  .catch(logger.info)
 
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
