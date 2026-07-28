@@ -5,20 +5,20 @@
  * electron renderer process from here and communicate with the other processes
  * through IPC.
  *
- * When running `yarn build` or `yarn build-main`, this file is compiled to
- * `./src/main.prod.js` using webpack. This gives us some performance wins.
+ * `npm run build` compiles this file to `./out/main/index.js` via
+ * electron-vite. Paths resolved against __dirname are therefore relative to
+ * `out/main`, not to `src`.
  */
 import logger from './lib/logger'
 
 import os from 'os'
-import 'core-js/stable'
-import 'regenerator-runtime/runtime'
 import path from 'path'
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 import MenuBuilder from './menu'
 import contextMenu from 'electron-context-menu'
+import electronDebug from 'electron-debug'
 import fs, { outputFile } from 'fs-extra'
 import format from './lib/compiler/format'
 import md5 from 'md5'
@@ -60,31 +60,34 @@ const userDataPath = app.getPath('userData'),
 
 logger.info(`ENV: ${process.env.NODE_ENV}`)
 
-if (process.env.NODE_ENV === 'production') {
-  const sourceMapSupport = require('source-map-support')
-  sourceMapSupport.install()
-}
+// electron-vite emits sourcemaps for the main process and Electron consumes
+// them natively, so the previous source-map-support hook is no longer needed.
 
-if (
-  process.env.NODE_ENV === 'development' ||
-  process.env.DEBUG_PROD === 'true'
-) {
-  require('electron-debug')()
+const isDebugBuild =
+  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
+
+if (isDebugBuild) {
+  electronDebug()
 }
 
 const installExtensions = async () => {
-  const installer = require('electron-devtools-installer')
-  const forceDownload = !!process.env.UPGRADE_EXTENSIONS
-  const extensions = ['REACT_DEVELOPER_TOOLS']
-
   logger.info(`Installing dev tools...`)
 
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      { forceDownload, loadExtensionOptions: { allowFileAccess: true } }
+  try {
+    // Imported lazily so a failed or offline extension download cannot delay
+    // startup of a production build, and so the dependency stays out of the
+    // packaged bundle's hot path.
+    const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import(
+      'electron-devtools-installer'
     )
-    .catch(logger.info)
+
+    await installExtension(REACT_DEVELOPER_TOOLS, {
+      forceDownload: !!process.env.UPGRADE_EXTENSIONS,
+      loadExtensionOptions: { allowFileAccess: true }
+    })
+  } catch (error) {
+    logger.info(`Unable to install dev tools: ${error}`)
+  }
 }
 
 const createWindow = async () => {
@@ -95,9 +98,11 @@ const createWindow = async () => {
     await installExtensions()
   }
 
+  // __dirname is out/main in an unpackaged build, so the repository's assets
+  // directory is two levels up rather than one.
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../assets')
+    : path.join(__dirname, '../../assets')
 
   const getAssetPath = (...paths: string[]): string => {
     return path.join(RESOURCES_PATH, ...paths)
@@ -124,7 +129,14 @@ const createWindow = async () => {
     backgroundColor: '#0a0a0a'
   })
 
-  mainWindow.loadURL(`file://${__dirname}/index.html`)
+  // electron-vite exports the dev server's address as ELECTRON_RENDERER_URL so
+  // the renderer can be served with HMR. Packaged and preview builds load the
+  // emitted HTML from out/renderer instead.
+  if (isDebugBuild && process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  }
 
   let eventsReady = false
 
@@ -489,10 +501,9 @@ const createWindow = async () => {
               }
 
               if (worldType === WORLD_EXPORT_TYPE.PWA) {
-                const enginePath =
-                  process.env.NODE_ENV === 'development'
-                    ? path.join(__dirname, '../assets/engine-dist')
-                    : path.join(process.resourcesPath, 'assets/engine-dist')
+                const enginePath = app.isPackaged
+                  ? path.join(process.resourcesPath, 'assets/engine-dist')
+                  : path.join(__dirname, '../../assets/engine-dist')
 
                 try {
                   await fs.copy(enginePath, savePathFull)
@@ -657,9 +668,12 @@ const createWindow = async () => {
   menuBuilder.buildMenu()
 
   // Open urls in the user's browser
-  mainWindow.webContents.on('new-window', (event, url) => {
-    event.preventDefault()
+  // Open external links in the user's browser rather than a new Electron
+  // window. Replaces the 'new-window' event, which was removed in Electron 22.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
+
+    return { action: 'deny' }
   })
 
   // Remove this if your app does not use auto updates

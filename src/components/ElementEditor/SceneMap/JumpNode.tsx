@@ -32,7 +32,12 @@ import styles from './styles.module.less'
 
 import { isConnectionValid } from './EventNode'
 import { NodeData } from '.'
-import { EVENT_TYPE } from '../../../../engine/tsc-build/src/types'
+// EVENT_TYPE is an enum, so this is a runtime import. It previously pointed at
+// engine/tsc-build, the engine's emitted tsc output, which no longer exists now
+// that the engine type-checks with --noEmit. The embedded engine copy that
+// `npm run engine:embed` produces is the same source and is already part of the
+// renderer bundle, matching how Storyteller/index.tsx imports Runtime.
+import { EVENT_TYPE } from '../../Storyteller/embedded/types'
 
 const JumpHandle: React.FC<{
   jumpId: ElementId
