@@ -140,8 +140,14 @@ Depends on nothing above and benefits from there being more to present.
 
 After the object system, so there is something new to document. The original was
 Docusaurus; VitePress or Astro Starlight fit this Vite-based repo and look better
-out of the box. The archived pages in `Docs/` are mostly literal "WIP" stubs, so
-most content is written fresh rather than ported.
+out of the box.
+
+The source material is the original docs.elmstory.com recovered from archive.org,
+kept locally in `Docs/` and **deliberately git-ignored** — reference to mine, not
+content to publish. Do not expect much from it: most pages are literal "WIP"
+stubs, `expressions.html` documents a `=/=` operator that has never parsed, and it
+omits the method calls that do work. Assume the new site is written fresh and
+verified against the code rather than ported.
 
 - [ ] Static documentation site
 - [ ] A proper expressions page, including arithmetic and the `=/=` correction
@@ -189,12 +195,12 @@ True instances are only needed if two objects of the same definition must hold
 that is the moment to add instances — and it would be a third migration, so it is
 worth being sure.
 
-## Note on containers, and why conditional placement is better
+## Decided: conditional placement, not recursive containers
 
 Objects inside objects — a battery in a locked drawer — is tempting but expensive:
 a recursive data model, a recursive UI, and a new "locked" concept. Gating an
 object's placement on a condition costs one field and reuses the existing
-`Condition` model.
+`Condition` model. **Containers are not being built.**
 
 The drawer works completely without containers:
 

@@ -65,3 +65,10 @@ src/styles/engine-editor.less
 # Ad hoc screenshots dropped in the project root
 /shot*.png
 /screenshot*.png
+
+# Local reference only: the original docs.elmstory.com, recovered from archive.org
+# because the site is gone. Kept out of the repository deliberately — it is source
+# material to mine when writing the new documentation site, not something to
+# publish. Most of its pages are literal "WIP" stubs. Ignored rather than merely
+# untracked so that a `git add -A` cannot sweep 142 files of vendored HTML in.
+/Docs/
