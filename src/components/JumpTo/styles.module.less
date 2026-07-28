@@ -1,0 +1,51 @@
+.JumpTo {
+  .JumpSelect {
+    h2 {
+      margin: 0px;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: hsl(0, 0%, 50%);
+    }
+
+    :global .ant-divider {
+      margin: 0px !important;
+      margin-bottom: 4px !important;
+    }
+
+    .selectWrapper {
+      display: grid;
+      // elmstorygames/feedback#202: moved grid-template-columns to inline
+
+      &.fullWidth {
+        display: block;
+      }
+
+      :global .ant-select {
+        margin-bottom: 4px !important;
+
+        &.jumpEventSelect {
+          margin-bottom: 0 !important;
+        }
+      }
+
+      :global .ant-btn {
+        margin: 0px;
+      }
+
+      .rollBackBtn {
+        width: 32px !important;
+        margin: 0px;
+        padding: 0px;
+        border: none;
+      }
+
+      .jumpToBtn {
+        width: 100%;
+      }
+    }
+
+    &:last-child :last-child {
+      margin-bottom: 0px !important;
+    }
+  }
+}

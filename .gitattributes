@@ -1,0 +1,44 @@
+* text eol=lf
+
+# Executables and archives
+*.exe   binary
+*.dll   binary
+*.node  binary
+*.dmg   binary
+*.zip   binary
+*.gz    binary
+*.7z    binary
+*.pdf   binary
+
+# Images
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.bmp   binary
+*.ico   binary
+*.icns  binary
+
+# Fonts
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+*.woff  binary
+*.woff2 binary
+
+# Audio
+*.mp3   binary
+*.wav   binary
+*.m4a   binary
+*.aac   binary
+*.oga   binary
+*.ogg   binary
+*.flac  binary
+
+# Video
+*.mp4   binary
+*.webm  binary
+
+# Lockfiles: keep diffs quiet in review
+package-lock.json -diff linguist-generated
