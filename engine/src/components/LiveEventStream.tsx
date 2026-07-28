@@ -121,7 +121,7 @@ const LiveEventStream: React.FC = React.memo(() => {
 
       await Promise.all([
         liveEventsArr.map(async (liveEvent) => {
-          let updatedLiveEventState: EngineLiveEventStateCollection = cloneDeep(
+          const updatedLiveEventState: EngineLiveEventStateCollection = cloneDeep(
             liveEvent.state
           )
 

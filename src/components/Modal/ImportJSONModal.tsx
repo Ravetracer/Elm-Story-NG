@@ -263,7 +263,7 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
                     {error.params && (
                       <>
                         {Object.keys(error.params).map((key) => (
-                          <code>
+                          <code key={key}>
                             {key}: {error.params?.[key]}
                           </code>
                         ))}

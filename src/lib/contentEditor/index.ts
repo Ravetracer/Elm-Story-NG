@@ -406,7 +406,7 @@ export const syncCharactersFromEventContentToEventData = async (
   if (editorCharacterIds.includes('')) return
 
   // remove duplicates
-  let syncedCharacterIds = uniq(
+  const syncedCharacterIds = uniq(
     editorCharacterIds.filter((id): id is ElementId => id !== undefined)
   )
 

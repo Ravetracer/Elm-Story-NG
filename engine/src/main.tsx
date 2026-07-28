@@ -4,7 +4,7 @@ import ServiceWorker from './components/ServiceWorker'
 import Runtime from './Runtime'
 
 function main() {
-  let ___worldId: string = '___worldId___',
+  const ___worldId: string = '___worldId___',
     ___packedStoryworldData: string = '___storytellerData___'
 
   console.info(

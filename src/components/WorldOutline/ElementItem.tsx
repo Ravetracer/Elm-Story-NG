@@ -226,7 +226,7 @@ const ElementItem = ({
       break
   }
 
-  let compositeSelectionStyles: string[] = []
+  const compositeSelectionStyles: string[] = []
 
   if (item.data.selected && !snapshot.isDragging)
     compositeSelectionStyles.push(styles.selected)

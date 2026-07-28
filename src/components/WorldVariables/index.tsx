@@ -262,7 +262,7 @@ export const VariableRow: React.FC<{
   }
 
   const getVariableInitialValue = useCallback(():
-    | Number
+    | number
     | string
     | undefined => {
     if (rowType === VARIABLE_ROW_TYPE.VARIABLE) {

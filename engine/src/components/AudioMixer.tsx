@@ -53,7 +53,7 @@ const AudioMixer: React.FC = React.memo(() => {
   const { data: profilesData, isLoading: isProfilesLoading } = useQuery<
     AudioMixerProfiles | null | undefined
   >(['currentMix', studioId, currentLiveEventData, audio], async () => {
-    if (!currentLiveEventData === null) return null
+    if (!currentLiveEventData) return null
 
     const eventData = await getEvent(
       studioId,

@@ -14,7 +14,7 @@ const getRemoteImageAsDataURL = async (
     blob = await response.blob()
 
   return new Promise((resolve, reject) => {
-    let reader = new FileReader()
+    const reader = new FileReader()
 
     reader.onload = () => {
       resolve(reader.result === 'data:' ? null : reader.result)

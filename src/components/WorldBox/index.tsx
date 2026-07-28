@@ -68,7 +68,7 @@ const WorldBox: React.FC<WorldBoxProps> = ({ studioId, world }) => {
           !world
             ? []
             : [
-                <Tooltip title="Remove World" mouseEnterDelay={1}>
+                <Tooltip key="delete" title="Remove World" mouseEnterDelay={1}>
                   <DeleteOutlined
                     key="delete"
                     onClick={(event) => {
@@ -78,7 +78,7 @@ const WorldBox: React.FC<WorldBoxProps> = ({ studioId, world }) => {
                     }}
                   />
                 </Tooltip>,
-                <Tooltip title="Edit World" mouseEnterDelay={1}>
+                <Tooltip key="edit" title="Edit World" mouseEnterDelay={1}>
                   <FormOutlined key="edit" />
                 </Tooltip>
               ]

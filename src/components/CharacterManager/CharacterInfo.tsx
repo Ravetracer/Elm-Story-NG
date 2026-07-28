@@ -206,7 +206,7 @@ const ReferencesSelect: React.FC<{
   }, [selections])
 
   useEffect(() => {
-    let incomingSelections: ReferenceSelectOption[] = []
+    const incomingSelections: ReferenceSelectOption[] = []
 
     refs.map((ref) => {
       const sanitizedRef = ref[1].toUpperCase().trim(),

@@ -221,7 +221,7 @@ const EventContent: React.FC<{
                       props.element
                     )
 
-                    let assetId: string = uuid()
+                    const assetId: string = uuid()
 
                     try {
                       const promises: Promise<any>[] = []

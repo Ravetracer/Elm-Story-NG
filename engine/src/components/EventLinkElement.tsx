@@ -9,7 +9,7 @@ const EventLinkElement: React.FC<{ text: string; url: string }> = ({
       className="event-content-link"
       href={url}
       target="_blank"
-      title={`Open "${url}" in a new tab`}
+      title={`Open "${url}" in a new tab`} rel="noreferrer"
     >
       {text}
     </a>

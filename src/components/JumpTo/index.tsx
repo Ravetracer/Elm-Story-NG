@@ -40,7 +40,7 @@ const JumpSelect: React.FC<{
     componentId: ElementId | null
   ) => Promise<void>
 }> = ({ studioId, worldId, sceneId, selectedId, width, onChangePathPart }) => {
-  let scenes: Scene[] | undefined = worldId
+  const scenes: Scene[] | undefined = worldId
       ? useScenes(studioId, worldId, [worldId])
       : undefined,
     events: Event[] | undefined = sceneId

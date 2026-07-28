@@ -22,6 +22,10 @@
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder build --publish never",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --write \"{src,engine/src}/**/*.{ts,tsx,less}\" \"*.{json,ts}\"",
     "engine:install": "npm --prefix ./engine install",
     "engine:build": "npm --prefix ./engine run build",
@@ -82,6 +86,9 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^12.1.5",
     "@types/howler": "^2.2.13",
     "@types/is-hotkey": "^0.1.10",
     "@types/is-url": "^1.2.32",
@@ -102,11 +109,19 @@
     "electron-builder": "^26.15.3",
     "electron-devtools-installer": "^4.0.0",
     "electron-vite": "^5.0.0",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.8.0",
+    "jsdom": "^30.0.0",
     "less": "^4.8.1",
     "prettier": "^3.6.2",
     "rimraf": "^6.1.3",
     "typescript": "~5.9.3",
-    "vite": "^7.3.6"
+    "typescript-eslint": "^8.65.0",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@ant-design/icons": "^4.8.3",
@@ -160,18 +175,6 @@
     "use-resize-observer": "^7.1.0",
     "uuid": "^14.0.1"
   },
-  "_overridesNote": [
-    "brace-expansion: GHSA-mh99-v99m-4gvg (unbounded expansion, OOM) covers",
-    "everything up to 5.0.7, and the fix was not backported, so the newest 1.x",
-    "and 2.x releases are still affected and only 5.0.8+ is clean. It reaches",
-    "this project transitively through minimatch and glob in build tooling",
-    "(rimraf, copyfiles, electron-builder), which only ever sees glob patterns",
-    "written in this repository. 5.0.8 ships both ESM and CommonJS entry points,",
-    "so the CommonJS consumers still resolve it."
-  ],
-  "overrides": {
-    "brace-expansion": "^5.0.8"
-  },
   "_allowScriptsNote": [
     "npm 11 blocks dependency install scripts until they are listed here.",
     "esbuild: its install script validates and links the platform binary. The",
@@ -186,5 +189,17 @@
     "esbuild": true,
     "core-js": false,
     "fsevents": false
-  }
+  },
+  "_acceptedAdvisories": [
+    "GHSA-mh99-v99m-4gvg (brace-expansion, unbounded expansion causing OOM) is",
+    "knowingly accepted. It covers everything up to 5.0.7 and was never",
+    "backported, so no 1.x or 2.x release is clean. Forcing 5.0.8 through",
+    "overrides does not work: minimatch 3 and 4 do `require('brace-expansion')`",
+    "and call the result, while 5.0.8's CommonJS build exports a named `expand`,",
+    "which breaks ESLint with 'expand is not a function'. The affected copies",
+    "reach us only through minimatch and glob inside build tooling, which sees",
+    "nothing but glob patterns written in this repository, so there is no",
+    "untrusted input path. Revisit when those packages ship a compatible",
+    "brace-expansion."
+  ]
 }

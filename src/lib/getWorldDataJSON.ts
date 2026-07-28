@@ -47,7 +47,7 @@ export default async (
         worldId
       )
 
-    let worldData: WorldDataJSON = {
+    const worldData: WorldDataJSON = {
       _: {
         children: world.children as WorldChildRefs,
         copyright: world.copyright,

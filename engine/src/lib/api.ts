@@ -188,7 +188,7 @@ export const saveEngineDefaultWorldCollectionData = async (
       )
     ])
 
-    let promises: Promise<void>[] = []
+    const promises: Promise<void>[] = []
 
     if (!existingAutoBookmark) {
       promises.push(
@@ -228,7 +228,7 @@ export const saveEngineDefaultWorldCollectionData = async (
         .where({ worldId })
         .toArray()
 
-      let variables: EngineVariableCollection = {}
+      const variables: EngineVariableCollection = {}
 
       variablesArr.map(
         (variable) => (variables[variable.id] = cloneDeep(variable))
@@ -337,7 +337,7 @@ export const updateEngineDefaultWorldCollectionData = async (
 
         const variables = await libraryDatabase.variables.toArray()
 
-        let newLiveEventState: EngineLiveEventStateCollection = {}
+        const newLiveEventState: EngineLiveEventStateCollection = {}
 
         variables.map(({ id, title, type, initialValue }) => {
           // for each variable, add to new event state

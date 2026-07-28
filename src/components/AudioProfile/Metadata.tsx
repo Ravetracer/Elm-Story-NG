@@ -150,12 +150,12 @@ const Metadata: React.FC<{
           step = Math.ceil(data.length / width),
           amp = height / 2
 
-        for (var i = 0; i < width; i++) {
+        for (let i = 0; i < width; i++) {
           let min = 1.0,
             max = -1.0
 
           for (let j = 0; j < step; j++) {
-            let datum = data[i * step + j]
+            const datum = data[i * step + j]
 
             if (datum < min) {
               min = datum * 0.95

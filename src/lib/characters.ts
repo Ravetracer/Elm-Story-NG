@@ -14,7 +14,7 @@ import { names, uniqueNamesGenerator } from 'unique-names-generator'
 import api from '../api'
 
 export const getCharacterPersonalityMakeup = (activeMasks: CharacterMask[]) => {
-  let value = { drive: 0, agency: 0 }
+  const value = { drive: 0, agency: 0 }
 
   activeMasks.map((activeMask) => {
     value.drive += CHARACTER_MASK_VALUES[activeMask.type][0]

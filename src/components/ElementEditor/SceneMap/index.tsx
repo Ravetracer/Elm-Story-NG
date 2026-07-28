@@ -65,6 +65,9 @@ export enum DEFAULT_NODE_SIZE {
   // elmstorygames/feedback#126
   EVENT_WIDTH = 200,
   EVENT_HEIGHT = 69,
+  // Event and jump nodes are deliberately laid out at the same width, so this
+  // repeated value is intentional rather than a copy-paste slip.
+  // eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
   JUMP_WIDTH = 200,
   JUMP_HEIGHT = 117,
   JUMP_HEIGHT_EXTENDED = 171
