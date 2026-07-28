@@ -27,7 +27,8 @@
     "engine:styles": "rimraf ./src/styles/engine.less ./src/styles/engine-editor.less && copyfiles -f ./engine/assets/engine.less ./engine/assets/engine-editor.less ./src/styles",
     "engine:embed": "rimraf ./src/components/Storyteller/embedded && copyfiles -u 2 \"./engine/src/**/*\" ./src/components/Storyteller/embedded && rimraf ./src/components/Storyteller/embedded/main.tsx",
     "engine:sync": "npm run engine:build && npm run engine:styles && npm run engine:embed",
-    "postinstall": "npm run engine:install"
+    "electron:install": "node scripts/ensure-electron.mjs",
+    "postinstall": "npm run engine:install && npm run electron:install"
   },
   "build": {
     "productName": "Elm Story",
@@ -156,5 +157,20 @@
     "use-debounce": "^7.0.1",
     "use-resize-observer": "^7.1.0",
     "uuid": "^14.0.1"
+  },
+  "_allowScriptsNote": [
+    "npm 11 blocks dependency install scripts until they are listed here.",
+    "esbuild: its install script validates and links the platform binary. The",
+    "binary itself arrives via optionalDependencies, so builds work either way,",
+    "but allowing it keeps the check in place and silences the install warning.",
+    "core-js and fsevents are denied deliberately. core-js@2's postinstall only",
+    "prints a funding banner, and fsevents is macOS-only and ships prebuilt.",
+    "Electron is absent from this list because v43 declares no install script at",
+    "all; its binary is fetched by scripts/ensure-electron.mjs instead."
+  ],
+  "allowScripts": {
+    "esbuild": true,
+    "core-js": false,
+    "fsevents": false
   }
 }
