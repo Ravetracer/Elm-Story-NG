@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Range, Transforms } from 'slate'
 import { ReactEditor, useSlate } from 'slate-react'
 
-import { Button, Form, Input, Popover } from 'antd'
+import { Button, Form, Input, InputRef, Popover } from 'antd'
 import Icon, { DeleteOutlined } from '@ant-design/icons'
 
 import { LinkElement } from '../../../../data/eventContentTypes'
@@ -59,7 +59,7 @@ const LinkElementEditor: React.FC<{ element: LinkElement }> = ({
   children
 }) => {
   const [linkForm] = Form.useForm(),
-    inputRef = useRef<Input>(null)
+    inputRef = useRef<InputRef>(null)
 
   const editor = useSlate(),
     { selection } = editor

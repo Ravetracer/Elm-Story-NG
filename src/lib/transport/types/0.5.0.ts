@@ -1,17 +1,8 @@
-export enum COMPONENT_TYPE {
-  STUDIO = 'STUDIO',
-  GAME = 'GAME',
-  JUMP = 'JUMP',
-  FOLDER = 'FOLDER',
-  SCENE = 'SCENE',
-  ROUTE = 'ROUTE',
-  PASSAGE = 'PASSAGE',
-  CHOICE = 'CHOICE',
-  INPUT = 'INPUT',
-  CONDITION = 'CONDITION',
-  EFFECT = 'EFFECT',
-  VARIABLE = 'VARIABLE'
-}
+// Shared with the 0.2.0 and 0.4.0 schemas so that the 0.4.0 to 0.5.0 upgrade can
+// convert between them; see pre-0.6.0.ts.
+import { COMPONENT_TYPE, EVENT_TYPE } from './pre-0.6.0'
+
+export { COMPONENT_TYPE, EVENT_TYPE }
 
 export enum COMPARE_OPERATOR_TYPE {
   EQ = '=',
@@ -28,11 +19,6 @@ export enum SET_OPERATOR_TYPE {
   SUBTRACT = '-',
   MULTIPLY = '*',
   DIVIDE = '/'
-}
-
-export enum EVENT_TYPE {
-  CHOICE = 'CHOICE',
-  INPUT = 'INPUT'
 }
 
 export enum VARIABLE_TYPE {

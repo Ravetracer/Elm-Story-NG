@@ -1,16 +1,20 @@
 import {
   COMPARE_OPERATOR_TYPE,
   ElementId,
-  ELEMENT_TYPE,
-  FolderChildRefs,
-  FolderParentRef,
-  WorldChildRefs,
-  SceneChildRefs,
-  SceneParentRef,
   SET_OPERATOR_TYPE,
   StudioId,
   VARIABLE_TYPE
 } from '../../../data/types'
+// Files of this vintage contain "GAME" and "PASSAGE", not the current model's
+// "WORLD" and "EVENT". See pre-0.6.0.ts.
+import {
+  COMPONENT_TYPE as ELEMENT_TYPE,
+  FolderChildRefs,
+  FolderParentRef,
+  GameChildRefs as WorldChildRefs,
+  SceneChildRefs,
+  SceneParentRef
+} from './pre-0.6.0'
 
 export interface RootData {
   children: WorldChildRefs

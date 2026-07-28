@@ -1,7 +1,9 @@
 // #288: upgrades 0.2.0-0.3.X data to 0.4.0
 import { cloneDeep } from 'lodash-es'
 
-import { EVENT_TYPE } from '../../../data/types'
+// A 0.4.0 passage is only ever a CHOICE or an INPUT; JUMP joined the current
+// EVENT_TYPE after 0.5.1. See types/pre-0.6.0.ts.
+import { EVENT_TYPE } from '../types/pre-0.6.0'
 import { GameDataJSON as GameDataJSON_020 } from '../types/0.2.0'
 import { GameDataJSON as GameDataJSON_030 } from '../types/0.3.0'
 import { GameDataJSON as GameDataJSON_031 } from '../types/0.3.1'

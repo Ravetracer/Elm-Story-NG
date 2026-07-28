@@ -1,13 +1,17 @@
 // upgrades 0.1.3 data to 0.2.0
 import { cloneDeep, pick } from 'lodash-es'
 
-import { ELEMENT_TYPE } from '../../../data/types'
+// 0.2.0 files name elements GAME, PASSAGE and ROUTE; the current ELEMENT_TYPE
+// would write WORLD and EVENT into data no reader of that vintage expects.
+import { COMPONENT_TYPE } from '../types/pre-0.6.0'
 import { GameDataJSON as GameDataJSON_013 } from '../types/0.1.3'
 import {
   FolderCollection,
   GameDataJSON as GameDataJSON_020,
+  JumpCollection,
   SceneCollection
 } from '../types/0.2.0'
+import { ElementId } from '../../../data/types'
 
 export default ({
   _,
@@ -27,19 +31,32 @@ export default ({
   Object.keys(clonedChapters).map((chapterId) => {
     folders[chapterId] = {
       children: clonedChapters[chapterId].scenes.map((sceneId) => [
-        ELEMENT_TYPE.SCENE,
+        COMPONENT_TYPE.SCENE,
         sceneId
       ]),
-      parent: ['GAME', null],
+      parent: [COMPONENT_TYPE.GAME, null],
       ...pick(clonedChapters[chapterId], ['id', 'tags', 'title', 'updated'])
     }
   })
 
-  const upgradedJumps = cloneDeep(jumps)
+  const upgradedJumps: JumpCollection = {}
 
-  Object.keys(upgradedJumps).map((jumpId) =>
-    upgradedJumps[jumpId].route.shift()
-  )
+  Object.keys(jumps).map((jumpId) => {
+    const clonedJump = cloneDeep(jumps[jumpId]),
+      route = clonedJump.route
+
+    // A 0.1.3 route leads with a chapter id, which 0.2.0 drops, narrowing the
+    // tuple from three entries to two. shift() is kept in preference to
+    // destructuring so that a route shorter than three entries stays short
+    // rather than gaining explicit undefined members, which would serialize as
+    // nulls. The cast is what shift() cannot express to the compiler.
+    route.shift()
+
+    upgradedJumps[jumpId] = {
+      ...clonedJump,
+      route: route as [ElementId?, ElementId?]
+    }
+  })
 
   const clonedScenes = cloneDeep(scenes),
     upgradedScenes: SceneCollection = {}
@@ -48,8 +65,11 @@ export default ({
     const clonedScene = clonedScenes[sceneId]
 
     upgradedScenes[sceneId] = {
-      children: clonedScene.passages.map((passageId) => ['PASSAGE', passageId]),
-      parent: [ELEMENT_TYPE.FOLDER, clonedScene.chapterId],
+      children: clonedScene.passages.map((passageId) => [
+        COMPONENT_TYPE.PASSAGE,
+        passageId
+      ]),
+      parent: [COMPONENT_TYPE.FOLDER, clonedScene.chapterId],
       ...pick(clonedScene, [
         'editor',
         'id',
@@ -63,7 +83,10 @@ export default ({
 
   return {
     _: {
-      children: _.chapters.map((chapterId) => [ELEMENT_TYPE.FOLDER, chapterId]),
+      children: _.chapters.map((chapterId) => [
+        COMPONENT_TYPE.FOLDER,
+        chapterId
+      ]),
       engine: '0.2.0',
       ...pick(_, [
         'designer',

@@ -13,7 +13,7 @@ import {
   StudioId
 } from '../../data/types'
 
-import { Col, Row, Form, Input, Popover, Button } from 'antd'
+import { Col, Row, Form, Input, InputRef, Popover, Button } from 'antd'
 import { RedoOutlined } from '@ant-design/icons'
 import {
   MultiValue,
@@ -46,7 +46,7 @@ const EditAliasPopover: React.FC<{
   onFinish: (newSelections: ReferenceSelectOption[]) => void
   onBlur: () => void
 }> = ({ children, editing, defaultValue, selections, onFinish, onBlur }) => {
-  const editRefInputRef = useRef<Input>(null)
+  const editRefInputRef = useRef<InputRef>(null)
 
   useEffect(() => {
     editRefInputRef.current?.select()
@@ -68,7 +68,7 @@ const EditAliasPopover: React.FC<{
           }}
           autoFocus
           onPressEnter={() => {
-            const newValue = editRefInputRef.current?.input.value
+            const newValue = editRefInputRef.current?.input?.value
 
             if (newValue && newValue !== defaultValue && selections) {
               const sanitizedNewValue = newValue.toUpperCase().trim()
@@ -190,8 +190,15 @@ const ReferencesSelect: React.FC<{
 
   useEffect(() => {
     async function updateCharacterReferences() {
+      // Only the pronoun entries in `options` below carry a null id, and
+      // onChange replaces it with a uuid before anything reaches `selections`,
+      // so the fallback here narrows for the compiler rather than changing
+      // behaviour. It mirrors what onChange already does.
       const selectionsAsRefArray: CharacterRefs = selections
-        ? selections.map((selection) => [selection.id, selection.value])
+        ? selections.map((selection) => [
+            selection.id || uuid(),
+            selection.value
+          ])
         : []
 
       try {
@@ -288,7 +295,7 @@ const CharacterInfo: React.FC<{
   worldId: WorldId
   character: Character
 }> = ({ studioId, worldId, character }) => {
-  const titleInputRef = useRef<Input>(null)
+  const titleInputRef = useRef<InputRef>(null)
 
   const [characterInfoForm] = Form.useForm()
 
