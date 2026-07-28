@@ -96,9 +96,11 @@ const decorate = (
   })
 }
 
-const useCharacters = (studioId: StudioId, characterIds: ElementId[]) => {
+const useCharacters = (studioId: StudioId, characterIds?: ElementId[]) => {
   const characters = useLiveQuery(
     async () => {
+      if (!characterIds) return undefined
+
       const characters = await Promise.all(
         characterIds.map((id) =>
           new LibraryDatabase(studioId).characters.get(id)
@@ -126,21 +128,19 @@ const EventContent: React.FC<{
 }> = React.memo(({ studioId, worldId, eventId, content, persona, state }) => {
   const { engine } = useContext(EngineContext)
 
-  let parsedContentAsJSON: EventContentNode[],
-    referencedCharacterIds,
-    characters
+  let parsedContentAsJSON: EventContentNode[] | undefined,
+    referencedCharacterIds: ElementId[] | undefined
 
   // #PWA: also for local testing
   if (engine.isComposer) {
     // elmstorygames/feedback#245
-    parsedContentAsJSON = JSON.parse(content)
+    const parsed: EventContentNode[] = JSON.parse(content)
 
-    referencedCharacterIds = getCharactersIdsFromEventContent(
-      parsedContentAsJSON
-    )
-
-    characters = useCharacters(studioId, referencedCharacterIds)
+    parsedContentAsJSON = parsed
+    referencedCharacterIds = getCharactersIdsFromEventContent(parsed)
   }
+
+  const characters = useCharacters(studioId, referencedCharacterIds)
 
   const [parsedContent, setParsedContent] = useState<
     string | JSX.Element | JSX.Element[]

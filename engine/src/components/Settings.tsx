@@ -16,24 +16,15 @@ const Settings: React.FC = () => {
   const { engine } = useContext(EngineContext),
     { settings, settingsDispatch } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
-  const {
-    studioId,
-    id: worldId,
-    copyright,
-    description,
-    designer,
-    studioTitle,
-    title,
-    version,
-    website
-  } = engine.worldInfo
+  const studioId = engine.worldInfo?.studioId,
+    worldId = engine.worldInfo?.id
 
   const { theme, font, motion, muted, size } = settings
 
   const setTheme = useCallback(
     async (selectedTheme: ENGINE_THEME) => {
+      if (!studioId || !worldId) return
+
       settingsDispatch({
         type: SETTINGS_ACTION_TYPE.SET_THEME,
         theme: selectedTheme,
@@ -53,6 +44,8 @@ const Settings: React.FC = () => {
 
   const setFont = useCallback(
     async (selectedFont: ENGINE_FONT) => {
+      if (!studioId || !worldId) return
+
       settingsDispatch({
         type: SETTINGS_ACTION_TYPE.SET_FONT,
         font: selectedFont,
@@ -72,6 +65,8 @@ const Settings: React.FC = () => {
 
   const setSize = useCallback(
     async (selectedSize: ENGINE_SIZE) => {
+      if (!studioId || !worldId) return
+
       settingsDispatch({
         type: SETTINGS_ACTION_TYPE.SET_SIZE,
         size: selectedSize,
@@ -91,6 +86,8 @@ const Settings: React.FC = () => {
 
   const setMotion = useCallback(
     async (selectedMotion: ENGINE_MOTION) => {
+      if (!studioId || !worldId) return
+
       settingsDispatch({
         type: SETTINGS_ACTION_TYPE.SET_MOTION,
         motion: selectedMotion,
@@ -107,6 +104,18 @@ const Settings: React.FC = () => {
     },
     [studioId, worldId, theme, font, motion, muted, size]
   )
+
+  if (!engine.worldInfo) return null
+
+  const {
+    copyright,
+    description,
+    designer,
+    studioTitle,
+    title,
+    version,
+    website
+  } = engine.worldInfo
 
   if (!settings.open) return null
 
@@ -282,7 +291,7 @@ const Settings: React.FC = () => {
               <p>
                 <a
                   onClick={async () => {
-                    if (engine.worldInfo?.id) {
+                    if (studioId && worldId) {
                       await resetWorld(studioId, worldId)
                       location.reload()
                     }

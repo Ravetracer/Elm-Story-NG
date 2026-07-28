@@ -56,14 +56,13 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
 }) => {
   const { engine, engineDispatch } = useContext(EngineContext)
 
-  if (!engine.worldInfo) return null
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
-  const { studioId, id: worldId } = engine.worldInfo
+  const liveEvent = useLiveQuery(async () => {
+    if (!studioId) return undefined
 
-  const liveEvent = useLiveQuery(
-    () => new LibraryDatabase(studioId).live_events.get(data.id),
-    []
-  )
+    return await new LibraryDatabase(studioId).live_events.get(data.id)
+  }, [studioId, data.id])
 
   const gotoNextLiveEvent: NextLiveEventProcessor = async ({
     destinationId,
@@ -73,6 +72,8 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
     pathId,
     state
   }) => {
+    if (!studioId || !worldId) return
+
     try {
       await saveLiveEventResult(studioId, data.id, liveEventResult)
 
@@ -179,6 +180,8 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
       throw error
     }
   }
+
+  if (!engine.worldInfo) return null
 
   return (
     <div className={`live-event ${liveEvent?.result ? 'live-event-past' : ''}`}>

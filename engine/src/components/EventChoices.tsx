@@ -61,31 +61,32 @@ const EventPassthroughChoice: React.FC<{
     const { engine } = useContext(EngineContext),
       { settings } = useContext(SettingsContext)
 
-    if (
-      !engine.worldInfo
-      // event.result?.value === ENGINE_EVENT_PASSTHROUGH_RESULT_VALUE
-    )
-      return null
+    const { studioId, id: worldId } = engine.worldInfo ?? {}
 
-    const { studioId, id: worldId } = engine.worldInfo
+    const conditions = useLiveQuery(async () => {
+      if (!studioId || !worldId) return undefined
 
-    const conditions = useLiveQuery(
-      () =>
-        new LibraryDatabase(studioId).conditions.where({ worldId }).toArray(),
-      []
-    )
+      return await new LibraryDatabase(studioId).conditions
+        .where({ worldId })
+        .toArray()
+    }, [studioId, worldId])
 
-    const variables = useLiveQuery(
-      () =>
-        new LibraryDatabase(studioId).variables.where({ worldId }).toArray(),
-      []
-    )
+    const variables = useLiveQuery(async () => {
+      if (!studioId || !worldId) return undefined
+
+      return await new LibraryDatabase(studioId).variables
+        .where({ worldId })
+        .toArray()
+    }, [studioId, worldId])
 
     const { data: openPath, isLoading: openRouteIsLoading } = useQuery(
       [`passthrough-${event.id}`, routes, conditions, variables],
       async () => {
+        if (!studioId) return undefined
+
         return await findOpenPath(studioId, routes, event.state)
-      }
+      },
+      { enabled: !!studioId }
     )
 
     const submitChoice = useCallback(
@@ -140,6 +141,9 @@ const EventPassthroughChoice: React.FC<{
       passthroughRef.current &&
         setHeight(passthroughRef.current.getBoundingClientRect().height)
     }, [passthroughRef.current])
+
+    // event.result?.value === ENGINE_EVENT_PASSTHROUGH_RESULT_VALUE
+    if (!engine.worldInfo) return null
 
     return (
       <>
@@ -325,11 +329,11 @@ const EventChoices: React.FC<{
 
   const { engine, engineDispatch } = useContext(EngineContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId, id: worldId } = engine.worldInfo
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
   const choices = useLiveQuery(async () => {
+    if (!studioId) return undefined
+
     const foundChoices = await new LibraryDatabase(studioId).choices
       .where({ eventId: event.id })
       .toArray()
@@ -363,15 +367,17 @@ const EventChoices: React.FC<{
     } catch (error) {
       throw error
     }
-  }, [event, liveEvent, engine.devTools.blockedChoicesVisible])
+  }, [studioId, event, liveEvent, engine.devTools.blockedChoicesVisible])
 
   const pathPassthroughs = useLiveQuery(async () => {
+    if (!studioId) return undefined
+
     const foundPaths = await new LibraryDatabase(studioId).paths
       .where({ originId: event.id })
       .toArray()
 
     return foundPaths.filter((foundRoute) => foundRoute.choiceId === undefined)
-  }, [event, liveEvent, engine.devTools.blockedChoicesVisible])
+  }, [studioId, event, liveEvent, engine.devTools.blockedChoicesVisible])
 
   const loopback = useCallback(async () => {
     if (liveEvent.prev && liveEvent.origin) {
@@ -396,6 +402,8 @@ const EventChoices: React.FC<{
       result: { value: ENGINE_LIVE_EVENT_STORY_OVER_RESULT_VALUE }
     })
   }, [liveEvent])
+
+  if (!engine.worldInfo) return null
 
   return (
     <div className="event-content-choices" ref={eventChoicesRef}>

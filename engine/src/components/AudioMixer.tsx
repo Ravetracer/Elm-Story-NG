@@ -21,9 +21,7 @@ const AudioMixer: React.FC = React.memo(() => {
     event: AudioProfile | undefined
   }>({ scene: undefined, event: undefined })
 
-  if (!engine.worldInfo) return null
-
-  const { studioId } = engine.worldInfo
+  const { studioId } = engine.worldInfo ?? {}
 
   const [profiles, setProfiles] = useState<AudioMixerProfiles>({
     scene: undefined,
@@ -38,6 +36,8 @@ const AudioMixer: React.FC = React.memo(() => {
 
   const currentLiveEventData = useLiveQuery(
     async () => {
+      if (!studioId) return undefined
+
       const currentLiveEventData = await new LibraryDatabase(
         studioId
       ).live_events.get(engine.currentLiveEvent || '')
@@ -52,22 +52,28 @@ const AudioMixer: React.FC = React.memo(() => {
 
   const { data: profilesData, isLoading: isProfilesLoading } = useQuery<
     AudioMixerProfiles | null | undefined
-  >(['currentMix', studioId, currentLiveEventData, audio], async () => {
-    if (!currentLiveEventData) return null
+  >(
+    ['currentMix', studioId, currentLiveEventData, audio],
+    async () => {
+      if (!studioId) return null
 
-    const eventData = await getEvent(
-      studioId,
-      currentLiveEventData?.destination || ''
-    )
+      if (!currentLiveEventData) return null
 
-    if (!eventData) return null
+      const eventData = await getEvent(
+        studioId,
+        currentLiveEventData?.destination || ''
+      )
 
-    const sceneData = await getScene(studioId, eventData.sceneId)
+      if (!eventData) return null
 
-    if (!sceneData) return null
+      const sceneData = await getScene(studioId, eventData.sceneId)
 
-    return { scene: sceneData.audio, event: eventData.audio }
-  })
+      if (!sceneData) return null
+
+      return { scene: sceneData.audio, event: eventData.audio }
+    },
+    { enabled: !!studioId }
+  )
 
   useEffect(() => {
     if (profilesData && !isProfilesLoading) {

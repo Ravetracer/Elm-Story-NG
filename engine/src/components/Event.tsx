@@ -82,26 +82,28 @@ export const Event: React.FC<{
   const { engine, engineDispatch } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
   const eventRef = useRef<HTMLDivElement>(null)
 
   const [introDone, setIntroDone] = useState(false)
 
-  const { studioId, id: worldId } = engine.worldInfo
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
   const event = useLiveQuery(
     async () => {
+      if (!studioId) return undefined
+
       const foundEvent = await new LibraryDatabase(studioId).events.get(eventId)
 
       return foundEvent || null
     },
-    [eventId],
+    [studioId, eventId],
     undefined
   )
 
   const processPath: PathProcessor = useCallback(
     async ({ originId, result, path, state }) => {
+      if (!studioId || !worldId) return
+
       try {
         let foundEvent: EngineEventData | undefined
 
@@ -163,7 +165,7 @@ export const Event: React.FC<{
         throw error
       }
     },
-    [event, liveEvent]
+    [event, liveEvent, studioId, worldId]
   )
 
   const [styles, api] = useSpring(() => ({
@@ -184,6 +186,8 @@ export const Event: React.FC<{
       })
     }
   })
+
+  if (!studioId || !worldId) return null
 
   return (
     <AcceleratedDiv style={{ ...styles, transform: 'translate3d(0,0,0)' }}>

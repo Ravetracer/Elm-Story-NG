@@ -33,10 +33,10 @@ const EventCharacterElement: React.FC<{
   transform?: CharacterElementTransformType
   styles?: CharacterElementStyleTypes
 }> = ({ studioId, characterId, aliasId, highlight, transform, styles }) => {
-  if (!characterId) return null
-
   const character = useLiveQuery(
     async () => {
+      if (!characterId) return undefined
+
       const _character = await new LibraryDatabase(studioId).characters.get(
         characterId
       )
@@ -86,6 +86,8 @@ const EventCharacterElement: React.FC<{
         : {}
     )
   }, [character, highlight])
+
+  if (!characterId) return null
 
   return (
     <>

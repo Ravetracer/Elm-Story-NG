@@ -16,13 +16,16 @@ const TitleCard: React.FC<{
   const { settingsDispatch } = useContext(SettingsContext),
     { engine } = useContext(EngineContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId, id: worldId } = engine.worldInfo
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
   const autoBookmark = useQuery(
     'autoBookmark',
-    async () => await getBookmarkAuto(studioId, worldId)
+    async () => {
+      if (!studioId || !worldId) return null
+
+      return await getBookmarkAuto(studioId, worldId)
+    },
+    { enabled: !!studioId && !!worldId }
   )
 
   return (

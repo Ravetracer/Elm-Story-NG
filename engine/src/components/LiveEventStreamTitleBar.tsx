@@ -12,12 +12,12 @@ const EventStreamTitleBar: React.FC = () => {
   const { engine, engineDispatch } = useContext(EngineContext),
     { settings, settingsDispatch } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId, id: worldId } = engine.worldInfo,
+  const { studioId, id: worldId } = engine.worldInfo ?? {},
     { theme, font, motion, muted, size } = settings
 
   const toggleAudioMute = useCallback(async () => {
+    if (!studioId || !worldId) return
+
     settingsDispatch({
       type: SETTINGS_ACTION_TYPE.SET_MUTED,
       muted: !settings.muted,

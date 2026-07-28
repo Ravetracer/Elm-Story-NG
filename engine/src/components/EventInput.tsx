@@ -36,9 +36,7 @@ const EventInput: React.FC<{
   const { engine } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId } = engine.worldInfo
+  const { studioId } = engine.worldInfo ?? {}
 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -48,18 +46,22 @@ const EventInput: React.FC<{
 
   const input = useLiveQuery(
     async () => {
+      if (!studioId) return undefined
+
       const input = new LibraryDatabase(studioId).inputs
         .where({ eventId: event.id })
         .first()
 
       return input || null
     },
-    [event.id],
+    [studioId, event.id],
     undefined
   )
 
   const inputVariable = useLiveQuery(
     async () => {
+      if (!studioId) return undefined
+
       if (input === null) return null
 
       let variable: EngineVariableData | null
@@ -90,14 +92,14 @@ const EventInput: React.FC<{
         return variable
       }
     },
-    [input],
+    [studioId, input],
     undefined
   )
 
   const submitInput = useCallback(
     async (boolValue?: 'true' | 'false') => {
       // elmstorygames/feedback#278
-      if (input && inputVariable && (inputValue || boolValue)) {
+      if (input && inputVariable && studioId && (inputValue || boolValue)) {
         const stateWithInputValue = cloneDeep(liveEvent.state)
 
         stateWithInputValue[inputVariable.id].value =
@@ -138,7 +140,7 @@ const EventInput: React.FC<{
 
       !inputValue && inputRef.current && inputRef.current.focus()
     },
-    [liveEvent, input, inputVariable, inputValue]
+    [liveEvent, input, inputVariable, inputValue, studioId]
   )
 
   const inputContainerRef = useRef<HTMLDivElement>(null)
@@ -169,6 +171,8 @@ const EventInput: React.FC<{
   useEffect(() => {
     inputValue && setPathError(false)
   }, [inputValue])
+
+  if (!engine.worldInfo) return null
 
   return (
     <AcceleratedDiv style={styles}>

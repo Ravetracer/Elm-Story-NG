@@ -38,9 +38,7 @@ const EventCharacterMask: React.FC<{
   const { engine } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId } = engine.worldInfo
+  const { studioId } = engine.worldInfo ?? {}
 
   const [styles, api] = useSpring(() => ({
     immediate: settings.motion === ENGINE_MOTION.REDUCED,
@@ -54,11 +52,11 @@ const EventCharacterMask: React.FC<{
     `data:image/svg+xml;base64,${btoa(placeholder)}`
   )
 
-  const mask = useLiveQuery(
-    async () =>
-      persona && (await getCharacterMask(studioId, persona?.[0], persona?.[1])),
-    [persona]
-  )
+  const mask = useLiveQuery(async () => {
+    if (!studioId || !persona) return undefined
+
+    return await getCharacterMask(studioId, persona[0], persona[1])
+  }, [studioId, persona])
 
   const processEvent: (event: Event) => void = (event) => {
     const { detail } = event as CustomEvent<EngineDevToolsLiveEvent>
@@ -136,6 +134,8 @@ const EventCharacterMask: React.FC<{
   useEffect(() => {
     if (maskUrl) api.start({ opacity: 1 })
   }, [maskUrl])
+
+  if (!engine.worldInfo) return null
 
   return (
     <div className="event-character-mask">

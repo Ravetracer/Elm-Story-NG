@@ -17,9 +17,7 @@ const EventCharacterReference: React.FC<{
   const { engine } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId } = engine.worldInfo
+  const { studioId } = engine.worldInfo ?? {}
 
   const [styles, api] = useSpring(() => ({
     immediate: settings.motion === ENGINE_MOTION.REDUCED,
@@ -29,16 +27,17 @@ const EventCharacterReference: React.FC<{
     config: config.gentle
   }))
 
-  const reference = useLiveQuery(
-    async () =>
-      persona &&
-      (await getCharacterReference(studioId, persona?.[0], persona?.[2])),
-    [persona]
-  )
+  const reference = useLiveQuery(async () => {
+    if (!studioId || !persona) return undefined
+
+    return await getCharacterReference(studioId, persona[0], persona[2])
+  }, [studioId, persona])
 
   useEffect(() => {
     if (reference) api.start({ opacity: 1 })
   }, [reference])
+
+  if (!engine.worldInfo) return null
 
   return (
     <AcceleratedDiv style={styles} className={`event-character-reference`}>

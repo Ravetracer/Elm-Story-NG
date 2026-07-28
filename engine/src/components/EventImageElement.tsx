@@ -51,12 +51,16 @@ const EventImageElement: React.FC<{
     string
   >('none')
 
+  // the composer resolves asset URLs over the DevTools event bridge instead, but
+  // the hook has to run unconditionally to keep hook order stable
+  const imageState = useImage({
+    srcList: engine.isComposer ? getSvgUrl(placeholder) : imageUrl,
+    useSuspense: false
+  })
+
   const { src, error, isLoading } = engine.isComposer
     ? { src: null, error: null, isLoading: null }
-    : useImage({
-        srcList: imageUrl,
-        useSuspense: false
-      })
+    : imageState
 
   const processEvent = (event: Event) => {
     const { detail } = event as CustomEvent<EngineDevToolsLiveEvent>

@@ -33,16 +33,20 @@ const LiveEventStream: React.FC = React.memo(() => {
   const { engine, engineDispatch } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId, id: worldId } = engine.worldInfo
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
   const [checkedJumpsOnQuery, setCheckedJumpsOnQuery] = useState(false),
     // used for first render work
     [animated, setAnimated] = useState(false)
 
   const getRecentLiveEvents = useCallback(async () => {
-    if (engine.installed && engine.currentLiveEvent && engine.worldInfo) {
+    if (
+      engine.installed &&
+      engine.currentLiveEvent &&
+      engine.worldInfo &&
+      studioId &&
+      worldId
+    ) {
       const recentLiveEvents = await _getRecentLiveEvents(
         studioId,
         worldId,
@@ -57,7 +61,7 @@ const LiveEventStream: React.FC = React.memo(() => {
         reset: true
       })
     }
-  }, [engine.installed, engine.currentLiveEvent, engine.worldInfo])
+  }, [engine.installed, engine.currentLiveEvent, engine.worldInfo, studioId, worldId])
 
   // #344: query cached on installation
   useQuery(
@@ -82,19 +86,26 @@ const LiveEventStream: React.FC = React.memo(() => {
     }
   )
 
-  const liveEventsArr = useLiveQuery(
-    () =>
-      new LibraryDatabase(studioId).live_events.where({ worldId }).toArray(),
-    []
-  )
+  const liveEventsArr = useLiveQuery(async () => {
+    if (!studioId || !worldId) return undefined
 
-  const variablesArr = useLiveQuery(
-    () => new LibraryDatabase(studioId).variables.where({ worldId }).toArray(),
-    []
-  )
+    return await new LibraryDatabase(studioId).live_events
+      .where({ worldId })
+      .toArray()
+  }, [studioId, worldId])
+
+  const variablesArr = useLiveQuery(async () => {
+    if (!studioId || !worldId) return undefined
+
+    return await new LibraryDatabase(studioId).variables
+      .where({ worldId })
+      .toArray()
+  }, [studioId, worldId])
 
   // Updates event state on variable change
   useQuery([`variables-${engine.installId}`, variablesArr], async () => {
+    if (!studioId || !worldId) return
+
     if (engine.isComposer && liveEventsArr && variablesArr) {
       // TODO: duplicate from API
       const variables: EngineVariableCollection = {},
@@ -187,17 +198,24 @@ const LiveEventStream: React.FC = React.memo(() => {
     }
   })
 
-  const world = useLiveQuery(() =>
-    new LibraryDatabase(studioId).worlds.get(worldId)
-  )
+  const world = useLiveQuery(async () => {
+    if (!studioId || !worldId) return undefined
+
+    return await new LibraryDatabase(studioId).worlds.get(worldId)
+  }, [studioId, worldId])
 
   // TODO: get specific jump based on type or title
-  const worldJumps = useLiveQuery(
-    () => new LibraryDatabase(studioId).jumps.where({ worldId }).toArray(),
-    []
-  )
+  const worldJumps = useLiveQuery(async () => {
+    if (!studioId || !worldId) return undefined
+
+    return await new LibraryDatabase(studioId).jumps
+      .where({ worldId })
+      .toArray()
+  }, [studioId, worldId])
 
   useQuery([`world-jump-${engine.installId}`, worldJumps], async () => {
+    if (!studioId || !worldId) return
+
     if (engine.isComposer && worldJumps) {
       if (worldJumps.length > 0) {
         const foundOnWorldStartJump = worldJumps.find(
@@ -282,6 +300,8 @@ const LiveEventStream: React.FC = React.memo(() => {
         block: 'start'
       })
   )
+
+  if (!engine.worldInfo) return null
 
   return (
     <>

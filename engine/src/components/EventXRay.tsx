@@ -22,13 +22,17 @@ const EventXRay: React.FC<{
 }> = React.memo(({ event }) => {
   const { engine } = useContext(EngineContext)
 
-  if (!engine.worldInfo) return null
-
-  const { studioId, id: worldId } = engine.worldInfo
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
   const variables = useLiveQuery(
-    () => new LibraryDatabase(studioId).variables.where({ worldId }).toArray(),
-    [],
+    async () => {
+      if (!studioId || !worldId) return []
+
+      return await new LibraryDatabase(studioId).variables
+        .where({ worldId })
+        .toArray()
+    },
+    [studioId, worldId],
     []
   )
 
@@ -118,6 +122,8 @@ const EventXRay: React.FC<{
       }
     }
   }, [eventTitle, sceneId, sceneTitle, event.destination])
+
+  if (!engine.worldInfo) return null
 
   return (
     <div id="engine-xray">
