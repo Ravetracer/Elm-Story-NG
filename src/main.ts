@@ -52,7 +52,12 @@ contextMenu({
   showSaveLinkAs: false,
   showInspectElement: false,
   showServices: false,
-  showSearchWithGoogle: false
+  showSearchWithGoogle: false,
+  // electron-context-menu adds Select All on every platform except macOS
+  // unless this is false. The option postdates the version this configuration
+  // was written against, so the entry began appearing on Linux and Windows
+  // after the upgrade.
+  showSelectAll: false
 })
 
 let mainWindow: BrowserWindow | null = null
@@ -70,7 +75,11 @@ const isDebugBuild =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true'
 
 if (isDebugBuild) {
-  electronDebug()
+  // electron-debug opens the developer tools on window creation by default.
+  // The keyboard shortcuts it installs are the useful part, so the panel is
+  // left closed and opened on demand with F12 or Ctrl/Cmd+Shift+I. Set
+  // OPEN_DEVTOOLS=true to restore the previous behaviour.
+  electronDebug({ showDevTools: process.env.OPEN_DEVTOOLS === 'true' })
 }
 
 const installExtensions = async () => {

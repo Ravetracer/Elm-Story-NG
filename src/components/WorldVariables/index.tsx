@@ -15,6 +15,7 @@ import {
 import { useVariable, useVariables } from '../../hooks'
 
 import { Col, Form, Input, InputNumber, Row, Select } from 'antd'
+import type { InputRef } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 
 import styles from './styles.module.less'
@@ -70,8 +71,26 @@ export const VariableRow: React.FC<{
     [editVariableTitleForm] = Form.useForm(),
     [editVariableInitialValueForm] = Form.useForm()
 
-  const variableTitleInputRef = useRef<Input | null>(null),
-    variableInitialValueInputRef = useRef<Input | null>(null)
+  // antd's Input is a forwardRef component, so the ref receives an InputRef
+  // rather than a class instance. It was a class component when this was
+  // written, which is why the annotation used the component itself as a type.
+  const variableTitleInputRef = useRef<InputRef | null>(null),
+    // A string variable renders an Input and a number variable an InputNumber,
+    // and the two take different ref types: InputRef versus the underlying
+    // HTMLInputElement. Only one is mounted at a time, so the helpers below
+    // address whichever is currently present.
+    variableInitialValueInputRef = useRef<InputRef | null>(null),
+    variableInitialValueNumberRef = useRef<HTMLInputElement | null>(null)
+
+  const focusInitialValue = () => {
+    variableInitialValueInputRef.current?.focus()
+    variableInitialValueNumberRef.current?.focus()
+  }
+
+  const blurInitialValue = () => {
+    variableInitialValueInputRef.current?.blur()
+    variableInitialValueNumberRef.current?.blur()
+  }
 
   const [variableTitle, setVariableTitle] = useState<string | undefined>(
       variable?.type
@@ -233,7 +252,7 @@ export const VariableRow: React.FC<{
           }
         } else {
           editVariableInitialValueForm.resetFields()
-          variableInitialValueInputRef.current?.focus()
+          focusInitialValue()
         }
       }
     }
@@ -273,9 +292,21 @@ export const VariableRow: React.FC<{
 
     variable?.title && setVariableTitle(variable.title)
 
-    // #166, #307
-    !variableTitleInputRef.current?.state.focused &&
+    // #166, #307: leave the field alone while it has focus, so a rename in
+    // progress is not discarded.
+    //
+    // This read `variableTitleInputRef.current?.state.focused` when antd's Input
+    // was a class component holding that flag in its own state. It is now a
+    // forwardRef component whose ref exposes focus(), blur(), select() and the
+    // underlying input element, and no state at all, so `.state` was undefined
+    // and dereferencing `.focused` threw inside this effect. The throw unmounted
+    // VariableRow and with it the whole panel, which is why the Variables tab
+    // rendered blank.
+    const titleInput = variableTitleInputRef.current?.input
+
+    if (!titleInput || document.activeElement !== titleInput) {
       editVariableTitleForm.resetFields()
+    }
   }, [variable?.title])
 
   useEffect(() => {
@@ -437,14 +468,14 @@ export const VariableRow: React.FC<{
                             variable.type,
                             () => {
                               editVariableInitialValueForm.resetFields()
-                              variableInitialValueInputRef.current?.focus()
+                              focusInitialValue()
                             }
                           )
                         }
                       : onVariableInitialValueChangeFromInput,
                     100
                   )}
-                  onFinish={() => variableInitialValueInputRef.current?.blur()}
+                  onFinish={() => blurInitialValue()}
                 >
                   {variable.type === VARIABLE_TYPE.STRING && (
                     <Form.Item name="initialValue">
@@ -458,7 +489,7 @@ export const VariableRow: React.FC<{
                   {variable.type === VARIABLE_TYPE.NUMBER && (
                     <Form.Item name="initialValue">
                       <InputNumber
-                        ref={variableInitialValueInputRef}
+                        ref={variableInitialValueNumberRef}
                         // formatter={(value) => {
                         //   const valueAsFloat = value
                         //     ? parseFloat(value as string)

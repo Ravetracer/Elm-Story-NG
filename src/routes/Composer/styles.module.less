@@ -19,9 +19,24 @@
     height: 31px;
   }
 
+  // rc-dock ships light-theme defaults. Its .dock-panel rule sets
+  // color: rgba(0, 0, 0, 0.85), which inactive tabs inherit, leaving their
+  // labels black against this dark dock and effectively invisible. Only the
+  // background was overridden above, so both tab states are given an explicit
+  // colour here rather than relying on what rc-dock happens to default to.
   :global .dock-tab {
     background: none !important;
     font-size: 12px;
+    color: hsl(0, 0%, 60%);
+  }
+
+  :global .dock-tab:hover {
+    color: hsl(0, 0%, 85%);
+  }
+
+  :global .dock-tab.dock-tab-active,
+  :global .dock-tab.dock-tab-active:hover {
+    color: hsl(0, 0%, 100%);
   }
 
   .worldOutlinePanel {
