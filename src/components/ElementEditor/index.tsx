@@ -160,7 +160,6 @@ const ElementEditor: React.FC<{ studioId: StudioId; world: World }> = ({
   const dockLayout = useRef<DockLayout>(null)
 
   const [activePanelId, setActivePanelId] = useState<string | undefined>('+0'),
-    [activeTabId, setActiveTabId] = useState<ElementId | undefined>(undefined),
     [tabs, setTabs] = useState<
       {
         id?: string | undefined

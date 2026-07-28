@@ -1,13 +1,7 @@
 import { cloneDeep, pick } from 'lodash'
 
-import React, {
-  useContext,
-  useRef,
-  useCallback,
-  useEffect,
-  useState
-} from 'react'
-import { useTransition, animated } from 'react-spring'
+import React, { useContext, useRef, useCallback, useState } from 'react'
+import { useTransition } from 'react-spring'
 import { useQuery } from 'react-query'
 import { useLiveQuery } from 'dexie-react-hooks'
 import useResizeObserver from '@react-hook/resize-observer'
@@ -21,13 +15,9 @@ import { LibraryDatabase } from '../lib/db'
 
 import {
   EngineLiveEventStateCollection,
-  EngineVariableCollection,
-  ENGINE_MOTION
+  EngineVariableCollection
 } from '../types'
-import {
-  INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY,
-  scrollElementToTop
-} from '../lib'
+import { INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY } from '../lib'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../contexts/EngineContext'
 import { SettingsContext } from '../contexts/SettingsContext'

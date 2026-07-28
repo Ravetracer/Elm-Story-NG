@@ -4,7 +4,6 @@ import { useCallback, useContext, useEffect, useState } from 'react'
 import { EngineContext } from '../../contexts/EngineContext'
 import {
   AudioProfile,
-  ElementId,
   EngineDevToolsLiveEvent,
   ENGINE_DEVTOOLS_LIVE_EVENTS,
   ENGINE_DEVTOOLS_LIVE_EVENT_TYPE
@@ -16,9 +15,7 @@ export type AudioTrack = [AudioSubTrack, AudioSubTrack]
 export type AudioSubTrack = { source?: string; audio?: Howl; primary: boolean }
 
 const useAudioTrack = ({
-  type,
   source,
-  muted,
   loop,
   paused,
   volume
@@ -74,8 +71,6 @@ const useAudioTrack = ({
     [track]
   )
 
-  const updateVolume = useCallback(() => {}, [])
-
   const pause = useCallback(() => {
     track[0].audio?.pause()
     track[1].audio?.pause()
@@ -95,19 +90,17 @@ const useAudioTrack = ({
   useEffect(() => updateTrack(source), [source])
 
   useEffect(() => {
-    let subTrackToFadeOutIndex = -1
-
-    const subTrackToFadeOut = track.find((subTrack, index) => {
-        subTrackToFadeOutIndex = index
-
-        return !subTrack.primary
-      }),
+    const subTrackToFadeOut = track.find((subTrack) => !subTrack.primary),
       subTrackToFadeIn = track.find((subTrack) => subTrack.primary)
 
     if (subTrackToFadeOut?.audio) {
       subTrackToFadeOut.audio.once('fade', () => {
         subTrackToFadeOut.audio?.stop()
 
+        // Restoring this needs the faded-out sub-track's index, which was
+        // previously captured by a write-only variable in the find() above.
+        // Use track.findIndex((subTrack) => !subTrack.primary) instead.
+        //
         // const resetSubTrack: AudioSubTrack = {
         //   source: undefined,
         //   audio: undefined,
@@ -115,7 +108,7 @@ const useAudioTrack = ({
         // }
 
         // setTrack(
-        //   subTrackToFadeOutIndex === 0
+        //   fadedOutIndex === 0
         //     ? [{ ...resetSubTrack }, { ...track[1] }]
         //     : [{ ...track[0] }, { ...resetSubTrack }]
         // )
@@ -177,13 +170,11 @@ const useAudioTrack = ({
 export const useAudioMixer = ({
   profiles,
   muted,
-  paused,
-  onEnd
+  paused
 }: {
   profiles: AudioMixerProfiles
   muted: boolean
   paused: boolean
-  onEnd?: (type: 'SCENE' | 'EVENT', source: string) => void
 }) => {
   const { engine } = useContext(EngineContext)
 

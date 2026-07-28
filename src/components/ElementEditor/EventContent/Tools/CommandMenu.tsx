@@ -4,7 +4,6 @@ import { BaseRange } from 'slate'
 import { ReactEditor, useSlate } from 'slate-react'
 
 import { ELEMENT_FORMATS } from '../../../../data/eventContentTypes'
-import { getActiveElementType } from '../../../../lib/contentEditor'
 
 import Portal from '../../../Portal'
 
@@ -14,17 +13,6 @@ interface MenuItem {
   type: string
   title: string
   additionalMatches?: string[]
-}
-
-enum TOP_OFFSET {
-  h1 = 0,
-  h2 = 6,
-  h3 = 14,
-  h4 = 20,
-  blockquote = 18,
-  ol = 16,
-  ul = 16,
-  p = 16
 }
 
 const FORMAT_MENU_ITEMS: MenuItem[] = [
@@ -187,8 +175,7 @@ const CommandMenu: React.FC<{
     if (!selection || !target) return
 
     const domRange = ReactEditor.toDOMRange(editor, target),
-      rect = domRange?.getBoundingClientRect(),
-      activeElement: ELEMENT_FORMATS = getActiveElementType(editor)
+      rect = domRange?.getBoundingClientRect()
 
     if (commandMenuRef.current) {
       if (rect) {

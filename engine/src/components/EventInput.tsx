@@ -143,7 +143,7 @@ const EventInput: React.FC<{
 
   const inputContainerRef = useRef<HTMLDivElement>(null)
 
-  const [height, setHeight] = useState(0)
+  const [height] = useState(0)
 
   const [styles, springApi] = useSpring(
     () => ({

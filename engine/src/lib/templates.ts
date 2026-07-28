@@ -361,9 +361,11 @@ export function parseTemplateExpressions(
 
   templateExpressions.map((templateExpression) => {
     try {
-      const parsedExpression: AcornNode = acorn.parse(templateExpression, {
+      // AcornNode is a deliberately loose local view of acorn's AST, so the
+      // precise Program type it returns is widened to it here.
+      const parsedExpression = acorn.parse(templateExpression, {
           ecmaVersion: 2020
-        }),
+        }) as unknown as AcornNode,
         statement = parsedExpression.body && parsedExpression.body[0],
         expression = statement?.expression
 

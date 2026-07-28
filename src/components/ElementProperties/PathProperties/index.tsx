@@ -50,9 +50,7 @@ const RouteConditionRow: React.FC<{
     [conditionCompareOperatorType, setConditionCompareOperatorType] = useState<
       COMPARE_OPERATOR_TYPE | undefined
     >(undefined),
-    [conditionValue, setConditionValue] = useState<string | undefined>(
-      undefined
-    )
+    [, setConditionValue] = useState<string | undefined>(undefined)
 
   async function onRemoveCondition() {
     condition?.id &&
@@ -79,7 +77,6 @@ const RouteConditionRow: React.FC<{
             rowType={VARIABLE_ROW_TYPE.CONDITION}
             allowRename={false}
             allowTypeChange={false}
-            allowCompareOperator={true}
             compareOperatorType={conditionCompareOperatorType}
             value={condition.compare[2] || undefined}
             onCompareOperatorTypeChange={async (
@@ -167,7 +164,7 @@ const RouteEffectRow: React.FC<{
     [effectSetOperatorType, setEffectSetOperatorType] = useState<
       SET_OPERATOR_TYPE | undefined
     >(undefined),
-    [effectValue, setEffectValue] = useState<string | undefined>(undefined)
+    [, setEffectValue] = useState<string | undefined>(undefined)
 
   async function onRemoveEffect() {
     effect?.id && (await api().effects.removeEffect(studioId, effect.id))

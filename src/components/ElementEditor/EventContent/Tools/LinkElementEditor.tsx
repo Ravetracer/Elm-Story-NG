@@ -31,7 +31,7 @@ const ClipboardIcon: React.FC = (props) => (
   />
 )
 
-const OpenLinkIcon: React.FC = (props) => (
+const OpenLinkIcon: React.FC = () => (
   <Icon
     component={() => (
       <svg

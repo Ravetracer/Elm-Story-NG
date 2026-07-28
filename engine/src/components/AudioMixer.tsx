@@ -16,7 +16,7 @@ const AudioMixer: React.FC = React.memo(() => {
   const { engine } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  const [audio, setAudio] = useState<{
+  const [audio] = useState<{
     scene: AudioProfile | undefined
     event: AudioProfile | undefined
   }>({ scene: undefined, event: undefined })
@@ -30,7 +30,7 @@ const AudioMixer: React.FC = React.memo(() => {
     event: undefined
   })
 
-  const audioMixer = useAudioMixer({
+  useAudioMixer({
     profiles,
     paused: !engine.visible,
     muted: engine.isComposer ? engine.devTools.muted : settings.muted

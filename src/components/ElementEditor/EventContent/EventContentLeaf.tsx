@@ -1,5 +1,4 @@
-import React, { ReactChild, ReactElement, ReactNode } from 'react'
-
+import React from 'react'
 import { EventContentLeaf as EventContentLeafType } from '../../../data/eventContentTypes'
 
 import styles from './styles.module.less'

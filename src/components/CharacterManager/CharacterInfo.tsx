@@ -130,8 +130,6 @@ const ReferencesSelect: React.FC<{
       GroupBase<ReferenceSelectOption>
     >
   ) => {
-    const isPronoun = props.data.pronoun as boolean | undefined
-
     return (
       <div
         // elmstorygames/feedback#200

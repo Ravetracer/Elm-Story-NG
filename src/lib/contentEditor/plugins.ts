@@ -17,7 +17,6 @@ import {
   ELEMENT_FORMATS,
   EditorType,
   EventContentElement,
-  ImageElement,
   ALIGN_TYPE
 } from '../../data/eventContentTypes'
 
@@ -94,7 +93,7 @@ export const withElementReset = (editor: EditorType) => {
 }
 
 export const withCorrectVoidBehavior = (editor: EditorType) => {
-  const { deleteBackward, insertBreak, insertNode } = editor
+  const { deleteBackward } = editor
 
   // if current selection is void node, insert a default node below
   // editor.insertBreak = () => {
@@ -235,7 +234,7 @@ export const withEmbeds = (editor: EditorType) => {
 }
 
 export const withCharacters = (editor: EditorType) => {
-  const { isInline, isVoid, deleteBackward } = editor
+  const { isInline, isVoid } = editor
 
   // TODO: this doesn't do anything, but has some useful code
   // editor.deleteBackward = (unit) => {

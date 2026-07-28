@@ -1243,26 +1243,30 @@ export const isPathOpen = async (
         }
 
         if (foundVariable.type === VARIABLE_TYPE.NUMBER) {
-          const conditionValueAsNumber = Number(condition.compare[2])
+          // eventValue is string | number because it comes from a ternary on
+          // this same variable type. Inside this branch it is always the
+          // number, but that is not something the compiler can follow.
+          const conditionValueAsNumber = Number(condition.compare[2]),
+            eventValueAsNumber = Number(eventValue)
 
           switch (condition.compare[1]) {
             case COMPARE_OPERATOR_TYPE.EQ:
-              isOpenAgg.push(eventValue === conditionValueAsNumber)
+              isOpenAgg.push(eventValueAsNumber === conditionValueAsNumber)
               break
             case COMPARE_OPERATOR_TYPE.GT:
-              isOpenAgg.push(eventValue > conditionValueAsNumber)
+              isOpenAgg.push(eventValueAsNumber > conditionValueAsNumber)
               break
             case COMPARE_OPERATOR_TYPE.GTE:
-              isOpenAgg.push(eventValue >= conditionValueAsNumber)
+              isOpenAgg.push(eventValueAsNumber >= conditionValueAsNumber)
               break
             case COMPARE_OPERATOR_TYPE.LT:
-              isOpenAgg.push(eventValue < conditionValueAsNumber)
+              isOpenAgg.push(eventValueAsNumber < conditionValueAsNumber)
               break
             case COMPARE_OPERATOR_TYPE.LTE:
-              isOpenAgg.push(eventValue <= conditionValueAsNumber)
+              isOpenAgg.push(eventValueAsNumber <= conditionValueAsNumber)
               break
             case COMPARE_OPERATOR_TYPE.NE:
-              isOpenAgg.push(eventValue !== conditionValueAsNumber)
+              isOpenAgg.push(eventValueAsNumber !== conditionValueAsNumber)
               break
             default:
               break

@@ -455,13 +455,13 @@ const InputRow: React.FC<{
   eventSceneId: ElementId
   inputId: ElementId
   handle: JSX.Element
-}> = ({ studioId, eventSceneId, inputId, handle }) => {
+}> = ({ studioId, inputId, handle }) => {
   const input = useInput(studioId, inputId, [inputId]),
     variable = useVariable(studioId, input?.variableId, [input?.variableId])
 
-  const { composer, composerDispatch } = useContext(ComposerContext)
+  const { composer } = useContext(ComposerContext)
 
-  const [incomingConnection, setIncomingConnection] = useState<{
+  const [, setIncomingConnection] = useState<{
     active: boolean
     validSource: boolean
     validTarget: boolean

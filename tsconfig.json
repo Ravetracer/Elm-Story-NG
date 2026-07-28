@@ -22,7 +22,20 @@
     /* Third-party declarations in this dependency set are not all clean under
        TypeScript 5.9, and they are not this project's to fix. */
     "skipLibCheck": true,
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    /* react-easy-crop and html-react-parser both ship declarations but their
+       "exports" maps predate the "types" condition, so bundler resolution cannot
+       find them and every import lands on an implicit any. Mapped explicitly
+       rather than falling back to node10 resolution, which would break
+       music-metadata (exports-only, no "main"). Affects type checking only;
+       Vite resolves these normally at build time. Remove an entry once the
+       package publishes a types condition. */
+    "baseUrl": ".",
+    "paths": {
+      "react-easy-crop": ["node_modules/react-easy-crop/index.d.ts"],
+      "react-easy-crop/types": ["node_modules/react-easy-crop/types.d.ts"],
+      "html-react-parser": ["node_modules/html-react-parser/index.d.ts"]
+    }
   },
   "include": ["src", "electron.vite.config.ts"],
   "exclude": [

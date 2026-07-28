@@ -34,7 +34,7 @@ import AcceleratedDiv from './AcceleratedDiv'
 import { SettingsContext } from '../contexts/SettingsContext'
 
 export type PathProcessor = ({
-  originId: origin,
+  originId,
   result,
   path,
   state

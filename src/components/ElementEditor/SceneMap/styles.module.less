@@ -837,6 +837,13 @@
   .EventSnippet {
     background-color: hsla(0, 0%, 3%, 0.8);
     border-top: 1px solid black;
+    // The preview body is generated HTML (see lib/serialization.ts) whose
+    // paragraphs carry no classes, so without a colour here they inherit
+    // rc-dock's light-theme `.dock-panel { color: rgba(0, 0, 0, 0.85) }` and
+    // render black against this near-black node. Set one level up so every
+    // generated element inherits it, while the explicit rules for links and
+    // character references still win.
+    color: hsl(0, 0%, 60%);
 
     .content {
       padding: 4px 0;

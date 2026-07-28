@@ -7,22 +7,17 @@ import {
 import React, { useCallback, useEffect, useState } from 'react'
 
 import {
-  ALIGN_TYPE,
-  ELEMENT_FORMATS,
-  LIST_TYPES
+  ELEMENT_FORMATS
 } from '../../../../data/eventContentTypes'
 
-import { Editor, Transforms, Element as SlateElement } from 'slate'
 import { useSlate } from 'slate-react'
 
 import { Dropdown, Menu } from 'antd'
 import Icon, {
   AlignLeftOutlined,
   DownOutlined,
-  FileImageOutlined,
   OrderedListOutlined,
-  UnorderedListOutlined,
-  YoutubeOutlined
+  UnorderedListOutlined
 } from '@ant-design/icons'
 
 import styles from './styles.module.less'

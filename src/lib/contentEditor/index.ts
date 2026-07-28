@@ -1,11 +1,9 @@
-import logger from '../logger'
-
 import { capitalizeString } from '..'
 
 import { isEqual, uniq } from 'lodash'
 import { ipcRenderer } from 'electron'
 
-import { Character, ElementId, Event, StudioId } from '../../data/types'
+import { Character, ElementId, StudioId } from '../../data/types'
 import { WINDOW_EVENT_TYPE } from '../events'
 
 import {

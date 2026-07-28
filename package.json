@@ -95,6 +95,7 @@
     "@types/react-page-visibility": "^6.4.4",
     "@types/react-router-dom": "^5.3.3",
     "@types/react-transition-group": "^4.4.12",
+    "@types/semver": "^7.7.1",
     "@vitejs/plugin-react": "^5.2.0",
     "copyfiles": "^2.4.1",
     "electron": "^43.2.0",

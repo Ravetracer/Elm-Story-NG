@@ -40,11 +40,6 @@ import api from '../../api'
 
 const { Text } = Typography
 
-const ParentBadge: React.FC<{
-  type: ELEMENT_TYPE
-  elementId: ElementId
-}> = React.memo(({ type, elementId }) => {})
-
 const EventBadge: React.FC<{ eventId: ElementId }> = React.memo(
   ({ eventId }) => {
     const { app } = useContext(AppContext)

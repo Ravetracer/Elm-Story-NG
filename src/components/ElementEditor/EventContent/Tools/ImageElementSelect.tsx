@@ -59,7 +59,7 @@ const ImageElementSelect: React.FC<{
     selected = useSelected()
 
   const [croppingImage, setCroppingImage] = useState<boolean>(false),
-    [loadingImage, setLoadingImage] = useState<boolean>(false),
+    [, setLoadingImage] = useState<boolean>(false),
     [imagePath, setImagePath] = useState<string | undefined>(undefined)
 
   const removeImage = useCallback(
@@ -77,7 +77,7 @@ const ImageElementSelect: React.FC<{
   useEffect(() => {
     async function getImagePath() {
       if (element.asset_id) {
-        const [path, exists]: [string, boolean] = await ipcRenderer.invoke(
+        const [path]: [string, boolean] = await ipcRenderer.invoke(
           WINDOW_EVENT_TYPE.GET_ASSET,
           {
             studioId,

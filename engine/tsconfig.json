@@ -15,7 +15,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "vite-plugin-pwa/react"]
+    "types": ["vite/client", "vite-plugin-pwa/react"],
+    /* html-react-parser ships declarations but its "exports" map predates the
+       "types" condition, so bundler resolution cannot find them and the import
+       lands on an implicit any. Mapped explicitly; affects type checking only.
+       Remove once the package publishes a types condition. */
+    "baseUrl": ".",
+    "paths": {
+      "html-react-parser": ["node_modules/html-react-parser/index.d.ts"]
+    }
   },
   "include": ["./src", "./vite.config.mts"]
 }

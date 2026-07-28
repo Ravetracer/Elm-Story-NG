@@ -4,7 +4,7 @@ import {
   ELEMENT_TYPE,
   FolderChildRefs,
   FolderParentRef,
-  GameChildRefs,
+  WorldChildRefs,
   SceneChildRefs,
   SceneParentRef,
   SET_OPERATOR_TYPE,
@@ -13,7 +13,7 @@ import {
 } from '../../../data/types'
 
 export interface RootData {
-  children: GameChildRefs
+  children: WorldChildRefs
   designer: string
   id: string
   engine: string

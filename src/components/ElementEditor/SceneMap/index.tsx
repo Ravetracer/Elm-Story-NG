@@ -45,8 +45,7 @@ import ReactFlow, {
   useStoreActions,
   FlowTransform,
   useZoomPanHelper,
-  useStoreState,
-  HandleType
+  useStoreState
 } from 'react-flow-renderer'
 
 import { Menu } from 'antd'
@@ -581,9 +580,7 @@ const SceneMap: React.FC<{
     logger.info('onElementsRemove')
 
     if (!composer.selectedSceneMapChoice) {
-      const jumpRefs: ElementId[] = [],
-        routeRefs: ElementId[] = [],
-        passageRefs: ElementId[] = []
+      const routeRefs: ElementId[] = []
 
       elements.map((element) => {
         switch (element.data.type) {
@@ -649,7 +646,7 @@ const SceneMap: React.FC<{
   }
 
   async function onSelectionDragStop(
-    event: React.MouseEvent<Element, MouseEvent>,
+    _event: React.MouseEvent<Element, MouseEvent>,
     nodes: Node<{ type: ELEMENT_TYPE }>[]
   ) {
     if (jumps && events) {
@@ -1530,7 +1527,7 @@ const SceneMap: React.FC<{
             }
             onNodeDragStop={onNodeDragStop}
             onConnectStart={(
-              event: React.MouseEvent<Element, MouseEvent>,
+              _event: React.MouseEvent<Element, MouseEvent>,
               params: OnConnectStartParams
             ) => {
               // nodeId: event ID

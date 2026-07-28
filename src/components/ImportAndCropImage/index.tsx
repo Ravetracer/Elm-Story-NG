@@ -15,7 +15,6 @@ import { Button, Slider } from 'antd'
 import styles from './styles.module.less'
 import {
   BorderInnerOutlined,
-  FileImageOutlined,
   ImportOutlined
 } from '@ant-design/icons'
 

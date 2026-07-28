@@ -36,7 +36,6 @@ export const VariableRow: React.FC<{
   rowType?: VARIABLE_ROW_TYPE
   allowRename?: boolean
   allowTypeChange?: boolean
-  allowCompareOperator?: boolean
   allowSetOperator?: boolean
   value?: string
   compareOperatorType?: COMPARE_OPERATOR_TYPE
@@ -57,7 +56,6 @@ export const VariableRow: React.FC<{
   rowType = VARIABLE_ROW_TYPE.VARIABLE,
   allowRename = true,
   allowTypeChange = true,
-  allowCompareOperator = false,
   allowSetOperator = false,
   value,
   compareOperatorType,

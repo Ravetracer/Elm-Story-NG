@@ -7,7 +7,7 @@ import {
   ElementId,
   FolderChildRefs,
   SceneChildRefs,
-  GameChildRefs
+  WorldChildRefs
 } from '../data/types'
 import { DB_NAME, LIBRARY_TABLE } from '.'
 
@@ -28,7 +28,7 @@ export default (database: Dexie) => {
 
           await gamesTable.toCollection().modify((game) => {
             const chapterIds: ElementId[] = game.chapters,
-              gameChildren: GameChildRefs = []
+              gameChildren: WorldChildRefs = []
 
             chapterIds.map((chapterId) =>
               gameChildren.push([ELEMENT_TYPE.FOLDER, chapterId])

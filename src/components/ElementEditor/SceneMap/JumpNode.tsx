@@ -1,6 +1,6 @@
 import React, { memo, useContext, useEffect, useState } from 'react'
 
-import { StudioId, ElementId, ELEMENT_TYPE, Path } from '../../../data/types'
+import { ElementId, ELEMENT_TYPE, Path } from '../../../data/types'
 
 import { useJump, usePathsBySceneRef, useScene, useEvent } from '../../../hooks'
 
@@ -13,7 +13,6 @@ import {
   Connection,
   FlowElement,
   Handle,
-  Node,
   NodeProps,
   Position,
   useStoreState
@@ -22,7 +21,6 @@ import {
 import { Divider } from 'antd'
 import {
   AlignLeftOutlined,
-  NodeExpandOutlined,
   PartitionOutlined
 } from '@ant-design/icons'
 

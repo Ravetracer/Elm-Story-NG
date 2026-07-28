@@ -705,8 +705,7 @@ const CharacterElementSelect: React.FC<{
     selection: [0, 0]
   })
 
-  const handleFocus = (event: React.FocusEvent<HTMLInputElement>) =>
-    setFocused(true)
+  const handleFocus = () => setFocused(true)
 
   const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
     setFocused(false)
