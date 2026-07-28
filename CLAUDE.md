@@ -29,6 +29,32 @@ Two editor modules also import from `engine/src` directly
 (`ElementEditor/SceneMap/EventSnippet.tsx`, `lib/serialization.ts`), which is
 inconsistent with the embedded copy but works.
 
+## Authoring affordances that are easy to miss
+
+The event content editor has two trigger characters and no visible affordance for
+either. The archived docs mark both sections "WIP", so this is the only record.
+
+- **`/`** opens a command menu (`Tools/CommandMenu.tsx`, triggered by the
+  `/\/(\s?\w*)$/` match in `lib/contentEditor/index.ts`): Text, Heading 1–4,
+  Quote, Numbered List, Bulleted List, Character Reference and **Image**. An
+  `EMBED` entry for video is present but commented out.
+- **`{`** starts a template expression. See below.
+
+**Images per event already work and are not a missing feature.** Picking Image
+inserts a void `ELEMENT_FORMATS.IMG` node, which renders `ImportAndCropImage`: a
+file import accepting `image/*`, cropped to a fixed 16:9 at 1310×736 and quality
+0.7, saved as `.webp` through the `SAVE_ASSET` IPC. The asset id is written both
+to the Slate node and to `Event.images`.
+
+`Event.images` is **not** an author-facing image list; it is the bookkeeping array
+used to clean assets up. `lib/contentEditor/index.ts` diffs it against the
+document to drop orphans, and `db/index.ts` uses it when removing an event. Keep
+it in step with the document when touching image elements.
+
+Toolbar buttons are a separate, smaller surface: the selection toolbar
+(`EventContentToolbar.tsx`) is a portal that only appears for a non-collapsed text
+selection and offers leaf marks and links, not blocks.
+
 ## Template expressions
 
 `{ ... }` inside event content is parsed with acorn and evaluated by
