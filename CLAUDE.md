@@ -202,8 +202,22 @@ place in this repository where a rename must *not* be applied:
   it. Resolving one of those to `LIBRARY_TABLE.WORLDS` reads the wrong table on a
   real upgrade and is invisible until a user with old data opens the app.
 
+Validation loads its schema from a static map in `validate/index.ts`, keyed on the
+file's `_.engine`. It used to be `require(`../schema/${version}.json`)`, which only
+worked under webpack, where a template-string require pulls in the whole directory
+as a context module. **Vite does not do that**, so the call threw at runtime and
+the catch reported it as an unsupported schema — which made a perfectly good file
+look too new for the app, for every version. Static imports also bundle the
+schemas, which a packaged build needs: nothing resolves
+`src/lib/transport/schema` at that point. Treat any surviving dynamic `require`
+with an interpolated path as a migration bug.
+
 Import is only exercised when someone actually imports a file, so it carries the
-same "test it or it silently rots" property as the export path above.
+same "test it or it silently rots" property as the export path above. Two things
+worth knowing when testing it: assets are copied from an `assets` directory
+**beside the chosen JSON**, so the file has to be imported through the Dashboard's
+picker for `jsonPath` to be set, and `IMPORT_WORLD_ASSETS` swallows any failure
+silently. The imported world is also renamed to `<title> (Imported)`.
 
 ## Housekeeping
 
