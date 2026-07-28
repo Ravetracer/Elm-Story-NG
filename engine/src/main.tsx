@@ -50,4 +50,10 @@ function main() {
   }
 }
 
+// Invoked here rather than from an inline module script in index.html so the
+// build produces exactly one entry chunk. The editor's PWA export locates that
+// chunk via manifest['index.html'].file and string-replaces the placeholder
+// tokens above inside it, so the tokens and the entry must live in one file.
+main()
+
 export default main
