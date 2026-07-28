@@ -42,12 +42,17 @@
   --event-content-bottom-border: 0.1rem solid hsl(0, 0%, 12%);
   --event-character-mask-border: 0.1rem solid hsl(0, 0%, 20%);
   --event-character-reference-text-color: hsl(0, 0%, 50%);
-  --event-character-reference-past-text-color: hsl(0, 0%, 30%);
-  --event-past-text-color: hsl(0, 0%, 30%);
+  // Lightened from 30%/30%/10%. These apply to events the reader has already
+  // resolved, and engine.less additionally renders those at 40% opacity, so the
+  // values above composited to roughly the background's own luminance against
+  // the editor's near-black preview: the disabled choice text measured 14 on a
+  // background of 8, which is invisible. See the opacity override below.
+  --event-character-reference-past-text-color: hsl(0, 0%, 45%);
+  --event-past-text-color: hsl(0, 0%, 45%);
   --event-past-choice-background-color: none;
   --event-past-choice-border: 1px solid hsl(0, 0%, 10%);
   --event-past-text-hover-color: hsl(0, 0%, 70%);
-  --event-past-choice-text-color: hsl(0, 0%, 10%);
+  --event-past-choice-text-color: hsl(0, 0%, 55%);
   --event-past-choice-result-background-color: var(
     --event-past-choice-background-color
   );
@@ -56,6 +61,17 @@
 
   * {
     font-family: 'Roboto Serif' !important;
+  }
+
+  // engine.less fades resolved events out with `opacity: 0.4` and
+  // `grayscale(100%)`. That reads well in the published storyteller, where
+  // earlier events are meant to recede as the reader moves on, but the editor's
+  // preview is an authoring surface: earlier events have to stay legible while
+  // writing. Relaxed here rather than in engine.less so the published runtime
+  // keeps its original presentation. This file is only loaded by the editor.
+  .live-event.live-event-past {
+    opacity: 0.65;
+    filter: grayscale(70%);
   }
 
   // ES reset
