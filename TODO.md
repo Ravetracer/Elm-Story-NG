@@ -255,7 +255,9 @@ note. Fixed in the same pass as `scope` and `scopeId`.
 The headline feature. Everything it persists was migrated in section 3, so this
 is application code only.
 
-**In progress. The model is done and tested; nothing has a user interface yet.**
+**Usable end to end.** Objects and recipes can be authored, placed, taken and
+combined; a path can be gated on holding something. What is left is listed under
+"Still open" below — none of it blocks authoring a world with objects in it.
 
 - [x] **The model** — `engine/src/lib/objects.ts`, pure, with the variable
       comparison and assignment rules split into `engine/src/lib/state.ts` so a
@@ -278,41 +280,58 @@ hidden its object, because `[].some()` is false; and both `isPathOpen` and
 condition or effect naming a variable missing from a save threw rather than being
 skipped.
 
-**Still to do, in order:**
+- [x] **The engine's writers** — `useObjectActions` appends an `OBJECT_TAKE` or
+      `OBJECT_COMBINE` live event with the same destination, since neither action
+      moves the player. Nothing is written when nothing changed. It also fixed a
+      latent bug: `gotoNextLiveEvent` rebuilt every field of the next live event
+      but not `objects`, so an inventory would have emptied itself on the next
+      choice.
+- [x] **The storyteller UI** — `ObjectPanel`, docked to the bottom of the runtime
+      column, with take, inspect and combine. Renders **nothing** when the world
+      has no objects, which is how every pre-0.8.0 storyworld keeps the
+      presentation it has.
+- [x] **The editor UI** — `components/ObjectManager`, two tabs. Objects carries
+      name, description, takeable, combineable, the stacked name, both image slots
+      and the placements; Recipes carries inputs, outputs, the success message and
+      variable effects. An object's recipes are listed on the object and open from
+      there, which is the "either side of the relationship" requirement.
 
-1. **The engine's writers** — `OBJECT_TAKE` and `OBJECT_COMBINE` live events, so a
-   take or a combination appends rather than mutating. The pure half is done; this
-   is the persistence and the event-stream entry.
-2. **The storyteller UI** — the inventory panel beside the event stream, inspect,
-   and the combine affordance. Note `displayTitle`/`displayAssetId` already decide
-   the stacked presentation.
-3. **The editor UI** — an object manager in the shape of `VariableManager`, a
-   recipe editor that shows a recipe from either side, a placement editor, and
-   object-condition rows in `ElementProperties/PathProperties`.
+**Still open, and none of it blocks authoring:**
 
-- [ ] World objects
-  - [ ] placed on a scene, static or takeable
-  - [ ] has a name
-  - [ ] has an optional dedicated image
-  - [ ] has a description shown when inspected
-  - [ ] combineable with other objects, with no limit on how many
-- [ ] Combination by recipe
-  - [ ] each input is consumed or retained
-  - [ ] each output goes to the inventory or to the current scene
-  - [ ] decomposition is just a recipe pointing the other way — opening the
+1. **Placement gate conditions have no editor.** The model evaluates them and the
+   transport carries them, so a gated placement authored by hand works — there is
+   just no UI, and the manager says so where the gates would go. This is what the
+   drawer scenario needs, so it is the first thing to add.
+2. **Object conditions on a path have no editor**, for the same reason —
+   `ElementProperties/PathProperties` needs a row type beside its condition and
+   effect rows. `isPathOpen` already evaluates them.
+3. **`Variable.scope`, `Path.notification` and `choicePresentation` are carried but
+   unread.** Fields shipped in section 3 against sections 6 and 7; the engine does
+   not act on any of them yet.
+
+- [x] World objects
+  - [x] placed on a scene, static or takeable
+  - [x] has a name
+  - [x] has an optional dedicated image
+  - [x] has a description shown when inspected
+  - [x] combineable with other objects, with no limit on how many
+- [x] Combination by recipe
+  - [x] each input is consumed or retained
+  - [x] each output goes to the inventory or to the current scene
+  - [x] decomposition is just a recipe pointing the other way — opening the
         charged flashlight is one input consumed, two outputs
-  - [ ] editor: show an object's recipes from either side of the relationship
+  - [x] editor: show an object's recipes from either side of the relationship
   - [ ] EXAMPLE: battery + flashlight → charged flashlight, both inputs consumed,
         output to inventory. Opening it: charged flashlight consumed, empty
         flashlight and battery out. The battery is then reusable elsewhere.
-- [ ] Character inventory
-  - [ ] holds takeable objects from anywhere in the world
-  - [ ] objects combine inside the inventory
-  - [ ] objects combine with static objects in the current scene
+- [x] Character inventory
+  - [x] holds takeable objects from anywhere in the world
+  - [x] objects combine inside the inventory
+  - [x] objects combine with static objects in the current scene
   - [ ] panel beside the event stream, centre of the storyteller, filling as the
         world is played
-- [ ] Inventory conditions
-  - [ ] paths gated on holding an object, so a charged flashlight can open a dark
+- [x] Inventory conditions
+  - [x] paths gated on holding an object (evaluated; no editor row yet), so a charged flashlight can open a dark
         corridor. Without this, objects are scenery: `Condition.compare` tests
         variables only today.
 
