@@ -32,6 +32,8 @@ const CharacterMask: React.FC<{
   contextMenu?: boolean
   fill?: boolean
   onChangeMaskImage?: (type: CHARACTER_MASK_TYPE) => void
+  // assign an image the storyworld already has, rather than importing a file
+  onChooseMaskImage?: (type: CHARACTER_MASK_TYPE) => void
   onReset?: (type: CHARACTER_MASK_TYPE) => void
   onToggle?: (type: CHARACTER_MASK_TYPE) => void
 }> = React.memo(
@@ -50,6 +52,7 @@ const CharacterMask: React.FC<{
     contextMenu,
     fill,
     onChangeMaskImage,
+    onChooseMaskImage,
     onReset,
     onToggle
   }) => {
@@ -212,8 +215,14 @@ const CharacterMask: React.FC<{
                           onChangeMaskImage && onChangeMaskImage(type)
                         }
                       >
-                        Change
+                        Import
                       </Button>
+
+                      {onChooseMaskImage && (
+                        <Button onClick={() => onChooseMaskImage(type)}>
+                          Choose
+                        </Button>
+                      )}
 
                       {((active && type !== CHARACTER_MASK_TYPE.NEUTRAL) ||
                         assetId) && (

@@ -286,6 +286,48 @@ const EventContent: React.FC<{
                 }
               : undefined
           }
+          /*
+           * Assigning an image the storyworld already has. The same two writes as
+           * above minus the file: the id goes into Event.images and onto the IMG
+           * node, because the content editor's debounced save reconciles the two
+           * and would drop an id the document does not carry.
+           *
+           * The image this node was showing is not removed here. That is
+           * syncImagesFromEventContentToEventData's job on the next content save,
+           * which counts every event before trashing anything.
+           */
+          onImageAssetSelect={
+            props.element.type === ELEMENT_FORMATS.IMG
+              ? async (assetId) => {
+                  if (!event?.id) return
+
+                  const imageElementPath = ReactEditor.findPath(
+                    editor,
+                    props.element
+                  )
+
+                  try {
+                    if (!event.images.includes(assetId)) {
+                      await api().events.saveEvent(studioId, {
+                        ...event,
+                        images: [...event.images, assetId]
+                      })
+                    }
+
+                    Transforms.setNodes<ImageElement>(
+                      editor,
+                      { asset_id: assetId },
+                      { at: imageElementPath }
+                    )
+
+                    ReactEditor.focus(editor)
+                    Transforms.move(editor)
+                  } catch (error) {
+                    throw error
+                  }
+                }
+              : undefined
+          }
           {...props}
         />
       )

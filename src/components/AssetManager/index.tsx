@@ -61,7 +61,20 @@ const matchesFilter = (asset: ManagedAsset, filter: ASSET_FILTER): boolean => {
 const AssetManager: React.FC<{
   studioId: StudioId
   worldId: WorldId
-}> = ({ studioId, worldId }) => {
+  /**
+   * Set to turn the manager into a picker for one kind of asset.
+   *
+   * The kind, not a media filter: assets are stored flat as `<id>.<ext>` and
+   * every read site asks for the extension it expects rather than reading disk,
+   * so offering a `.png` for a character mask would produce an assignment that
+   * resolves to nothing — and `CharacterMask` reacts to a missing file by
+   * silently clearing the assignment again. Restricting to the kind's own
+   * extension is what makes every offered asset actually assignable.
+   */
+  selectKind?: ASSET_KIND
+  onSelect?: (assetId: string) => void
+  selectedAssetId?: string
+}> = ({ studioId, worldId, selectKind, onSelect, selectedAssetId }) => {
   const characters = useCharacters(studioId, worldId, [worldId]),
     events = useEvents(studioId, worldId, [worldId]),
     scenes = useScenes(studioId, worldId, [worldId])
@@ -107,9 +120,19 @@ const AssetManager: React.FC<{
     [assets]
   )
 
+  const selectExtension = selectKind ? ASSET_KINDS[selectKind].ext : undefined
+
   const visibleAssets = useMemo(
-    () => assets?.filter((asset) => matchesFilter(asset, filter)),
-    [assets, filter]
+    () =>
+      assets
+        ?.filter((asset) => matchesFilter(asset, filter))
+        // a missing asset has no file to assign
+        .filter(
+          (asset) =>
+            !selectExtension ||
+            (asset.ext === selectExtension && !asset.missing)
+        ),
+    [assets, filter, selectExtension]
   )
 
   /**
@@ -296,12 +319,18 @@ const AssetManager: React.FC<{
           onChange={(event) => setFilter(event.target.value)}
         >
           <Radio.Button value={ASSET_FILTER.ALL}>All</Radio.Button>
-          <Radio.Button value={ASSET_FILTER.IMAGES}>
-            <PictureOutlined /> Images
-          </Radio.Button>
-          <Radio.Button value={ASSET_FILTER.AUDIO}>
-            <SoundOutlined /> Audio
-          </Radio.Button>
+          {/* the kind already restricts the list to one extension, so a media
+              filter over it would only ever be a no-op or empty */}
+          {!selectKind && (
+            <>
+              <Radio.Button value={ASSET_FILTER.IMAGES}>
+                <PictureOutlined /> Images
+              </Radio.Button>
+              <Radio.Button value={ASSET_FILTER.AUDIO}>
+                <SoundOutlined /> Audio
+              </Radio.Button>
+            </>
+          )}
           <Radio.Button value={ASSET_FILTER.UNUSED}>Unused</Radio.Button>
         </Radio.Group>
 
@@ -312,42 +341,56 @@ const AssetManager: React.FC<{
             no way to infer from a JPEG on disk whether the author meant it as a
             character mask or an event image.
           */}
-          <Dropdown
-            disabled={working || cropping}
-            overlay={
-              <Menu
-                onClick={({ key }) => startImport(key as ASSET_KIND)}
-                selectedKeys={[]}
-              >
-                {Object.entries(ASSET_KINDS).map(([kind, { label }]) => (
-                  <Menu.Item key={kind}>{label}</Menu.Item>
-                ))}
-              </Menu>
-            }
-          >
-            <Button size="small" disabled={working || cropping}>
-              <ImportOutlined /> Import Asset
+          {/* in select mode the kind is already known, so there is nothing to
+              ask and the menu collapses to the one button */}
+          {selectKind ? (
+            <Button
+              size="small"
+              disabled={working || cropping}
+              onClick={() => startImport(selectKind)}
+            >
+              <ImportOutlined /> Import {ASSET_KINDS[selectKind].label}
             </Button>
-          </Dropdown>
+          ) : (
+            <Dropdown
+              disabled={working || cropping}
+              overlay={
+                <Menu
+                  onClick={({ key }) => startImport(key as ASSET_KIND)}
+                  selectedKeys={[]}
+                >
+                  {Object.entries(ASSET_KINDS).map(([kind, { label }]) => (
+                    <Menu.Item key={kind}>{label}</Menu.Item>
+                  ))}
+                </Menu>
+              }
+            >
+              <Button size="small" disabled={working || cropping}>
+                <ImportOutlined /> Import Asset
+              </Button>
+            </Dropdown>
+          )}
 
-          <Popconfirm
-          title={`Move ${unusedAssets.length} unused ${
-            unusedAssets.length === 1 ? 'asset' : 'assets'
-          } to the trash?`}
-          okText="Move to Trash"
-          cancelText="Cancel"
-          disabled={unusedAssets.length === 0 || working}
-          onConfirm={removeUnusedAssets}
-        >
-          <Button
-            size="small"
-            danger
-            disabled={unusedAssets.length === 0 || working}
-            loading={working}
-          >
-              <DeleteOutlined /> Delete Unused ({unusedAssets.length})
-            </Button>
-          </Popconfirm>
+          {!selectKind && (
+            <Popconfirm
+              title={`Move ${unusedAssets.length} unused ${
+                unusedAssets.length === 1 ? 'asset' : 'assets'
+              } to the trash?`}
+              okText="Move to Trash"
+              cancelText="Cancel"
+              disabled={unusedAssets.length === 0 || working}
+              onConfirm={removeUnusedAssets}
+            >
+              <Button
+                size="small"
+                danger
+                disabled={unusedAssets.length === 0 || working}
+                loading={working}
+              >
+                <DeleteOutlined /> Delete Unused ({unusedAssets.length})
+              </Button>
+            </Popconfirm>
+          )}
         </div>
       </div>
 
@@ -395,14 +438,20 @@ const AssetManager: React.FC<{
               asset={asset}
               working={working}
               onRemove={() => removeAsset(asset)}
+              onSelect={onSelect ? () => onSelect(asset.id) : undefined}
+              selected={asset.id === selectedAssetId}
             />
           ))}
 
           {visibleAssets?.length === 0 && (
             <div className={styles.empty}>
-              {assets?.length === 0
-                ? 'This storyworld has no assets. Import one here, or import an image or a track in the composer.'
-                : 'No assets match this filter.'}
+              {selectKind
+                ? `This storyworld has no ${ASSET_KINDS[
+                    selectKind
+                  ].label.toLowerCase()} assets yet. Import one to assign it.`
+                : assets?.length === 0
+                  ? 'This storyworld has no assets. Import one here, or import an image or a track in the composer.'
+                  : 'No assets match this filter.'}
             </div>
           )}
         </div>

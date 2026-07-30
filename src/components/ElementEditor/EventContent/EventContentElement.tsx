@@ -27,7 +27,10 @@ import {
 import CharacterElementSelect, {
   OnCharacterSelect
 } from './Tools/CharacterElementSelect'
-import ImageElementSelect, { OnImageSelect } from './Tools/ImageElementSelect'
+import ImageElementSelect, {
+  OnImageAssetSelect,
+  OnImageSelect
+} from './Tools/ImageElementSelect'
 
 import styles from './styles.module.less'
 import LinkElementEditor from './Tools/LinkElementEditor'
@@ -82,7 +85,16 @@ const ImageElement: React.FC<{
   element: ImageElementType
   attributes: {}
   onImageSelect: OnImageSelect
-}> = ({ studioId, worldId, element, attributes, onImageSelect, children }) => {
+  onImageAssetSelect?: OnImageAssetSelect
+}> = ({
+  studioId,
+  worldId,
+  element,
+  attributes,
+  onImageSelect,
+  onImageAssetSelect,
+  children
+}) => {
   return (
     <div {...attributes} className={`${styles.img}`}>
       {children}
@@ -92,6 +104,7 @@ const ImageElement: React.FC<{
         worldId={worldId}
         element={element}
         onImageSelect={onImageSelect}
+        onImageAssetSelect={onImageAssetSelect}
       />
     </div>
   )
@@ -226,6 +239,7 @@ export const Element: React.FC<{
   worldId?: WorldId
   onCharacterSelect?: OnCharacterSelect
   onImageSelect?: OnImageSelect
+  onImageAssetSelect?: OnImageAssetSelect
   element: EventContentElement
   attributes: {}
 }> = ({
@@ -233,6 +247,7 @@ export const Element: React.FC<{
   worldId,
   onCharacterSelect,
   onImageSelect,
+  onImageAssetSelect,
   element,
   attributes,
   children
@@ -332,6 +347,7 @@ export const Element: React.FC<{
           element={element}
           attributes={attributes}
           onImageSelect={onImageSelect}
+          onImageAssetSelect={onImageAssetSelect}
         >
           {children}
         </ImageElement>

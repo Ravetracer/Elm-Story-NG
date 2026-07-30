@@ -12,6 +12,7 @@ import { AppContext } from '../../contexts/AppContext'
 import { Button, Collapse, Slider, Spin } from 'antd'
 import {
   DeleteOutlined,
+  FolderOpenOutlined,
   ImportOutlined,
   LoadingOutlined,
   PauseOutlined,
@@ -46,7 +47,17 @@ const AudioProfile: React.FC<{
   onSelect: (profile: AudioProfileType) => Promise<void>
   onRequestAudioPath: (assetId: string) => Promise<[string, boolean]>
   onRemove?: () => void
-}> = ({ profile, info, onImport, onSelect, onRequestAudioPath, onRemove }) => {
+  // assign a track the storyworld already has, rather than importing a file
+  onChoose?: () => void
+}> = ({
+  profile,
+  info,
+  onImport,
+  onSelect,
+  onRequestAudioPath,
+  onRemove,
+  onChoose
+}) => {
   const { app } = useContext(AppContext)
 
   const importAudioInputRef = useRef<HTMLInputElement>(null),
@@ -230,6 +241,12 @@ const AudioProfile: React.FC<{
               'Import MP3'
             )}
           </Button>
+
+          {onChoose && (
+            <Button onClick={onChoose} disabled={loading} size="small">
+              Choose Track
+            </Button>
+          )}
         </div>
       )}
 
@@ -363,6 +380,17 @@ const AudioProfile: React.FC<{
                   <ImportOutlined />
                 )}
               </Button>
+              {onChoose && (
+                <Button
+                  size="small"
+                  className={`${styles.button} ${styles.import}`}
+                  onClick={onChoose}
+                  disabled={!player.ready || loading}
+                  title="Choose an existing track"
+                >
+                  <FolderOpenOutlined />
+                </Button>
+              )}
               <Button
                 size="small"
                 className={`${styles.button} ${styles.delete}`}

@@ -1,12 +1,14 @@
 import { ipcRenderer } from 'electron'
 import { v4 as uuid } from 'uuid'
 
-import React from 'react'
+import React, { useState } from 'react'
 
+import { ASSET_KIND } from '../../lib/assets'
 import { WINDOW_EVENT_TYPE } from '../../lib/events'
 import { Event, Scene, StudioId, ELEMENT_TYPE } from '../../data/types'
 
 import AudioProfile from '../AudioProfile'
+import { AssetsModal } from '../Modal'
 
 import api from '../../api'
 
@@ -16,7 +18,7 @@ const ElementAudio: React.FC<{
   element: Scene | Event
   className?: string
 }> = ({ studioId, elementType, element, className }) => {
-  if (!element.id) return null
+  const [choosingAudio, setChoosingAudio] = useState(false)
 
   let elementSaveEndpoint: (
     studioId: StudioId,
@@ -36,8 +38,35 @@ const ElementAudio: React.FC<{
       break
   }
 
+  // below the hook, not above it: an early return over a hook changes hook
+  // order between renders
+  if (!element.id) return null
+
   return (
     <>
+      <AssetsModal
+        studioId={studioId}
+        worldId={element.worldId}
+        subject={element.title}
+        visible={choosingAudio}
+        selectKind={ASSET_KIND.AUDIO}
+        selectedAssetId={element.audio?.[0]}
+        onSelect={async (assetId) => {
+          /*
+           * Only the reference is written. The track this element was playing is
+           * left on disk: two events may share one mp3, so whether the old track
+           * is now dead is a question for the asset manager.
+           */
+          await elementSaveEndpoint(studioId, {
+            ...element,
+            audio: [assetId, element.audio ? element.audio[1] : false]
+          })
+
+          setChoosingAudio(false)
+        }}
+        onCancel={() => setChoosingAudio(false)}
+      />
+
       <div className={className}>
         <AudioProfile
           profile={element.audio}
@@ -77,6 +106,7 @@ const ElementAudio: React.FC<{
               ext: 'mp3'
             })
           }}
+          onChoose={() => setChoosingAudio(true)}
           onSelect={async (profile) => {
             try {
               await elementSaveEndpoint(studioId, {

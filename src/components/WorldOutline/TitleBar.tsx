@@ -37,7 +37,8 @@ const TitleBar: React.FC<{
     <>
       <AssetsModal
         studioId={studioId}
-        world={world}
+        worldId={world.id as WorldId}
+        subject={world.title}
         visible={assetsModalVisible}
         onCancel={() => setAssetsModalVisible(false)}
       />

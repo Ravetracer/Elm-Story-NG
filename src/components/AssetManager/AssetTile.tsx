@@ -53,7 +53,23 @@ const AssetTile: React.FC<{
   asset: ManagedAsset
   working: boolean
   onRemove: () => Promise<void>
-}> = ({ studioId, worldId, asset, working, onRemove }) => {
+  /**
+   * Set when the manager is being used to choose an asset rather than to tidy
+   * one up. The tile becomes the control, and the removal affordance goes: a
+   * grid where one click assigns and a neighbouring one trashes is a grid where
+   * the wrong click is expensive.
+   */
+  onSelect?: () => void
+  selected?: boolean
+}> = ({
+  studioId,
+  worldId,
+  asset,
+  working,
+  onRemove,
+  onSelect,
+  selected
+}) => {
   // GET_ASSET returns the URL wrapped in double quotes, because most callers
   // interpolate it straight into a CSS url(). An <audio> src needs it bare.
   const [quotedUrl, setQuotedUrl] = useState<string | undefined>(undefined)
@@ -114,7 +130,16 @@ const AssetTile: React.FC<{
 
   return (
     <div
-      className={`${styles.AssetTile} ${asset.missing ? styles.isMissing : ''}`}
+      className={[
+        styles.AssetTile,
+        asset.missing ? styles.isMissing : '',
+        onSelect ? styles.selectable : '',
+        selected ? styles.selected : ''
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      // a missing asset has no file to assign, so it stays inert
+      onClick={onSelect && !asset.missing ? onSelect : undefined}
     >
       <div className={styles.preview}>
         {asset.missing && (
@@ -137,7 +162,12 @@ const AssetTile: React.FC<{
             <SoundOutlined />
 
             {quotedUrl && (
-              <audio controls src={quotedUrl.replace(/^"|"$/g, '')} />
+              <audio
+                controls
+                src={quotedUrl.replace(/^"|"$/g, '')}
+                // scrubbing a track is not choosing it
+                onClick={(event) => event.stopPropagation()}
+              />
             )}
           </div>
         )}
@@ -163,7 +193,7 @@ const AssetTile: React.FC<{
                 .join(' · ')}
         </span>
 
-        {clearable ? (
+        {onSelect ? null : clearable ? (
           <Popconfirm
             title={confirmTitle}
             okText={asset.missing ? 'Remove Reference' : 'Move to Trash'}

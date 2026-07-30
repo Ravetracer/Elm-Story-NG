@@ -86,6 +86,15 @@
     }
   }
 
+  &.selectable {
+    cursor: pointer;
+  }
+
+  &.selected {
+    border-color: var(--highlight-color);
+    box-shadow: 0 0 0 1px var(--highlight-color);
+  }
+
   .preview {
     aspect-ratio: 16/9;
     background: black;

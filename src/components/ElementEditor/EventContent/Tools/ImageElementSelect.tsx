@@ -4,7 +4,7 @@ import { getSvgUrl } from '../../../../lib'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
-import { EVENT_IMAGE_PIPELINE } from '../../../../lib/assets'
+import { ASSET_KIND, EVENT_IMAGE_PIPELINE } from '../../../../lib/assets'
 import { WINDOW_EVENT_TYPE } from '../../../../lib/events'
 import { StudioId, WorldId } from '../../../../data/types'
 import { ImageElement } from '../../../../data/eventContentTypes'
@@ -16,10 +16,20 @@ import ImportAndCropImage, { CroppedImage } from '../../../ImportAndCropImage'
 import styles from './styles.module.less'
 import { Transforms } from 'slate'
 import { Button } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
+import { DeleteOutlined, FolderOpenOutlined } from '@ant-design/icons'
+
+import { AssetsModal } from '../../../Modal'
 import { getElement } from '../../../../lib/contentEditor'
 
 export type OnImageSelect = (image: CroppedImage) => Promise<void>
+
+/**
+ * Assigning an image the storyworld already has, rather than importing a file.
+ * A separate callback from OnImageSelect rather than a widened one, because the
+ * two write different things: one saves a new file under a new id, this one only
+ * re-points the node and the event's image list.
+ */
+export type OnImageAssetSelect = (assetId: string) => Promise<void>
 
 export const ImageSelectPlaceholder = `
 <svg
@@ -53,8 +63,11 @@ const ImageElementSelect: React.FC<{
   worldId: WorldId
   element: ImageElement
   onImageSelect: OnImageSelect
-}> = ({ studioId, worldId, element, onImageSelect }) => {
+  onImageAssetSelect?: OnImageAssetSelect
+}> = ({ studioId, worldId, element, onImageSelect, onImageAssetSelect }) => {
   const importInlineImageRef = useRef<{ import: () => void }>(null)
+
+  const [choosingImage, setChoosingImage] = useState(false)
 
   const editor = useSlate(),
     selected = useSelected()
@@ -141,6 +154,19 @@ const ImageElementSelect: React.FC<{
           }}
         >
           <div className={styles.toolbar}>
+            {onImageAssetSelect && (
+              <Button
+                title="Choose an existing image"
+                onClick={(clickEvent) => {
+                  clickEvent.stopPropagation()
+
+                  setChoosingImage(true)
+                }}
+              >
+                <FolderOpenOutlined />
+              </Button>
+            )}
+
             <Button danger onClick={removeImage}>
               <DeleteOutlined />
             </Button>
@@ -164,11 +190,40 @@ const ImageElementSelect: React.FC<{
           }}
         >
           <div className={styles.toolbar}>
+            {onImageAssetSelect && (
+              <Button
+                title="Choose an existing image"
+                onClick={(clickEvent) => {
+                  clickEvent.stopPropagation()
+
+                  setChoosingImage(true)
+                }}
+              >
+                <FolderOpenOutlined />
+              </Button>
+            )}
+
             <Button danger onClick={removeImage}>
               <DeleteOutlined />
             </Button>
           </div>
         </div>
+      )}
+
+      {onImageAssetSelect && (
+        <AssetsModal
+          studioId={studioId}
+          worldId={worldId}
+          visible={choosingImage}
+          selectKind={ASSET_KIND.EVENT_IMAGE}
+          selectedAssetId={element.asset_id}
+          onSelect={async (assetId) => {
+            await onImageAssetSelect(assetId)
+
+            setChoosingImage(false)
+          }}
+          onCancel={() => setChoosingImage(false)}
+        />
       )}
     </div>
   )

@@ -12,7 +12,9 @@ import React, {
 import { getCroppedImageData } from '../../lib'
 import { getCharacterDominateMakeup } from '../../lib/characters'
 
-import { CHARACTER_MASK_PIPELINE } from '../../lib/assets'
+import { ASSET_KIND, CHARACTER_MASK_PIPELINE } from '../../lib/assets'
+
+import { AssetsModal } from '../Modal'
 
 import {
   Character,
@@ -46,10 +48,52 @@ const MaskWrapper: React.FC<{
     overlay: true
   }
 
+  const [choosingMaskImage, setChoosingMaskImage] = useState(false)
+
   const foundMaskIndex = character.masks.findIndex((mask) => mask.type === type)
+
+  /**
+   * Points this mask at an image the storyworld already has.
+   *
+   * Only the reference is written — no file is copied and the image this mask
+   * was showing is left alone, because another mask may be showing it too. An
+   * image nothing points at any more is the asset manager's business.
+   */
+  const chooseMaskImage = async (assetId: string) => {
+    const newMasks = [...character.masks]
+
+    if (foundMaskIndex === -1) {
+      newMasks.push({ type, active: true, assetId })
+    } else {
+      newMasks[foundMaskIndex].active = true
+      newMasks[foundMaskIndex].assetId = assetId
+    }
+
+    await api().characters.saveCharacter(studioId, {
+      ...character,
+      masks: newMasks
+    })
+
+    setChoosingMaskImage(false)
+  }
 
   return (
     <>
+      <AssetsModal
+        studioId={studioId}
+        worldId={character.worldId}
+        subject={`${character.title} — ${type.toLowerCase()}`}
+        visible={choosingMaskImage}
+        selectKind={ASSET_KIND.CHARACTER_MASK}
+        selectedAssetId={
+          foundMaskIndex === -1
+            ? undefined
+            : character.masks[foundMaskIndex].assetId
+        }
+        onSelect={chooseMaskImage}
+        onCancel={() => setChoosingMaskImage(false)}
+      />
+
       {character.id && (
         <Mask
           {...maskDefaults}
@@ -71,6 +115,7 @@ const MaskWrapper: React.FC<{
           }}
           contextMenu
           onChangeMaskImage={(type) => onChangeMaskImage(type)}
+          onChooseMaskImage={() => setChoosingMaskImage(true)}
           onReset={async (type) => {
             const newMasks = [...character.masks]
 
