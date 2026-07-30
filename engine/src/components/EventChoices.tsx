@@ -84,7 +84,12 @@ const EventPassthroughChoice: React.FC<{
       async () => {
         if (!studioId) return undefined
 
-        return await findOpenPath(studioId, routes, event.state)
+        return await findOpenPath(
+          studioId,
+          routes,
+          event.state,
+          worldId ? { worldId, liveEvent: event } : undefined
+        )
       },
       { enabled: !!studioId }
     )
@@ -345,7 +350,8 @@ const EventChoices: React.FC<{
             studioId,
             foundChoices,
             liveEvent.state,
-            engine.devTools.blockedChoicesVisible ? true : false
+            engine.devTools.blockedChoicesVisible ? true : false,
+            worldId ? { worldId, liveEvent } : undefined
           )
         )
 

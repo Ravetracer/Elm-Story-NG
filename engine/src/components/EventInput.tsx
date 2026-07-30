@@ -36,7 +36,7 @@ const EventInput: React.FC<{
   const { engine } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
 
-  const { studioId } = engine.worldInfo ?? {}
+  const { studioId, id: worldId } = engine.worldInfo ?? {}
 
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -114,7 +114,11 @@ const EventInput: React.FC<{
         const foundOpenPath = await findOpenPath(
           studioId,
           await getPathsFromInput(studioId, input.id),
-          stateWithInputValue
+          // the value just typed is included, and the object snapshot is built
+          // against this same state so a placement gate and a path condition
+          // cannot disagree about the variable the player just set
+          stateWithInputValue,
+          worldId ? { worldId, liveEvent } : undefined
         )
 
         // if event.origin, loopback

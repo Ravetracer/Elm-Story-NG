@@ -8,12 +8,9 @@ import lzwCompress from 'lzwcompress'
 import { DB_NAME, LibraryDatabase } from './db'
 
 import {
-  COMPARE_OPERATOR_TYPE,
   ElementId,
   ELEMENT_TYPE,
   WorldId,
-  SET_OPERATOR_TYPE,
-  VARIABLE_TYPE,
   ESGEngineCollectionData,
   ENGINE_THEME,
   EngineLiveEventStateCollection,
@@ -34,14 +31,21 @@ import {
   PATH_CONDITIONS_TYPE,
   ENGINE_FONT,
   ENGINE_MOTION,
-  ENGINE_SIZE
+  ENGINE_SIZE,
+  EngineObjectConditionData,
+  EngineObjectDeltaCollection
 } from '../types'
 import {
   AUTO_ENGINE_BOOKMARK_KEY,
   DEFAULT_ENGINE_SETTINGS_KEY,
-  formatNumberFromString,
   INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY
 } from '../lib'
+import { applyVariableSets, variableCompareHolds } from './state'
+import {
+  objectCompareHolds,
+  pruneDeltas,
+  type ObjectWorldSnapshot
+} from './objects'
 
 export const getWorldInfo = async (
   studioId: StudioId,
@@ -378,12 +382,33 @@ export const updateEngineDefaultWorldCollectionData = async (
           }
         })
 
+        /*
+         * 0.8.0: the object counterpart of the variable reconciliation above.
+         *
+         * This is the one place a save is brought forward onto a newer world, so it
+         * is the only place a delta naming a deleted object can be dropped. Left in,
+         * a save keeps counts for objects the world no longer has, and "the player
+         * has X" answers about a ghost — including gating a path on one.
+         *
+         * Deltas for objects that still exist are carried across untouched, the same
+         * way a surviving variable keeps its value.
+         */
+        const objectIds = (
+          await libraryDatabase.objects.where({ worldId }).toArray()
+        ).map(({ id }) => id)
+
+        const newLiveEventObjects = pruneDeltas(
+          foundLiveEvent.objects ?? {},
+          objectIds
+        )
+
         await Promise.all([
           libraryDatabase.live_events.add(
             {
               ...foundLiveEvent,
               id: newLiveEventId,
               state: newLiveEventState,
+              objects: newLiveEventObjects,
               updated: Date.now(),
               version: foundWorld.version
             },
@@ -714,6 +739,19 @@ export const getEffectsByPathRef = async (
   }
 }
 
+/**
+ * Applies a path's effects to the live event state.
+ *
+ * The arithmetic itself moved to `lib/state.ts` as `applyVariableSets`, so that a
+ * path effect and a recipe effect cannot drift apart — they are the same operation
+ * on the same shape, and 0.8.0 added the second caller. The formatting behaviour is
+ * unchanged, including the `formatNumberFromString` pass for feedback#276.
+ *
+ * One behavioural fix came with the move: the old body read
+ * `newState[effect.variableId].value` outside the guard that checked the entry
+ * existed, so an effect naming a variable absent from this save's state threw
+ * rather than being skipped.
+ */
 export const processEffectsByRoute = async (
   studioId: StudioId,
   pathId: ElementId,
@@ -721,54 +759,12 @@ export const processEffectsByRoute = async (
 ) => {
   const effects = await getEffectsByPathRef(studioId, pathId)
 
-  if (effects.length > 0) {
-    const newState: EngineLiveEventStateCollection = cloneDeep(state)
+  if (effects.length === 0) return state
 
-    effects.map((effect) => {
-      const isNumber = effect.set[3] === VARIABLE_TYPE.NUMBER
-
-      if (effect.id && newState[effect.variableId]) {
-        switch (effect.set[1]) {
-          case SET_OPERATOR_TYPE.ASSIGN:
-            newState[effect.variableId].value = effect.set[2]
-            break
-          case SET_OPERATOR_TYPE.ADD:
-            newState[effect.variableId].value = `${(
-              Number(newState[effect.variableId].value) + Number(effect.set[2])
-            ).toFixed(2)}`
-            break
-          case SET_OPERATOR_TYPE.SUBTRACT:
-            newState[effect.variableId].value = `${(
-              Number(newState[effect.variableId].value) - Number(effect.set[2])
-            ).toFixed(2)}`
-            break
-          case SET_OPERATOR_TYPE.MULTIPLY:
-            newState[effect.variableId].value = `${(
-              Number(newState[effect.variableId].value) * Number(effect.set[2])
-            ).toFixed(2)}`
-            break
-          case SET_OPERATOR_TYPE.DIVIDE:
-            newState[effect.variableId].value = `${(
-              Number(newState[effect.variableId].value) / Number(effect.set[2])
-            ).toFixed(2)}`
-            break
-          default:
-            break
-        }
-      }
-
-      if (isNumber) {
-        // elmstorygames/feedback#276
-        newState[effect.variableId].value = formatNumberFromString(
-          newState[effect.variableId].value
-        )
-      }
-    })
-
-    return newState
-  } else {
-    return state
-  }
+  return applyVariableSets(
+    state,
+    effects.map((effect) => effect.set)
+  )
 }
 
 export const getEvent = async (studioId: StudioId, eventId: ElementId) => {
@@ -854,7 +850,8 @@ export const getChoicesFromEventWithOpenPath = async (
   studioId: StudioId,
   choices: EngineChoiceData[],
   state: EngineLiveEventStateCollection,
-  includeAll?: boolean // editor can show choices with closed routes
+  includeAll?: boolean, // editor can show choices with closed routes
+  objectContext?: PathObjectContext
 ): Promise<{
   filteredChoices: EngineChoiceData[]
   openPaths: { [choiceId: ElementId]: EnginePathData }
@@ -867,7 +864,12 @@ export const getChoicesFromEventWithOpenPath = async (
       const pathsFromChoice = await getPathsFromChoice(studioId, choice.id)
 
       if (pathsFromChoice) {
-        const openPath = await findOpenPath(studioId, pathsFromChoice, state)
+        const openPath = await findOpenPath(
+          studioId,
+          pathsFromChoice,
+          state,
+          objectContext
+        )
 
         if (openPath) {
           openPaths[choice.id] = cloneDeep(openPath)
@@ -1172,14 +1174,105 @@ export const getPathFromDestination = async (
   }
 }
 
+export const getObjectConditionsByPaths = async (
+  studioId: StudioId,
+  pathIds: ElementId[]
+) => {
+  try {
+    return await new LibraryDatabase(studioId).objectConditions
+      .where('pathId')
+      .anyOf(pathIds)
+      .toArray()
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
+ * What the object model needs in order to judge an object condition on a path.
+ *
+ * Deliberately does **not** carry the variable state: `findOpenPath` passes the
+ * state it was asked to evaluate against, which is not always the live event's own.
+ * `EventInput` evaluates against the state *plus the value just typed*, and a
+ * placement gate reading the pre-input value instead would disagree with the path
+ * condition beside it about the same variable.
+ *
+ * Optional so a caller with no live event in reach still compiles, but a path
+ * carrying object conditions and given no context is treated as **closed** — see
+ * `isPathOpen`.
+ */
+export interface PathObjectContext {
+  worldId: WorldId
+  liveEvent: {
+    /** the event the player is on; its scene resolves CURRENT_SCENE */
+    destination?: ElementId
+    objects?: EngineObjectDeltaCollection
+  }
+}
+
+/**
+ * Builds the snapshot the object model needs.
+ *
+ * The current scene is derived here, from the destination event's `sceneId`, rather
+ * than being asked of every caller — the engine has no notion of a "current scene"
+ * anywhere else either, and `AudioMixer` already reaches it the same way. Deriving
+ * it in one place is what keeps a caller from passing the wrong one or forgetting.
+ *
+ * Kept out of `objects.ts` so that module stays pure and synchronous.
+ */
+export const getObjectWorldSnapshot = async (
+  studioId: StudioId,
+  worldId: WorldId,
+  state: EngineLiveEventStateCollection,
+  liveEvent: {
+    destination?: ElementId
+    objects?: EngineObjectDeltaCollection
+  }
+): Promise<ObjectWorldSnapshot> => {
+  const libraryDatabase = new LibraryDatabase(studioId)
+
+  const [objects, world, destinationEvent] = await Promise.all([
+    libraryDatabase.objects.where({ worldId }).toArray(),
+    libraryDatabase.worlds.get(worldId),
+    liveEvent.destination
+      ? libraryDatabase.events.get(liveEvent.destination)
+      : undefined
+  ])
+
+  return {
+    objects,
+    deltas: liveEvent.objects ?? {},
+    state,
+    currentSceneId: destinationEvent?.sceneId,
+    noRecipeMessage: world?.objectNoRecipeMessage
+  }
+}
+
 export const findOpenPath = async (
   studioId: StudioId,
   paths: EnginePathData[],
-  liveEventState: EngineLiveEventStateCollection
+  liveEventState: EngineLiveEventStateCollection,
+  objectContext?: PathObjectContext
 ) => {
   const pathIds = paths.map((path) => path.id),
-    conditionsByPaths = await getConditionsByPaths(studioId, pathIds),
     openPaths: [EnginePathData, number][] = []
+
+  const [conditionsByPaths, objectConditionsByPaths] = await Promise.all([
+    getConditionsByPaths(studioId, pathIds),
+    getObjectConditionsByPaths(studioId, pathIds)
+  ])
+
+  // Only built when something actually needs it, so a world with no object
+  // conditions costs no extra reads beyond the indexed lookup above.
+  const objectSnapshot =
+    objectConditionsByPaths.length > 0 && objectContext
+      ? await getObjectWorldSnapshot(
+          studioId,
+          objectContext.worldId,
+          liveEventState,
+          objectContext.liveEvent
+        )
+      : undefined
 
   if (conditionsByPaths) {
     await Promise.all(
@@ -1188,7 +1281,11 @@ export const findOpenPath = async (
           studioId,
           cloneDeep(liveEventState),
           path.conditionsType,
-          conditionsByPaths.filter((condition) => condition.pathId === path.id)
+          conditionsByPaths.filter((condition) => condition.pathId === path.id),
+          objectConditionsByPaths.filter(
+            (condition) => condition.pathId === path.id
+          ),
+          objectSnapshot
         )
 
         pathOpen[0] && openPaths.push([cloneDeep(path), pathOpen[1]])
@@ -1207,95 +1304,105 @@ export const findOpenPath = async (
   }
 }
 
+/**
+ * Whether a path's conditions are satisfied, and **how many** it had.
+ *
+ * The count is not decoration: `findOpenPath` prefers a path that had conditions
+ * over one that had none (feedback#105), so it must include object conditions or a
+ * path gated only on objects silently loses that preference.
+ *
+ * The two kinds aggregate into the same array, so `PATH_CONDITIONS_TYPE` still
+ * composes across both — ALL means every variable *and* object condition, ANY means
+ * one of either.
+ *
+ * **They fail in opposite directions, deliberately.** A variable condition whose
+ * variable cannot be resolved is dropped, so under ALL it leaves the path open;
+ * that is behaviour worlds have been authored against since 0.6 and is not being
+ * changed here. An object condition that cannot be evaluated is pushed as `false`,
+ * closing the path — new code will not unlock content on the strength of a
+ * comparison nobody could make. This asymmetry is why object conditions are a
+ * separate collection with a separate evaluator rather than another row shape in
+ * `conditions`, where every reader that missed them would have failed open.
+ *
+ * The comparison rules themselves live in `lib/state.ts`, shared with placement
+ * gates, so a path and a gate cannot disagree about the same authored comparison.
+ */
 export const isPathOpen = async (
   studioId: StudioId,
   liveEventState: EngineLiveEventStateCollection,
   pathConditionsType: PATH_CONDITIONS_TYPE,
-  conditions: EngineConditionData[]
+  conditions: EngineConditionData[],
+  objectConditions: EngineObjectConditionData[] = [],
+  objectSnapshot?: ObjectWorldSnapshot
   // feedback#105
 ): Promise<[boolean, number]> => {
-  const totalConditions = conditions.length
+  const totalConditions = conditions.length + objectConditions.length
 
   if (totalConditions === 0) return [true, 0]
 
   const isOpenAgg: boolean[] = []
 
-  const variableIdsFromConditions = conditions.map(
-    (condition) => condition.variableId
-  )
-
-  let variablesFromConditions: EngineVariableData[]
-
-  try {
-    variablesFromConditions = await new LibraryDatabase(studioId).variables
-      .where('id')
-      .anyOf(variableIdsFromConditions)
-      .toArray()
-  } catch (error) {
-    throw error
-  }
-
   if (conditions.length) {
+    const variableIdsFromConditions = conditions.map(
+      (condition) => condition.variableId
+    )
+
+    let variablesFromConditions: EngineVariableData[]
+
+    try {
+      variablesFromConditions = await new LibraryDatabase(studioId).variables
+        .where('id')
+        .anyOf(variableIdsFromConditions)
+        .toArray()
+    } catch (error) {
+      throw error
+    }
+
     conditions.map((condition) => {
       // #400
       const foundVariable = variablesFromConditions.find(
         (variable) => variable.id === condition.compare[0]
       )
 
-      if (foundVariable) {
-        const eventValue =
-          foundVariable.type === VARIABLE_TYPE.NUMBER
-            ? Number(liveEventState[condition.compare[0]].value)
-            : liveEventState[condition.compare[0]].value.toLowerCase()
+      if (!foundVariable) return
 
-        if (foundVariable.type !== VARIABLE_TYPE.NUMBER) {
-          const conditionValueAsString = condition.compare[2].toLowerCase()
+      /*
+       * Guarded, where it was not before. The old body read
+       * `liveEventState[condition.compare[0]].value` before checking the entry
+       * existed, so a condition naming a variable missing from this save's state
+       * threw rather than being skipped — reachable with a save taken before the
+       * variable was added and not yet reconciled. Skipping matches what an
+       * unresolvable variable already did.
+       */
+      const entry = liveEventState[condition.compare[0]]
 
-          switch (condition.compare[1]) {
-            case COMPARE_OPERATOR_TYPE.EQ:
-              isOpenAgg.push(eventValue === conditionValueAsString)
-              break
-            case COMPARE_OPERATOR_TYPE.NE:
-              isOpenAgg.push(eventValue !== conditionValueAsString)
-              break
-            default:
-              break
-          }
-        }
+      if (!entry) return
 
-        if (foundVariable.type === VARIABLE_TYPE.NUMBER) {
-          // eventValue is string | number because it comes from a ternary on
-          // this same variable type. Inside this branch it is always the
-          // number, but that is not something the compiler can follow.
-          const conditionValueAsNumber = Number(condition.compare[2]),
-            eventValueAsNumber = Number(eventValue)
+      const holds = variableCompareHolds(
+        condition.compare,
+        foundVariable.type,
+        entry.value
+      )
 
-          switch (condition.compare[1]) {
-            case COMPARE_OPERATOR_TYPE.EQ:
-              isOpenAgg.push(eventValueAsNumber === conditionValueAsNumber)
-              break
-            case COMPARE_OPERATOR_TYPE.GT:
-              isOpenAgg.push(eventValueAsNumber > conditionValueAsNumber)
-              break
-            case COMPARE_OPERATOR_TYPE.GTE:
-              isOpenAgg.push(eventValueAsNumber >= conditionValueAsNumber)
-              break
-            case COMPARE_OPERATOR_TYPE.LT:
-              isOpenAgg.push(eventValueAsNumber < conditionValueAsNumber)
-              break
-            case COMPARE_OPERATOR_TYPE.LTE:
-              isOpenAgg.push(eventValueAsNumber <= conditionValueAsNumber)
-              break
-            case COMPARE_OPERATOR_TYPE.NE:
-              isOpenAgg.push(eventValueAsNumber !== conditionValueAsNumber)
-              break
-            default:
-              break
-          }
-        }
-      }
+      // undefined is "no opinion" — an ordering operator on a string. Dropped, as
+      // it always has been.
+      if (holds !== undefined) isOpenAgg.push(holds)
     })
   }
+
+  objectConditions.forEach((condition) => {
+    if (!objectSnapshot) {
+      console.error(
+        '[STORYTELLER] unable to evaluate an object condition without a world snapshot; treating the path as closed.'
+      )
+
+      isOpenAgg.push(false)
+
+      return
+    }
+
+    isOpenAgg.push(objectCompareHolds(objectSnapshot, condition))
+  })
 
   return pathConditionsType === PATH_CONDITIONS_TYPE.ALL
     ? [isOpenAgg.every((value) => value === true), totalConditions]
