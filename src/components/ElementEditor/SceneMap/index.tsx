@@ -1632,15 +1632,28 @@ const SceneMap: React.FC<{
       composer.selectedWorldOutlineElement.id === sceneId &&
       editorTab.eventForEditing.visible
     ) {
-      // composer.selectedSceneMapEvent &&
-      //   composer.selectedSceneMapEvent !== editorTab.eventForEditing.id &&
-      //   editorTabDispatch({
-      //     type: ELEMENT_EDITOR_TAB_ACTION_TYPE.EDIT_EVENT,
-      //     eventForEditing: {
-      //       id: editorTab.eventForEditing.id,
-      //       visible: true
-      //     }
-      //   })
+      /*
+       * The open editor follows the storyworld outline's selection. Selecting
+       * another event moved the element inspector but left the editor on the
+       * event before it, so the two panels described different events.
+       *
+       * Only a non-null id is acted on. Selecting an event from the outline
+       * dispatches null and then the new id a tick apart — see the `stack hack`
+       * in WorldOutline's onSelect (#132) — so treating null as "nothing is
+       * selected" would close the editor mid-gesture and never reopen it.
+       *
+       * `EventContent` is built for this: it resets its `ready` flag when the
+       * event it is handed stops matching the one it has loaded.
+       */
+      composer.selectedSceneMapEvent &&
+        composer.selectedSceneMapEvent !== editorTab.eventForEditing.id &&
+        editorTabDispatch({
+          type: ELEMENT_EDITOR_TAB_ACTION_TYPE.EDIT_EVENT,
+          eventForEditing: {
+            id: composer.selectedSceneMapEvent,
+            visible: true
+          }
+        })
 
       // elmstorygames/feedback#2
       editorTabDispatch({
@@ -1684,6 +1697,15 @@ const SceneMap: React.FC<{
         >
           {scene && editorTab.eventForEditing.id && (
             <EventContent
+              /*
+               * Keyed on the event, so switching to another one builds a fresh
+               * editor. slate-react 0.72 takes `value` as the initial document
+               * only and thereafter owns `editor.children`, so handing the same
+               * editor a new event changed the header and left the prose behind.
+               * A different event is also a different undo history and a
+               * different selection, which remounting gets right for free.
+               */
+              key={editorTab.eventForEditing.id}
               studioId={studioId}
               scene={scene}
               eventId={editorTab.eventForEditing.id}

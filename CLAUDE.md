@@ -394,6 +394,32 @@ UI size picker.
   exactly what the mode is meant to remove. The DOM measurements all looked
   correct while this was still visible; only a screenshot showed it.
 - **`TabContent` now reads `ComposerContext`**, which it did not before.
+
+## The content editor follows the outline's selection
+
+Selecting another event in the storyworld outline while a content editor is open
+moves the editor to it, not just the element inspector. The SceneMap effect that
+watches `editorTab.eventForEditing` re-dispatches `EDIT_EVENT` with
+`composer.selectedSceneMapEvent`.
+
+- **`EventContent` is keyed on the event id.** slate-react 0.72 takes `value` as
+  the *initial* document and thereafter owns `editor.children`, so handing the
+  same editor a new `eventId` changed the header and left the prose behind.
+- **That was data loss, not just a confusing display.** The stale document stayed
+  in the editor while `debounceSaveContent` closed over the *new* `eventId`, so
+  the next change — a selection change counts — wrote the previous event's
+  content over the newly selected one. Two events in the imported test world were
+  overwritten this way before it was found. Remounting is what makes the write
+  impossible, because the editor never holds a document belonging to another
+  event.
+- **Only a non-null selection is followed.** `WorldOutline`'s `onSelect`
+  dispatches `null` and then the new id a tick apart (the `stack hack`, #132), so
+  treating `null` as "nothing selected" closes the editor mid-gesture and never
+  reopens it.
+- **The debounced save is flushed on unmount.** It is 1000ms, so closing or
+  switching used to discard anything typed since the timer last fired. `flush()`
+  invokes it with the arguments it was last called with, which name the event
+  being left.
 - **The header bar in the content editor was restored, not invented.** The
   authors left `.eventTitle` commented out. It carries the scene and event title —
   which the overlay otherwise hides — and the mode's only visible way in and out,

@@ -402,6 +402,16 @@ const EventContent: React.FC<{
     composerDispatch({ type: COMPOSER_ACTION_TYPE.CONTENT_EDITOR_OPENED })
 
     return () => {
+      /*
+       * The last second of typing is otherwise lost. `saveContent` is debounced
+       * at 1000ms, so closing an event — or switching to another one, which
+       * remounts this component — discarded anything typed since the last time
+       * the timer fired. Flushing invokes it with the arguments it was last
+       * called with, which name the event being left rather than the one being
+       * opened.
+       */
+      saveContent.flush()
+
       composerDispatch({ type: COMPOSER_ACTION_TYPE.CONTENT_EDITOR_CLOSED })
     }
   }, [])
