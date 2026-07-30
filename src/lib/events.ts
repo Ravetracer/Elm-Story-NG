@@ -17,5 +17,18 @@ export enum WINDOW_EVENT_TYPE {
   RESTORE_ASSET = 'RESTORE_ASSET',
   REMOVE_ASSET = 'REMOVE_ASSET',
   REMOVE_ASSETS = 'REMOVE_ASSETS',
-  GET_ASSET = 'GET_ASSET'
+  GET_ASSET = 'GET_ASSET',
+  ZOOM_UI = 'ZOOM_UI'
+}
+
+/**
+ * Declared here rather than in menu.ts because both sides of ZOOM_UI compare
+ * against it: the View menu sends it and the renderer steps its UI scale by it.
+ * Two separately declared string enums are not assignable to one another in
+ * TypeScript even with identical members.
+ */
+export enum ZOOM_UI_TYPE {
+  IN = 'IN',
+  OUT = 'OUT',
+  RESET = 'RESET'
 }

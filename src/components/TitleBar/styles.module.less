@@ -69,3 +69,50 @@
     }
   }
 }
+
+/*
+ * Not nested inside .titleBar: antd's Dropdown portals its overlay to
+ * document.body, so a descendant selector would never match. CSS modules only
+ * hash the class name, they do not rewrite the structure.
+ *
+ * The picker's own type is deliberately not the smallest in the app — an author
+ * who cannot read the UI has to be able to read the fix for it.
+ */
+.uiScaleMenu {
+  min-width: 200px;
+
+  .uiScaleRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .uiScaleRowActive {
+    .uiScaleLabel {
+      color: var(--highlight-color);
+    }
+  }
+
+  .uiScaleCheck {
+    width: 12px;
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--highlight-color);
+  }
+
+  .uiScaleLabel {
+    flex: 1;
+  }
+
+  .uiScalePercentage {
+    color: hsl(0, 0%, 45%);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .uiScaleHint {
+    font-size: 11px;
+    text-align: center;
+    cursor: default;
+  }
+}

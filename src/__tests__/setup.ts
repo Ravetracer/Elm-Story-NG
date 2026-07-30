@@ -42,6 +42,31 @@ if (!window.matchMedia) {
   }))
 }
 
+/*
+ * Node 22's own experimental `localStorage` global shadows jsdom's and resolves
+ * to undefined without --localstorage-file, warning as it goes. The renderer
+ * runs in real Chromium where it exists, so it is stubbed here rather than
+ * worked around in the code under test. lib/uiScale.ts stores the UI scale
+ * preference through it.
+ */
+if (!window.localStorage) {
+  const store = new Map<string, string>()
+
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      get length() {
+        return store.size
+      },
+      key: (index: number) => [...store.keys()][index] ?? null,
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, `${value}`),
+      removeItem: (key: string) => void store.delete(key),
+      clear: () => store.clear()
+    } as Storage
+  })
+}
+
 // jsdom implements neither, and the storyteller preview touches both.
 if (!window.HTMLCanvasElement.prototype.getContext) {
   window.HTMLCanvasElement.prototype.getContext = vi.fn(

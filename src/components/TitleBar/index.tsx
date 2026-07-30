@@ -1,10 +1,10 @@
 import { ipcRenderer } from 'electron'
-import { cloneDeep } from 'lodash'
 
 import React, { useEffect, useRef, useContext, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import { WINDOW_EVENT_TYPE } from '../../lib/events'
+import { UI_SCALES, uiScalePercentage } from '../../lib/uiScale'
 import { PLATFORM_TYPE } from '../../data/types'
 
 import {
@@ -13,8 +13,11 @@ import {
   APP_LOCATION
 } from '../../contexts/AppContext'
 
+import { Dropdown, Menu } from 'antd'
 import {
+  CheckOutlined,
   CloseOutlined,
+  FontSizeOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   MinusOutlined,
@@ -32,57 +35,83 @@ enum TITLE_BAR_BUTTON_TYPE {
   HELP = 'HELP',
   MENU = 'MENU',
   MINIMIZE = 'MINIMIZE',
-  QUIT = 'QUIT'
+  QUIT = 'QUIT',
+  UI_SCALE = 'UI_SCALE'
 }
 
-interface TitleBarButtonProps extends React.HTMLProps<HTMLDivElement> {
+/**
+ * Mirrors .titleBarButton's width and .titleBarButtonsContainer's offset in
+ * styles.module.less. The drag region has to start clear of whichever buttons
+ * are showing, and both are absolutely positioned, so the two cannot be derived
+ * from one another in CSS alone.
+ */
+const TITLE_BAR_BUTTON_WIDTH = 23,
+  TITLE_BAR_BUTTONS_OFFSET = 10,
+  // the ESG icon on the opposite corner, at its own 15px offset
+  TITLE_BAR_ICON_WIDTH = 34
+
+interface TitleBarButtonProps extends React.HTMLAttributes<HTMLDivElement> {
   type: TITLE_BAR_BUTTON_TYPE
 }
 
-const TitleBarButton: React.FC<TitleBarButtonProps> = ({ onClick, type }) => {
-  let buttonTitle,
-    buttonIcon: JSX.Element = <></>
+/**
+ * A forwardRef component rather than a plain one because antd's Dropdown clones
+ * its child to attach a ref and its own handlers. A function component would
+ * take neither, so the UI size menu would never open or position itself.
+ */
+const TitleBarButton = React.forwardRef<HTMLDivElement, TitleBarButtonProps>(
+  ({ type, ...props }, ref) => {
+    let buttonTitle,
+      buttonIcon: JSX.Element = <></>
 
-  switch (type) {
-    case TITLE_BAR_BUTTON_TYPE.QUIT:
-      buttonIcon = <CloseOutlined />
-      buttonTitle = 'Quit'
-      break
-    case TITLE_BAR_BUTTON_TYPE.MINIMIZE:
-      buttonIcon = <MinusOutlined />
-      buttonTitle = 'Minimize'
-      break
-    case TITLE_BAR_BUTTON_TYPE.FULLSCREEN:
-      buttonIcon = <FullscreenOutlined />
-      buttonTitle = 'Enter Fullscreen'
-      break
-    case TITLE_BAR_BUTTON_TYPE.FLOATING:
-      buttonIcon = <FullscreenExitOutlined />
-      buttonTitle = 'Exit Fullscreen'
-      break
-    case TITLE_BAR_BUTTON_TYPE.HELP:
-      buttonIcon = <QuestionCircleFilled />
-      buttonTitle = 'Help'
-      break
-    case TITLE_BAR_BUTTON_TYPE.MENU:
-      buttonTitle = 'Menu'
-      break
-    default:
-      throw new Error('Unable to generate TitleBarButton. Missing type.')
+    switch (type) {
+      case TITLE_BAR_BUTTON_TYPE.QUIT:
+        buttonIcon = <CloseOutlined />
+        buttonTitle = 'Quit'
+        break
+      case TITLE_BAR_BUTTON_TYPE.MINIMIZE:
+        buttonIcon = <MinusOutlined />
+        buttonTitle = 'Minimize'
+        break
+      case TITLE_BAR_BUTTON_TYPE.FULLSCREEN:
+        buttonIcon = <FullscreenOutlined />
+        buttonTitle = 'Enter Fullscreen'
+        break
+      case TITLE_BAR_BUTTON_TYPE.FLOATING:
+        buttonIcon = <FullscreenExitOutlined />
+        buttonTitle = 'Exit Fullscreen'
+        break
+      case TITLE_BAR_BUTTON_TYPE.HELP:
+        buttonIcon = <QuestionCircleFilled />
+        buttonTitle = 'Help'
+        break
+      case TITLE_BAR_BUTTON_TYPE.MENU:
+        buttonTitle = 'Menu'
+        break
+      case TITLE_BAR_BUTTON_TYPE.UI_SCALE:
+        buttonIcon = <FontSizeOutlined />
+        buttonTitle = 'UI Size'
+        break
+      default:
+        throw new Error('Unable to generate TitleBarButton. Missing type.')
+    }
+
+    return (
+      <div
+        {...props}
+        ref={ref}
+        className={`${styles.titleBarButton} ${
+          type === TITLE_BAR_BUTTON_TYPE.HELP ? styles.helpButton : ''
+        }`}
+        title={buttonTitle}
+      >
+        {buttonIcon}
+      </div>
+    )
   }
+)
 
-  return (
-    <div
-      className={`${styles.titleBarButton} ${
-        type === TITLE_BAR_BUTTON_TYPE.HELP ? styles.helpButton : ''
-      }`}
-      title={buttonTitle}
-      onClick={onClick}
-    >
-      {buttonIcon}
-    </div>
-  )
-}
+TitleBarButton.displayName = 'TitleBarButton'
 
 const TitleBar: React.FC = () => {
   const { pathname } = useLocation()
@@ -139,8 +168,70 @@ const TitleBar: React.FC = () => {
 
         ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [helpUrl])
       }
-    }
+    },
+    { type: TITLE_BAR_BUTTON_TYPE.UI_SCALE }
   ]
+
+  // minimizing a window that has no frame to restore it from would strand the
+  // author, so that button is dropped in fullscreen
+  const visibleButtonData = titleBarButtonData.filter(
+    ({ type }) => type !== TITLE_BAR_BUTTON_TYPE.MINIMIZE || !app.fullscreen
+  )
+
+  const buttonsOnLeft = app.platform === PLATFORM_TYPE.MACOS,
+    // the platform's own window controls sit on the opposite side, so the order
+    // is mirrored to keep quit outermost
+    orderedButtonData = buttonsOnLeft
+      ? visibleButtonData
+      : [...visibleButtonData].reverse(),
+    // plus the pixel of slack the 103px this replaced also had
+    buttonsWidth =
+      TITLE_BAR_BUTTONS_OFFSET +
+      visibleButtonData.length * TITLE_BAR_BUTTON_WIDTH +
+      1
+
+  const uiScaleMenu = (
+    <Menu
+      className={styles.uiScaleMenu}
+      onClick={({ key }) =>
+        appDispatch({
+          type: APP_ACTION_TYPE.SET_UI_SCALE,
+          uiScale: Number.parseFloat(`${key}`)
+        })
+      }
+    >
+      {/* antd's Dropdown clones the menu with selectable: false, so the active
+          size is marked by a check of its own rather than by selectedKeys */}
+      <Menu.ItemGroup title="UI Size">
+        {UI_SCALES.map(({ label, scale }) => (
+          <Menu.Item key={`${scale}`}>
+            <div
+              className={`${styles.uiScaleRow} ${
+                scale === app.uiScale ? styles.uiScaleRowActive : ''
+              }`}
+            >
+              <span className={styles.uiScaleCheck}>
+                {scale === app.uiScale && <CheckOutlined />}
+              </span>
+              <span className={styles.uiScaleLabel}>{label}</span>
+              <span className={styles.uiScalePercentage}>
+                {uiScalePercentage(scale)}
+              </span>
+            </div>
+          </Menu.Item>
+        ))}
+      </Menu.ItemGroup>
+
+      <Menu.Divider />
+
+      {/* the View menu these accelerators live on is not rendered: the window
+          is frameless, so this is the only place they are written down */}
+      <Menu.Item key="hint" className={styles.uiScaleHint} disabled>
+        {app.platform === PLATFORM_TYPE.MACOS ? 'Cmd' : 'Ctrl'}+Alt+ + / &minus;
+        / 0
+      </Menu.Item>
+    </Menu>
+  )
 
   useEffect(() => {
     if (isFirstRun.current) {
@@ -194,8 +285,12 @@ const TitleBar: React.FC = () => {
           <div
             className={styles.dragBar}
             style={{
-              left: app.platform === PLATFORM_TYPE.MACOS ? '103px' : '34px',
-              right: app.platform !== PLATFORM_TYPE.MACOS ? '103px' : '34px'
+              left: buttonsOnLeft
+                ? `${buttonsWidth}px`
+                : `${TITLE_BAR_ICON_WIDTH}px`,
+              right: buttonsOnLeft
+                ? `${TITLE_BAR_ICON_WIDTH}px`
+                : `${buttonsWidth}px`
             }}
           />
         )}
@@ -203,35 +298,24 @@ const TitleBar: React.FC = () => {
         <div
           className={styles.titleBarButtonsContainer}
           style={{
-            left: app.platform === PLATFORM_TYPE.MACOS ? '10px' : 'initial',
-            right: app.platform !== PLATFORM_TYPE.MACOS ? '10px' : 'initial'
+            left: buttonsOnLeft ? `${TITLE_BAR_BUTTONS_OFFSET}px` : 'initial',
+            right: buttonsOnLeft ? 'initial' : `${TITLE_BAR_BUTTONS_OFFSET}px`
           }}
         >
-          {app.platform === PLATFORM_TYPE.MACOS &&
-            titleBarButtonData.map(
-              (data, index) =>
-                (index !== 1 || (index === 1 && !app.fullscreen)) && (
-                  <TitleBarButton
-                    key={data.type}
-                    type={data.type}
-                    onClick={data.onClick}
-                  />
-                )
-            )}
-
-          {app.platform !== PLATFORM_TYPE.MACOS &&
-            cloneDeep(titleBarButtonData)
-              .reverse()
-              .map(
-                (data, index) =>
-                  (index !== 2 || (index === 2 && !app.fullscreen)) && (
-                    <TitleBarButton
-                      key={data.type}
-                      type={data.type}
-                      onClick={data.onClick}
-                    />
-                  )
-              )}
+          {orderedButtonData.map(({ type, onClick }) =>
+            type === TITLE_BAR_BUTTON_TYPE.UI_SCALE ? (
+              <Dropdown
+                key={type}
+                overlay={uiScaleMenu}
+                trigger={['click']}
+                placement={buttonsOnLeft ? 'bottomLeft' : 'bottomRight'}
+              >
+                <TitleBarButton type={type} />
+              </Dropdown>
+            ) : (
+              <TitleBarButton key={type} type={type} onClick={onClick} />
+            )
+          )}
 
           {/* #137 */}
           {/* <TitleBarButton

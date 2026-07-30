@@ -7,42 +7,23 @@ import {
   WebContents
 } from 'electron'
 
-import { WINDOW_EVENT_TYPE } from './lib/events'
+import { WINDOW_EVENT_TYPE, ZOOM_UI_TYPE } from './lib/events'
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string
   submenu?: DarwinMenuItemConstructorOptions[] | Menu
 }
 
-// elmstorygames/feedback#284
-const ZOOM_UI_INCREMENT: number = 0.2
-
-enum ZOOM_TYPE {
-  IN = 'IN',
-  OUT = 'OUT',
-  RESET = 'RESET'
-}
-
-const zoomUI = (webContents: WebContents, zoomType: ZOOM_TYPE) => {
-  if (zoomType === ZOOM_TYPE.RESET) {
-    webContents.setZoomLevel(0)
-    return
-  }
-
-  const currentZoomLevel = webContents.getZoomLevel()
-
-  if (currentZoomLevel < 3 && zoomType === ZOOM_TYPE.IN) {
-    webContents.setZoomLevel(
-      parseFloat((currentZoomLevel + ZOOM_UI_INCREMENT).toFixed(2))
-    )
-  }
-
-  if (currentZoomLevel > -1 && zoomType === ZOOM_TYPE.OUT) {
-    webContents.setZoomLevel(
-      parseFloat((currentZoomLevel - ZOOM_UI_INCREMENT).toFixed(2))
-    )
-  }
-}
+/**
+ * elmstorygames/feedback#284
+ *
+ * The zoom factor itself is set by the renderer (see lib/uiScale.ts), which
+ * owns the UI scale preference, persists it and shows it in the title bar. The
+ * accelerators only ask for a step, so the keyboard and the picker cannot
+ * report different sizes and a step survives a restart.
+ */
+const zoomUI = (webContents: WebContents, zoomType: ZOOM_UI_TYPE) =>
+  webContents.send(WINDOW_EVENT_TYPE.ZOOM_UI, [zoomType])
 
 export default class MenuBuilder {
   mainWindow: BrowserWindow
@@ -117,17 +98,17 @@ export default class MenuBuilder {
         {
           label: 'Zoom UI In',
           accelerator: 'CmdOrCtrl+Alt+=',
-          click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.IN)
+          click: () => zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.IN)
         },
         {
           label: 'Zoom UI Out',
           accelerator: 'CmdOrCtrl+Alt+-',
-          click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.OUT)
+          click: () => zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.OUT)
         },
         {
           label: 'Reset UI Zoom',
           accelerator: 'CmdOrCtrl+Alt+0',
-          click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.RESET)
+          click: () => zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.RESET)
         },
         {
           label: 'Reload',
@@ -156,18 +137,18 @@ export default class MenuBuilder {
         {
           label: 'Zoom UI In',
           accelerator: 'CmdOrCtrl+Alt+=',
-          click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.IN)
+          click: () => zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.IN)
         },
 
         {
           label: 'Zoom UI Out',
           accelerator: 'CmdOrCtrl+Alt+-',
-          click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.OUT)
+          click: () => zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.OUT)
         },
         {
           label: 'Reset UI Zoom',
           accelerator: 'CmdOrCtrl+Alt+0',
-          click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.RESET)
+          click: () => zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.RESET)
         },
         {
           label: 'Reload',
@@ -271,20 +252,21 @@ export default class MenuBuilder {
                 {
                   label: 'Zoom UI In',
                   accelerator: 'CmdOrCtrl+Alt+=',
-                  click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.IN)
+                  click: () =>
+                    zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.IN)
                 },
 
                 {
                   label: 'Zoom UI Out',
                   accelerator: 'CmdOrCtrl+Alt+-',
                   click: () =>
-                    zoomUI(this.mainWindow.webContents, ZOOM_TYPE.OUT)
+                    zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.OUT)
                 },
                 {
                   label: 'Reset UI Zoom',
                   accelerator: 'CmdOrCtrl+Alt+0',
                   click: () =>
-                    zoomUI(this.mainWindow.webContents, ZOOM_TYPE.RESET)
+                    zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.RESET)
                 },
                 {
                   label: '&Reload',
@@ -314,19 +296,20 @@ export default class MenuBuilder {
                 {
                   label: 'Zoom UI In',
                   accelerator: 'CmdOrCtrl+Alt+=',
-                  click: () => zoomUI(this.mainWindow.webContents, ZOOM_TYPE.IN)
+                  click: () =>
+                    zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.IN)
                 },
                 {
                   label: 'Zoom UI Out',
                   accelerator: 'CmdOrCtrl+Alt+-',
                   click: () =>
-                    zoomUI(this.mainWindow.webContents, ZOOM_TYPE.OUT)
+                    zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.OUT)
                 },
                 {
                   label: 'Reset UI Zoom',
                   accelerator: 'CmdOrCtrl+Alt+0',
                   click: () =>
-                    zoomUI(this.mainWindow.webContents, ZOOM_TYPE.RESET)
+                    zoomUI(this.mainWindow.webContents, ZOOM_UI_TYPE.RESET)
                 },
                 {
                   label: '&Reload',
