@@ -55,6 +55,35 @@ Toolbar buttons are a separate, smaller surface: the selection toolbar
 (`EventContentToolbar.tsx`) is a portal that only appears for a non-collapsed text
 selection and offers leaf marks and links, not blocks.
 
+## The asset manager
+
+`components/AssetManager`, reached from the picture button in the storyworld
+outline's title bar. It joins the `LIST_ASSETS` IPC handler's directory listing to
+`lib/assets.ts`'s reference index and trashes what nothing points at.
+
+Three things carry more meaning than they look like they do:
+
+- **There are exactly four places a storyworld names an asset**:
+  `Character.masks[].assetId` (jpeg), `Event.images[]` (webp), `Event.audio[0]`
+  and `Scene.audio[0]` (both mp3). `collectAssetReferences` has to cover all four
+  or the manager offers to delete something in use. Add a fifth writer and it
+  belongs there too.
+- **`LIST_ASSETS` lists every extension, not just those three.**
+  `IMPORT_WORLD_ASSETS` copies whatever sits beside an imported JSON, so real
+  directories contain files the app never wrote — filtering to the app's own
+  extensions hid a 241 KB `.png` orphan in the test world. Nothing can reference
+  such a file, which makes it an orphan by construction.
+- **An asset used by event content cannot be deleted from the manager**, and the
+  button is disabled rather than the reference being cleared. The id lives both in
+  `Event.images` and as an IMG node in `Event.content`; rewriting the document
+  from outside the editor would be overwritten by an open content editor's next
+  debounced save. Character masks and both audio profiles are a single field, so
+  those are cleared before the file is trashed. `isReferenceClearable` is the
+  distinction.
+
+Deletion goes through `REMOVE_ASSET` with `trash: true`, so `RESTORE_ASSET` still
+applies and files land in `userData/.trash`.
+
 ## Template expressions
 
 `{ ... }` inside event content is parsed with acorn and evaluated by
@@ -84,6 +113,288 @@ an authoring error while an empty STRING is treated as ordinary data.
 
 `src/__tests__/templates.test.ts` covers the arithmetic evaluator, including the
 zero-result case above.
+
+**A template expression names a variable by its title, not its id.** Both
+`EventSnippet` and the engine build their variable map keyed on `variable.title`,
+so renaming a variable breaks every expression that used the old name, and the
+breakage is silent: the expression renders as an ERROR span rather than failing
+anywhere a build would notice. Two variables sharing a title are likewise
+ambiguous, with whichever the map saw last winning. `lib/variableUsage.ts` finds
+those references for the variable manager, and it reads identifiers off acorn's
+AST rather than by regex — `{ health > 50 ? "ok" : "hurt" }` would otherwise
+credit variables titled `ok` or `hurt`, and `{ name.upper() }` one titled `upper`.
+
+## The variable manager
+
+`components/VariableManager`, the single place variables are edited. It opens from
+the Variables tab title in the world inspector, from the `+` beside it, or by
+clicking any row in the tab's list. Search, type and unused filters, per-variable
+usage counts, a description field, and a deletion that states its consequences.
+
+- **`WorldVariables` is an index, not an editor.** It was a second editable table
+  with the same title, type and initial-value fields, which is why it was reduced
+  to a row per variable that opens the manager — the same relationship
+  `WorldCharacters` has with `CharacterModal`. It still exports `VariableRow`,
+  which the manager and `ElementProperties/PathProperties` both render.
+- **`LibraryDatabase.removeVariable` cascades.** It deletes every condition and
+  effect naming the variable — which changes whether the paths carrying them are
+  taken — and clears the variable from any input. That used to happen on one
+  unconfirmed click, so `confirmRemoveVariable` states what a deletion takes with
+  it. The panel no longer deletes at all.
+- **The `?` opens an in-app reference, not a link.** `ElementHelpButton` sends
+  authors to `docs.elmstory.com`, which no longer resolves, and the archived copy
+  is not a substitute: its expressions page documents a `=/=` operator that has
+  never parsed and omits the method calls and arithmetic that work. So
+  `VariableHelp.tsx` is written against `lib/templates.ts` and is the only
+  accurate description of the expression language in the product.
+  `src/__tests__/variableHelpExamples.test.ts` runs every expression it shows
+  through the real pipeline, so the sheet cannot drift into claiming something the
+  parser rejects. Keep the two in step. **The help buttons for every other element
+  type still point at the dead domain.**
+- **`Variable.description` needed no migration**, which is worth knowing before
+  assuming the next field will. Dexie only declares indexes, so an unindexed
+  property is stored without a version bump, and the engine has no use for it at
+  runtime. What it *did* need was the transport contract: `variables` in
+  `schema/0.7.0.json` sets `additionalProperties: false`, so exporting a property
+  the schema does not name produces a file this app then refuses to import,
+  reported as an unsupported schema. It is optional in both the schema and
+  `transport/types/0.7.0.ts`, which keeps files written by the original 0.7.0
+  valid. `src/__tests__/validateWorldData.test.ts` holds that in place, including
+  that an unnamed property is still rejected.
+- **There are four kinds of usage**: `Condition.variableId`, `Effect.variableId`,
+  `Input.variableId` and content template expressions. The first three reference
+  by id and survive a rename; the fourth does not, and no cascade can repair it.
+- **`VariableRow` is reused verbatim** from `WorldVariables`, which is where the
+  rename, retype and initial-value logic lives along with its focus workarounds
+  (#166, #307). The manager adds a usage line under each row rather than another
+  column, because the row's column widths are shared with the condition and
+  effect rows in `ElementProperties/PathProperties`.
+
+**An antd `Modal` must not be a child of an rc-dock `DividerBox`.** DividerBox
+divides its space between its React children and counts the modal as one, even
+though it portals to `document.body` and renders nothing in place — which
+collapsed the world outline to zero height. Render it as a sibling, inside a
+fragment, as `WorldInspector` and `WorldOutline/TitleBar` both now do.
+
+## The scene map clipboard
+
+Cut, copy, paste and duplicate for events, jumps and the paths between them.
+`Ctrl/Cmd+X/C/V/D`, or the entries in the scene map's toolbar, which carry the
+shortcuts because the View menu that would list them is never rendered.
+
+`lib/sceneMapClipboard.ts` is the rewrite and is **pure**: a paste is not a copy
+but a re-pointing, since an event owns its choices and its input, a path owns its
+conditions and effects, and all of them reference each other by id.
+`src/__tests__/sceneMapClipboard.test.ts` covers it, and the assertion that earns
+its keep is the one that serialises a remapped payload and fails if **any** copied
+id survives anywhere in it — a missed reference draws correctly on the map and is
+wrong underneath. It caught jump positions not being offset.
+
+What travels:
+
+- **Nodes drive it, paths ride along.** A path cannot exist without both ends, so
+  selecting one alone copies nothing, and only paths with **both** ends inside the
+  selection are copied. The rest are counted, and the count is logged, so a paste
+  is never quietly lossy.
+- **World-scoped references are kept, not remapped**: characters, variables,
+  assets, and a jump aimed elsewhere in the world. A jump aimed *into* the
+  selection follows the copy. This is why a clipboard records its `worldId` and a
+  paste refuses another storyworld — it is in-memory `ComposerContext` state, not
+  the system clipboard, precisely because those ids mean nothing elsewhere.
+- **Titles are not suffixed.** A duplicate of "Green Additional" is another
+  "Green Additional"; event titles carry no semantics, unlike variable titles,
+  which template expressions resolve by name.
+
+**`Scene.children` is replaced wholesale by every write, which makes it a
+lost-update trap.** Two bugs came out of this, both found by reading the database
+after the operation rather than by watching the map:
+
+- **A multi-element cut must remove sequentially.** `removeEvent` reads, splices
+  and saves the whole array, so a `Promise.all` over the selection has each
+  removal splice its own copy and the last write win — leaving the other ids
+  behind as child refs pointing at events that no longer exist.
+- **A paste must re-read the child refs** rather than appending to the `scene`
+  its component rendered with. That copy can be stale, and saving it puts back
+  whatever was removed meanwhile.
+
+Either one produces a **dangling child ref, which is fatal on next open**:
+`createWorldOutlineTreeData` gives a scene item one child per ref and
+@atlaskit/tree dereferences every child while flattening, so the outline throws
+and takes the renderer with it — a blank window, with the real cause a storyworld
+away from the symptom.
+
+**Anything that adds several elements to a scene must announce all of them.**
+`COMPOSER_ACTION_TYPE.ELEMENTS_SAVE` exists for that: the outline resets a scene
+item's children from the database when it hears about a save (#414), so announcing
+one of five pasted events leaves four child ids with no item behind them — the
+same crash. Repeated single-element dispatches do not work, because React batches
+them into one. The bulk effect in `WorldOutline` patches the tree rather than
+rebuilding it, since a rebuild collapses every folder and scene the author had
+open.
+
+Two more things worth knowing:
+
+- **A cut keeps the event's assets** (`removeEvent`'s `keepAssets`). The clipboard
+  still names the images and audio, and trashing them would paste an event whose
+  files are in `userData/.trash`. An unpasted cut therefore leaves assets behind,
+  which is what the asset manager is for.
+- **`Event.audio` needed reference counting before two events could share an
+  mp3.** `removeDeadImageAssets` already did this for images; `removeDeadAudioAsset`
+  now mirrors it, through `collectAssetReferences` so a scene audio profile counts
+  too. `Event.audio` has no Dexie index (`v10.ts` indexes `images` but not
+  `audio`), so the count is taken in memory. Before this, deleting either of two
+  events sharing a track took the file from under the other.
+- **The commands are performed by the scene map, not where they are asked for.**
+  Cutting needs its element-removal path and pasting its viewport centre, so the
+  toolbar sets `composer.sceneMapClipboardCommand` and the map runs and clears it —
+  the same shape as `centeredSceneMapSelection`. Only the scene the outline has
+  selected acts on a command, because rc-dock keeps every opened scene tab mounted
+  in its pane cache and an unguarded listener would have all of them paste. The
+  keyboard also stands down inside a text field and while a text selection exists,
+  so copying words out of an event preview still works.
+
+## The scene map's viewport, and how it used to stall
+
+The per-gesture stall is fixed; `TODO.md`'s "Why the scene map stalled while you
+moved it" holds the measurements. Four things there are load-bearing and easy to
+undo by accident.
+
+- **A live query dependency must name the field, not the record.** `useScene` is a
+  Dexie live query, so *any* write to the scene hands back a new object.
+  `saveSceneViewTransform` writes on every pan and zoom, so listing `scene` in the
+  elements effect's dependencies rebuilt all 27 nodes and 27 edges per wheel tick —
+  write → invalidate → rebuild. It depends on `scene?.id`, which is the only field
+  it reads. The same trap is available anywhere a `use*` hook's whole result lands
+  in a dependency array.
+- **Two viewport values are debounced, and one of them must still be flushed.**
+  The transform write (500ms) is flushed from the unmount cleanup, because losing
+  it means a scene reopens somewhere the author did not leave it. The
+  `SCENE_MAP_SELECT_CENTER` dispatch (250ms) is *dropped* on unmount instead —
+  dispatching into a context from an unmounting component would land on a scene
+  that is no longer open. Both compute their value when the timer fires rather
+  than when it is scheduled, so a deferred value reflects where the viewport came
+  to rest.
+- **`selectedSceneMapCenter` is context state that nothing renders from.** All
+  four readers take it inside an event handler, to place a new element at the
+  middle of the view. That is what makes debouncing it safe, and it is why
+  dispatching it per tick was expensive: `ComposerContext` has 29 consumers, so
+  each dispatch re-rendered the storyworld outline and the inspector. **Its cost
+  scales with how much of the outline is expanded** — ~300ms of long tasks per
+  zoom with five rows open, ~2600ms with seventy — so any measurement here has to
+  state the outline state or it is not reproducible.
+- **`onlyRenderVisibleElements` must stay `false`.** In react-flow-renderer 9 it
+  permanently drops nodes: this scene went from 27 nodes to 16, and the missing
+  ones did not return on zoom-out or fit-view, because a node that has never
+  rendered has no measured dimensions and so never passes the visibility test. It
+  looks like a free win and is a correctness bug.
+
+`highlightElements` copies an element only when that element's own `className` or
+`data.selectedChoice` changes. It used to `cloneDeep` the whole array, which gave
+every node a new identity and defeated `memo()` on `EventNode`. If you touch it,
+note that its two `map`s over the selection are order-dependent by design — for an
+edge between two selected nodes, the last match wins.
+
+Two unrelated things that surface while working here and are **not** regressions:
+`react-flow` logs `couldn't create edge for source handle id: null` and renders 26
+of 27 edges on this scene, which is the authors' own
+`BUG: Unable to create edges on initial node render because choices aren't ready`;
+and `npm run dev` keeps warning `Could not Fast Refresh ("DEFAULT_NODE_SIZE" export
+is incompatible)` because the module exports both a component and an enum, so
+editing it forces a full reload rather than a hot update.
+
+## Distraction-free mode
+
+`Ctrl/Cmd+Shift+F`, or the button in the content editor's header, leaves the
+writing column alone on an empty field: the storyworld outline, the element
+inspector, the dock tab bar and the per-tab toolbar all go. The title bar stays,
+because on a frameless window it is the only quit and minimize and it carries the
+UI size picker.
+
+- **The state lives in `ComposerContext`, not in the content editor**, because
+  the chrome it hides belongs to the Composer route two levels above
+  `EventContent`, which the SceneMap mounts.
+- **It is two booleans, and the difference matters.** `active` is what the layout
+  reads and is true only while a content editor is open; `preferred` outlives the
+  editor. `EventContent` reports `CONTENT_EDITOR_OPENED` and
+  `CONTENT_EDITOR_CLOSED` on mount and unmount, so closing an event brings the
+  chrome back rather than leaving an author with no panels and nothing to write
+  in, while the next event opens straight back into the mode. Neither is
+  persisted; a restart starts with the full chrome.
+- **The two exits are deliberately not the same.**
+  `TOGGLE_DISTRACTION_FREE_MODE` (the button and the shortcut) sets both, so
+  switching the mode off means the next event keeps its chrome.
+  `EXIT_DISTRACTION_FREE_MODE` (escape) clears only `active`, so escaping out and
+  opening the next event writes distraction-free again. Escape steps out one
+  layer at a time — command menu, then the mode, then the editor — so one press
+  never discards two things. Getting these backwards makes the mode either
+  impossible to stay in or impossible to leave, which is what
+  `src/__tests__/distractionFreeMode.test.ts` is for; `composerReducer` and
+  `defaultComposerState` are exported for it.
+- **Hidden with CSS, not by unmounting.** Dropping the panels from the
+  `DividerBox` would discard the outline's tree and the properties form and
+  rebuild the inspector's own `DockLayout` on every toggle. Both side panels are
+  pinned to 300px, so `display: none` is enough for the editor between them to
+  take the space. rc-dock also renders a divider between each pair of children,
+  which is why `.distractionFree > .dock-divider` is scoped to direct children —
+  the dividers inside the editor's own docks must stay.
+- **Three stylesheets, because CSS module class names are not addressable across
+  modules.** The route hides the side panels, the dividers and `.dock-bar`;
+  `TabContent` hides its own toolbar *and* moves `.TabContentView` to `top: 0`,
+  since the view is positioned against the toolbar's 32px rather than laid out
+  after it; `EventContent` drops its `hsla(0, 0%, 1%, 0.9)` overlay to fully
+  opaque. That last one is not cosmetic — at 0.9 alpha the scene map, its zoom
+  controls and its minimap stay legible behind the writing column, which is
+  exactly what the mode is meant to remove. The DOM measurements all looked
+  correct while this was still visible; only a screenshot showed it.
+- **`TabContent` now reads `ComposerContext`**, which it did not before.
+- **The header bar in the content editor was restored, not invented.** The
+  authors left `.eventTitle` commented out. It carries the scene and event title —
+  which the overlay otherwise hides — and the mode's only visible way in and out,
+  since the View menu holding the shortcut is never rendered.
+
+## UI scale
+
+The editor's type is small by default — 50 declarations at 12px and another 28
+below that before the sub-12px ones in the authoring panels were lifted to 12 and
+13. The **UI Size** picker in the title bar (the `Aa` button, beside Help) is the
+answer to that, offering Small through Huge as Chromium zoom factors.
+
+- **It is a zoom factor, not a font-size variable.** Most of the type in this UI
+  is sized by `antd/dist/antd.dark.less`, which is resolved at build time into
+  absolute pixels, so nothing declared at runtime reaches it. A `--ui-scale`
+  custom property would scale the app's own 125 declarations and leave every antd
+  control behind. `webFrame.setZoomFactor` scales both.
+- **The renderer owns the preference.** `lib/uiScale.ts` holds the step list,
+  snaps and clamps to it, and reads and writes the `esg-ui-scale` localStorage
+  key. `AppContext` carries it as `uiScale` and `App.tsx` has the single effect
+  that applies and stores it, whichever surface changed it. `index.tsx` applies
+  the stored value before the first render, so the window does not paint at one
+  size and jump to another.
+- **The View menu's accelerators (`Ctrl+Alt+=`, `-`, `0`, from
+  elmstorygames/feedback#284) no longer set the zoom themselves.** `menu.ts` sends
+  `WINDOW_EVENT_TYPE.ZOOM_UI` with a `ZOOM_UI_TYPE`, and the renderer steps its
+  own scale, so the keyboard and the picker cannot report different sizes and a
+  step is persisted like any other. The window is frameless, so that menu is
+  never rendered — the picker's footer is the only place those accelerators are
+  written down.
+- **`TitleBarButton` is a `forwardRef` component for the picker's sake.** antd's
+  Dropdown clones its child to attach a ref and its own handlers, and a plain
+  function component would take neither. The overlay also portals to
+  `document.body`, so `.uiScaleMenu` is declared at the top level of
+  `TitleBar/styles.module.less` rather than nested inside `.titleBar`: CSS modules
+  hash the class name but do not rewrite the selector's structure.
+- **The drag region's width is derived from the button count.** Both it and the
+  button container are absolutely positioned, so `TITLE_BAR_BUTTON_WIDTH` and
+  `TITLE_BAR_BUTTONS_OFFSET` in `TitleBar/index.tsx` mirror the stylesheet. The
+  hardcoded `103px` was for four buttons; a fifth would have sat under the drag
+  region and stopped responding to clicks. Adding a sixth needs nothing beyond
+  the array. The same rewrite replaced the index comparisons that hid Minimize in
+  fullscreen (`index !== 1` on macOS, `index !== 2` elsewhere, because the array
+  is mirrored) with a check on the type, which no longer breaks when the order
+  changes.
+- **SceneMap's four 10px sizes were left alone**, along with the character mask
+  caption, because those sit in fixed-width nodes and 76px tiles where larger
+  type overflows rather than reflows. The zoom covers them.
 
 ## Do not upgrade React
 
@@ -134,6 +445,19 @@ The app opens on the dashboard with nothing selected. To get to the Composer:
 1. **Select studio…** → **Ravetracer**
 2. Click the storyworld (**Archiv der Erinnerungen**)
 3. Click the first entry in the left-hand outline
+
+**There are two studios and they are not interchangeable.** Ravetracer's world has
+one scene and two events, which is fine for a quick look and useless for anything
+about scale or performance. The imported December 2022 export lives under **Indie**
+as **Das Archiv der Erinnerungen (Imported)** — 14 scenes, 74 events, 113 paths,
+27 jumps — and its *Fr. Wittgenstein* scene is the largest at 27 nodes and 27
+edges. Use that one, and note the outline's scene rows carry a `partition` icon
+while event rows carry `align-left`, which is how to tell them apart when two share
+a title.
+
+Faster than clicking when you only need to know what is in there: read the
+`esg-library-<studioId>` IndexedDB databases directly with `eval.mjs` and an
+`indexedDB.databases()` walk. The studio id is in the database name.
 
 That last click lands on a SceneMap with event nodes, which is where rc-dock,
 react-flow-renderer and slate are all exercised at once. Characters open as a
@@ -277,6 +601,17 @@ silently. The imported world is also renamed to `<title> (Imported)`.
 
 ## Housekeeping
 
+- **Two numbers in this repository read like a version and only one of them is
+  the app's.** `package.json`'s `version` is the release, is read by nothing at
+  runtime and is the one to bump — patch for fixes, minor for features, major for
+  impactful changes. `AppContext`'s `defaultAppState.version` is the **storyworld
+  schema version**: `ExportWorldMenu` passes it to `getWorldDataJSON` as
+  `schemaVersion`, it is written into an exported world's `_.engine`, and
+  `transport/validate` looks that up in a static schema map — so bumping it makes
+  the app refuse to import its own exports, reported as an unsupported schema. It
+  moves only alongside a new `transport/schema/*.json` and an `upgrade/*` step.
+  The About box shows both, the release from `package.json` (imported for its
+  `version`, tree-shaken to that one field) and the schema version beside it.
 - Type checking **is** in the build path, as of both projects reaching zero
   errors: the editor went 127 → 39 → 0, `engine/` was already clean. `npm run
   typecheck` covers both projects and `build` runs it after `engine:sync` and
@@ -291,8 +626,11 @@ silently. The imported world is also renamed to `<title> (Imported)`.
   `tsconfig` reports `noImplicitReturns` violations that `engine/tsconfig.json`
   does not, so engine code can be clean on its own and still fail the editor's
   check once embedded.
-- `npm run lint` exits 0 with ~730 catalogued warnings, counts recorded in
-  `eslint.config.mjs`. `react-hooks/rules-of-hooks` was 89 sites across 21
+- `npm run lint` exits 0 with ~727 catalogued warnings, counts recorded in
+  `eslint.config.mjs`. Note `Docs/**` is in the ignore list: eslint walks the
+  working tree rather than the index, so the git-ignored recovered docs and the
+  third-party scripts saved with them reported 14352 errors and made the command
+  exit 1. `react-hooks/rules-of-hooks` was 89 sites across 21
   files and is now **0 and set to `error`**, so it gates. The pattern it caught
   was an early `return null` above a component's hooks, which changes hook order
   between renders. If you need a guard, put it *below* every hook and let the
@@ -300,9 +638,18 @@ silently. The imported world is also renamed to `<title> (Imported)`.
   engine's `useLiveQuery` callbacks all take optional ids and return `undefined`
   for exactly this reason. `exhaustive-deps` (148) and `set-state-in-effect`
   (55) are still real risks, just too widespread to gate on.
+- **Do not run `npm run format` over files you have only partly touched.** The
+  pinned prettier is 3.x and the tree was formatted with 2.x, so it reformats
+  nested ternaries, long assignments and type unions throughout — a two-line
+  change came back as a forty-line diff. Format new files only, or reformat the
+  whole tree deliberately in a commit of its own.
 - `npm test` runs Vitest. `vitest.config.ts` mirrors the renderer's `electron`
   alias onto a stub in `src/__tests__/stubs/`, and `setup.ts` supplies the
-  browser APIs jsdom lacks but antd, rc-dock and react-flow touch on mount.
+  browser APIs jsdom lacks but antd, rc-dock and react-flow touch on mount. One
+  of those is **`localStorage`, which jsdom does implement**: Node 22's own
+  experimental global shadows it and resolves to `undefined` without
+  `--localstorage-file`, warning once per worker. Real Chromium has it, so it is
+  stubbed in `setup.ts` rather than worked around in the code under test.
 - Never run `npm audit fix --force`; every remaining fix it offers is a
   downgrade. `GHSA-mh99-v99m-4gvg` (brace-expansion) is knowingly accepted and
   documented in both package.json files. Do **not** try to fix it with an

@@ -68,10 +68,13 @@ machinery that is present rather than adding new machinery.
       (`EventContentElement`), a new `ELEMENT_FORMATS` member, serialization in
       `lib/serialization.ts`, and asset handling for a new extension. Larger than
       the rest of this group.
-- [ ] **Asset manager.** No UI exists; assets are only reachable by
-      right-clicking a character mask. Needs a listing of what is under
-      `userData/assets/<studioId>/<worldId>`, orphan detection against what the
-      storyworld references, and deletion. Self-contained, no schema change.
+- [x] **Asset manager.** Done. `components/AssetManager`, opened from the
+      storyworld title bar in the outline. Lists everything under
+      `userData/assets/<studioId>/<worldId>` through the `LIST_ASSETS` IPC
+      handler, joins it to the four places a storyworld names an asset, and
+      trashes what nothing references. One gap by design: an asset used by event
+      content cannot be deleted from it, because the id is also a Slate node in
+      `Event.content`.
 
 ## 0.9.0 — Smart Composition
 
@@ -107,11 +110,12 @@ gated behind schema changes.
 - [ ] **Multiple storyworld bookmarks.** The `bookmarks` table exists and is
       already keyed per world; today only one automatic bookmark is written, via
       `AUTO_ENGINE_BOOKMARK_KEY`. Needs named bookmarks and UI, not new storage.
-- [ ] **Variable manager.** `WorldVariables` already lists, renames, retypes and
-      sets initial values. This is search, filtering, usage counts and safe
-      deletion. Note the existing type-change path already rewrites related
-      conditions and effects (`db/index.ts` resets initial values per type), so
-      follow that precedent rather than inventing a second one.
+- [x] **Variable manager.** Done, and now the only place variables are edited.
+      `components/VariableManager`: search over title and initial value, filters by
+      type and by unused, usage counts per variable (`lib/variableUsage.ts`), an
+      author-facing description per variable, adding, and a deletion that says what
+      it will take with it. The `WorldVariables` panel was a duplicate editable
+      table and is now an index that opens the manager.
 - [ ] **Storyworld notifications.** The engine has `ErrorNotification` and a
       `SHOW_ERROR_NOTIFICATION` action. This is generalising it to author-authored
       messages.
