@@ -13,6 +13,8 @@ import { WorldDataJSON as WorldDataJSON_060 } from '../types/0.6.0'
 // 0.7.1 declares no shape of its own — `types/0.7.1` re-exports this one — so it
 // needs no separate member in the parameter union below.
 import { WorldDataJSON as WorldDataJSON_070 } from '../types/0.7.0'
+// 0.8.0 does declare its own shape, so it is a distinct member.
+import { WorldDataJSON as WorldDataJSON_080 } from '../types/0.8.0'
 
 import schema013 from '../schema/0.1.3.json'
 import schema020 from '../schema/0.2.0.json'
@@ -23,6 +25,7 @@ import schema050 from '../schema/0.5.0.json'
 import schema051 from '../schema/0.5.1.json'
 import schema060 from '../schema/0.6.0.json'
 import schema070 from '../schema/0.7.0.json'
+import schema080 from '../schema/0.8.0.json'
 
 /**
  * Keyed by the `_.engine` value of an incoming file.
@@ -57,7 +60,11 @@ const SCHEMAS: { [version: string]: Schema } = {
   '0.5.1': schema051,
   '0.6.0': schema060,
   '0.7.0': schema070,
-  '0.7.1': schema070
+  '0.7.1': schema070,
+  // 0.8.0 gets its own entry rather than an alias: unlike 0.7.1 it genuinely
+  // changed the shape, adding four collections to a top-level object that is
+  // `additionalProperties: false`.
+  '0.8.0': schema080
 }
 
 export type ValidationError = {
@@ -94,7 +101,8 @@ export default (
     | GameDataJSON_050
     | GameDataJSON_051
     | WorldDataJSON_060
-    | WorldDataJSON_070,
+    | WorldDataJSON_070
+    | WorldDataJSON_080,
   version: string
 ): [boolean, ValidationError[]] => {
   const schema = SCHEMAS[version]

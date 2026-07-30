@@ -6,7 +6,7 @@ import {
   ELEMENT_TYPE,
   WorldDataJSON,
   ESGEngineCollectionData
-} from '../transport/types/0.7.1'
+} from '../transport/types/0.8.0'
 
 function filterCollectionChildProps<T extends object, U extends keyof T>(
   collectionToFilter: { [ElementId: string]: T },
@@ -22,6 +22,16 @@ function filterCollectionChildProps<T extends object, U extends keyof T>(
   return filteredCollection
 }
 
+/**
+ * Packs a storyworld into what the Storyteller actually loads.
+ *
+ * **The pick lists below are the contract, not a convenience.** A field declared
+ * on both the transport type and the engine type is still invisible at runtime
+ * until it is named here, which makes this the easiest place in the repository to
+ * add a field and believe it works. `characterRelationships` is the one collection
+ * deliberately not passed through: it is authoring metadata, and anything of it
+ * that must reach the engine goes through its optional `variableId`.
+ */
 function format(worldData: WorldDataJSON): string {
   const {
     _,
@@ -32,7 +42,10 @@ function format(worldData: WorldDataJSON): string {
     events,
     inputs,
     jumps,
+    objectConditions,
+    objects,
     paths,
+    recipes,
     scenes,
     variables
   }: WorldDataJSON = cloneDeep(worldData)
@@ -45,12 +58,15 @@ function format(worldData: WorldDataJSON): string {
         .filter((child) => child[0] === ELEMENT_TYPE.SCENE)
         .map((child) => child),
       ...pick(_, [
+        'choicePresentation',
         'copyright',
+        'coverAssetId',
         'description',
         'designer',
         'engine',
         'id',
         'jump',
+        'objectNoRecipeMessage',
         'schema',
         'studioId',
         'studioTitle',
@@ -84,6 +100,7 @@ function format(worldData: WorldDataJSON): string {
     ]),
     events: filterCollectionChildProps(events, [
       'audio',
+      'choicePresentation',
       'choices',
       'content',
       'ending',
@@ -95,6 +112,27 @@ function format(worldData: WorldDataJSON): string {
     ]),
     inputs: filterCollectionChildProps(inputs, ['id', 'eventId', 'variableId']),
     jumps: filterCollectionChildProps(jumps, ['id', 'path', 'sceneId']),
+    // @ts-ignore
+    objectConditions: filterCollectionChildProps(objectConditions, [
+      'compare',
+      'id',
+      'location',
+      'objectId',
+      'pathId',
+      'sceneId'
+    ]),
+    objects: filterCollectionChildProps(objects, [
+      'assetId',
+      'combineable',
+      'description',
+      'id',
+      'noRecipeMessage',
+      'placements',
+      'stackedAssetId',
+      'stackedTitle',
+      'takeable',
+      'title'
+    ]),
     paths: filterCollectionChildProps(paths, [
       'choiceId',
       'conditionsType',
@@ -102,14 +140,25 @@ function format(worldData: WorldDataJSON): string {
       'destinationType',
       'id',
       'inputId',
+      'notification',
       'originId',
       'originType',
       'sceneId'
+    ]),
+    // @ts-ignore
+    recipes: filterCollectionChildProps(recipes, [
+      'effects',
+      'id',
+      'inputs',
+      'message',
+      'outputs'
     ]),
     scenes: filterCollectionChildProps(scenes, ['audio', 'children', 'id']),
     variables: filterCollectionChildProps(variables, [
       'id',
       'initialValue',
+      'scope',
+      'scopeId',
       'title',
       'type'
     ]),

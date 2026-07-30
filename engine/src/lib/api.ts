@@ -75,12 +75,15 @@ export const saveEngineCollectionData = async (
 ): Promise<boolean> => {
   const {
     children,
+    choicePresentation,
     copyright,
+    coverAssetId,
     description,
     designer,
     engine,
     id: worldId,
     jump,
+    objectNoRecipeMessage,
     schema,
     studioId,
     studioTitle,
@@ -136,14 +139,32 @@ export const saveEngineCollectionData = async (
           worldId,
           engineData.variables
         ),
+        // 0.8.0. Defaulted rather than assumed present: an exported PWA built
+        // before 0.8.0 has no such key, and the engine embedded in the composer
+        // reads whatever the editor packed.
+        libraryDatabase.saveObjectCollectionData(
+          worldId,
+          engineData.objects ?? {}
+        ),
+        libraryDatabase.saveRecipeCollectionData(
+          worldId,
+          engineData.recipes ?? {}
+        ),
+        libraryDatabase.saveObjectConditionCollectionData(
+          worldId,
+          engineData.objectConditions ?? {}
+        ),
         libraryDatabase.saveWorldData({
           children,
+          choicePresentation,
           copyright,
+          coverAssetId,
           description,
           designer,
           engine,
           id: worldId,
           jump,
+          objectNoRecipeMessage,
           schema,
           studioId,
           studioTitle,

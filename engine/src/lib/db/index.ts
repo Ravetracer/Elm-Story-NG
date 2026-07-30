@@ -19,8 +19,14 @@ import {
   EngineJumpData,
   EngineLiveEventCollection,
   EngineEventData,
+  EngineObjectCollection,
+  EngineObjectConditionCollection,
+  EngineObjectConditionData,
+  EngineObjectData,
   EnginePathCollection,
   EnginePathData,
+  EngineRecipeCollection,
+  EngineRecipeData,
   EngineSceneCollection,
   EngineSceneData,
   EngineSettingsCollection,
@@ -43,7 +49,10 @@ export enum LIBRARY_TABLE {
   INPUTS = 'inputs',
   JUMPS = 'jumps',
   LIVE_EVENTS = 'live_events',
+  OBJECT_CONDITIONS = 'objectConditions',
+  OBJECTS = 'objects',
   PATHS = 'paths',
+  RECIPES = 'recipes',
   SCENES = 'scenes',
   SETTINGS = 'settings',
   VARIABLES = 'variables',
@@ -56,6 +65,7 @@ import v8 from './v8'
 import v9 from './v9'
 import v10 from './v10'
 import v11 from './v11'
+import v12 from './v12'
 
 export const DB_NAME = 'esg-library'
 
@@ -69,7 +79,10 @@ export class LibraryDatabase extends Dexie {
   public inputs: Dexie.Table<EngineInputData, string>
   public jumps: Dexie.Table<EngineJumpData, string>
   public live_events: Dexie.Table<EngineLiveEventData, string>
+  public objectConditions: Dexie.Table<EngineObjectConditionData, string>
+  public objects: Dexie.Table<EngineObjectData, string>
   public paths: Dexie.Table<EnginePathData, string>
+  public recipes: Dexie.Table<EngineRecipeData, string>
   public scenes: Dexie.Table<EngineSceneData, string>
   public settings: Dexie.Table<EngineSettingsData, string>
   public variables: Dexie.Table<EngineVariableData, string>
@@ -84,6 +97,7 @@ export class LibraryDatabase extends Dexie {
     v9(this)
     v10(this)
     v11(this)
+    v12(this)
 
     this.bookmarks = this.table(LIBRARY_TABLE.BOOKMARKS)
     this.characters = this.table(LIBRARY_TABLE.CHARACTERS)
@@ -94,7 +108,10 @@ export class LibraryDatabase extends Dexie {
     this.inputs = this.table(LIBRARY_TABLE.INPUTS)
     this.jumps = this.table(LIBRARY_TABLE.JUMPS)
     this.live_events = this.table(LIBRARY_TABLE.LIVE_EVENTS)
+    this.objectConditions = this.table(LIBRARY_TABLE.OBJECT_CONDITIONS)
+    this.objects = this.table(LIBRARY_TABLE.OBJECTS)
     this.paths = this.table(LIBRARY_TABLE.PATHS)
+    this.recipes = this.table(LIBRARY_TABLE.RECIPES)
     this.scenes = this.table(LIBRARY_TABLE.SCENES)
     this.settings = this.table(LIBRARY_TABLE.SETTINGS)
     this.variables = this.table(LIBRARY_TABLE.VARIABLES)
@@ -404,6 +421,78 @@ export class LibraryDatabase extends Dexie {
                 await this.variables.add(
                   { ...variableCollection[key], worldId },
                   variableCollection[key].id
+                )
+            )
+          ])
+      )
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveObjectCollectionData(
+    worldId: WorldId,
+    objectCollection: EngineObjectCollection
+  ) {
+    try {
+      await this.transaction(
+        'rw',
+        this.objects,
+        async () =>
+          await Promise.all([
+            Object.keys(objectCollection).map(
+              async (key) =>
+                await this.objects.add(
+                  { ...objectCollection[key], worldId },
+                  objectCollection[key].id
+                )
+            )
+          ])
+      )
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveRecipeCollectionData(
+    worldId: WorldId,
+    recipeCollection: EngineRecipeCollection
+  ) {
+    try {
+      await this.transaction(
+        'rw',
+        this.recipes,
+        async () =>
+          await Promise.all([
+            Object.keys(recipeCollection).map(
+              async (key) =>
+                await this.recipes.add(
+                  { ...recipeCollection[key], worldId },
+                  recipeCollection[key].id
+                )
+            )
+          ])
+      )
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveObjectConditionCollectionData(
+    worldId: WorldId,
+    objectConditionCollection: EngineObjectConditionCollection
+  ) {
+    try {
+      await this.transaction(
+        'rw',
+        this.objectConditions,
+        async () =>
+          await Promise.all([
+            Object.keys(objectConditionCollection).map(
+              async (key) =>
+                await this.objectConditions.add(
+                  { ...objectConditionCollection[key], worldId },
+                  objectConditionCollection[key].id
                 )
             )
           ])

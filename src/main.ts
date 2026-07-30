@@ -42,7 +42,11 @@ import {
   WORLD_EXPORT_TYPE,
   PLATFORM_TYPE
 } from './data/types'
-import { WorldDataJSON } from './lib/transport/types/0.7.1'
+// The current schema, which is what the export path actually receives:
+// `worldDataAsString` is whatever `getWorldDataJSON` just produced. Bumping this
+// with the schema is required — `format()` is typed against the same version, so a
+// stale import here silently packs a PWA missing the newest collections.
+import { WorldDataJSON } from './lib/transport/types/0.8.0'
 
 // A named rather than default export: the main entry otherwise mixes named and
 // default exports, which Rollup warns about.
@@ -650,6 +654,10 @@ const createWindow = async () => {
       ipcMain.handle(
         WINDOW_EVENT_TYPE.IMPORT_WORLD_GET_JSON,
         async (
+          // The chosen file may be of any era — this names the current schema
+          // because the handler only reads and forwards the bytes. Deciding the
+          // real version and walking the upgrade chain is `importWorldData`'s job
+          // in the renderer, which dispatches on `_.engine`.
           _
         ): Promise<{ worldData?: WorldDataJSON; jsonPath?: string }> => {
           if (mainWindow) {

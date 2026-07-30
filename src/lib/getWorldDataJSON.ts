@@ -12,7 +12,7 @@ import {
   EVENT_TYPE,
   SceneChildRefs,
   SceneParentRef
-} from './transport/types/0.7.1'
+} from './transport/types/0.8.0'
 
 import api from '../api'
 
@@ -30,6 +30,18 @@ export default async (
         studioId,
         worldId
       ),
+      characterRelationships =
+        await api().characterRelationships.getCharacterRelationshipsByWorldRef(
+          studioId,
+          worldId
+        ),
+      objects = await api().objects.getObjectsByWorldRef(studioId, worldId),
+      objectConditions =
+        await api().objectConditions.getObjectConditionsByWorldRef(
+          studioId,
+          worldId
+        ),
+      recipes = await api().recipes.getRecipesByWorldRef(studioId, worldId),
       choices = await api().choices.getChoicesByWorldRef(studioId, worldId),
       conditions = await api().conditions.getConditionsByWorldRef(
         studioId,
@@ -50,12 +62,15 @@ export default async (
     const worldData: WorldDataJSON = {
       _: {
         children: world.children as WorldChildRefs,
+        choicePresentation: world.choicePresentation,
         copyright: world.copyright,
+        coverAssetId: world.coverAssetId,
         description: world.description,
         designer: world.designer,
         engine: schemaVersion,
         id: world.id as ElementId,
         jump: world.jump,
+        objectNoRecipeMessage: world.objectNoRecipeMessage,
         schema: `https://elmstory.com/schema/elm-story-${schemaVersion}.json`,
         studioId: studioId,
         studioTitle: studio?.title as string,
@@ -65,6 +80,7 @@ export default async (
         version: world.version,
         website: world.website
       },
+      characterRelationships: {},
       characters: {},
       choices: {},
       conditions: {},
@@ -73,7 +89,10 @@ export default async (
       folders: {},
       inputs: {},
       jumps: {},
+      objectConditions: {},
+      objects: {},
       paths: {},
+      recipes: {},
       scenes: {},
       variables: {}
     }
@@ -133,6 +152,7 @@ export default async (
         async ({
           audio,
           characters,
+          choicePresentation,
           choices,
           content,
           composer,
@@ -150,6 +170,7 @@ export default async (
           (worldData.events[id as string] = {
             audio,
             characters,
+            choicePresentation,
             choices,
             content: serializeContentToHTML
               ? (
@@ -220,6 +241,7 @@ export default async (
         destinationType,
         id,
         inputId,
+        notification,
         originId,
         originType,
         sceneId,
@@ -234,6 +256,7 @@ export default async (
           destinationType: destinationType as ELEMENT_TYPE,
           id: id as string,
           inputId,
+          notification,
           originId,
           originType: originType as ELEMENT_TYPE | EVENT_TYPE,
           sceneId,
@@ -258,15 +281,122 @@ export default async (
     )
 
     variables.map(
-      ({ description, id, initialValue, tags, title, type, updated }) =>
+      ({
+        description,
+        id,
+        initialValue,
+        scope,
+        scopeId,
+        tags,
+        title,
+        type,
+        updated
+      }) =>
         (worldData.variables[id as string] = {
           description,
           id: id as string,
           initialValue,
+          scope,
+          scopeId,
           tags,
           title,
           type,
           updated: updated as number
+        })
+    )
+
+    objects.map(
+      ({
+        assetId,
+        combineable,
+        description,
+        id,
+        noRecipeMessage,
+        placements,
+        stackedAssetId,
+        stackedTitle,
+        tags,
+        takeable,
+        title,
+        updated
+      }) =>
+        (worldData.objects[id as string] = {
+          assetId,
+          combineable,
+          description,
+          id: id as string,
+          noRecipeMessage,
+          placements,
+          stackedAssetId,
+          stackedTitle,
+          tags,
+          takeable,
+          title,
+          updated: updated as number
+        })
+    )
+
+    recipes.map(
+      ({ effects, id, inputs, message, outputs, tags, title, updated }) =>
+        (worldData.recipes[id as string] = {
+          effects,
+          id: id as string,
+          inputs,
+          message,
+          outputs,
+          tags,
+          title,
+          updated: updated as number
+        })
+    )
+
+    objectConditions.map(
+      ({
+        compare,
+        id,
+        location,
+        objectId,
+        pathId,
+        sceneId,
+        tags,
+        title,
+        updated
+      }) =>
+        (worldData.objectConditions[id as string] = {
+          compare,
+          id: id as string,
+          location,
+          objectId,
+          pathId,
+          sceneId,
+          tags,
+          title,
+          updated: updated as number
+        })
+    )
+
+    characterRelationships.map(
+      ({
+        description,
+        directed,
+        from,
+        id,
+        tags,
+        title,
+        to,
+        updated,
+        variableId
+      }) =>
+        (worldData.characterRelationships[id as string] = {
+          description,
+          directed,
+          from,
+          id: id as string,
+          tags,
+          title,
+          to,
+          updated: updated as number,
+          variableId
         })
     )
 

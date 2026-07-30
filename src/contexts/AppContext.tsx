@@ -117,7 +117,7 @@ interface AppContextType {
 // being a schema this app can actually import
 export const defaultAppState: AppState = {
   release,
-  version: '0.7.1',
+  version: '0.8.0',
   build: 'd6f6b568',
   uiScale: DEFAULT_UI_SCALE,
   platform: undefined,

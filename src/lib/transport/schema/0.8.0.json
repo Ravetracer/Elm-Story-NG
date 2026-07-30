@@ -1,0 +1,1172 @@
+{
+  "type": "object",
+  "properties": {
+    "_": {
+      "type": "object",
+      "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          }
+        },
+        "copyright": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "designer": {
+          "type": "string"
+        },
+        "engine": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "jump": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "schema": {
+          "type": "string"
+        },
+        "studioId": {
+          "type": "string"
+        },
+        "studioTitle": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "number"
+        },
+        "version": {
+          "type": "string"
+        },
+        "website": {
+          "type": "string"
+        },
+        "choicePresentation": {
+          "type": "string"
+        },
+        "coverAssetId": {
+          "type": "string"
+        },
+        "objectNoRecipeMessage": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "children",
+        "designer",
+        "engine",
+        "id",
+        "jump",
+        "schema",
+        "studioId",
+        "studioTitle",
+        "tags",
+        "title",
+        "updated",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "characters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "masks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "active": {
+                  "type": "boolean"
+                },
+                "assetId": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "active",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "items": false
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "masks",
+          "refs",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "choices": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "eventId",
+          "id",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "compare": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "minItems": 4,
+            "maxItems": 4,
+            "items": false
+          },
+          "id": {
+            "type": "string"
+          },
+          "pathId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "variableId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "compare",
+          "id",
+          "pathId",
+          "tags",
+          "title",
+          "updated",
+          "variableId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "effects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "pathId": {
+            "type": "string"
+          },
+          "set": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "minItems": 4,
+            "maxItems": 4,
+            "items": false
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "variableId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "pathId",
+          "set",
+          "tags",
+          "title",
+          "updated",
+          "variableId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "events": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "audio": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          },
+          "characters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "content": {
+            "type": "string"
+          },
+          "composer": {
+            "type": "object",
+            "properties": {
+              "sceneMapPosX": {
+                "type": "number"
+              },
+              "sceneMapPosY": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "ending": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "input": {
+            "type": "string"
+          },
+          "persona": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ],
+            "minItems": 3,
+            "maxItems": 3,
+            "items": false
+          },
+          "sceneId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "choicePresentation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "characters",
+          "content",
+          "ending",
+          "id",
+          "images",
+          "sceneId",
+          "tags",
+          "title",
+          "type",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "folders": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "items": false
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "children",
+          "id",
+          "parent",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "variableId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "eventId",
+          "id",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "jumps": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "composer": {
+            "type": "object",
+            "properties": {
+              "sceneMapPosX": {
+                "type": "number"
+              },
+              "sceneMapPosY": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 2
+          },
+          "sceneId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "choiceId": {
+            "type": "string"
+          },
+          "conditionsType": {
+            "type": "string"
+          },
+          "destinationId": {
+            "type": "string"
+          },
+          "destinationType": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputId": {
+            "type": "string"
+          },
+          "originId": {
+            "type": "string"
+          },
+          "originType": {
+            "type": "string"
+          },
+          "sceneId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "notification": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "conditionsType",
+          "destinationId",
+          "destinationType",
+          "id",
+          "originId",
+          "originType",
+          "sceneId",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scenes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "audio": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2,
+              "items": false
+            }
+          },
+          "composer": {
+            "type": "object",
+            "properties": {
+              "sceneMapTransformX": {
+                "type": "number"
+              },
+              "sceneMapTransformY": {
+                "type": "number"
+              },
+              "sceneMapTransformZoom": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          },
+          "id": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "children",
+          "id",
+          "parent",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "variables": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "initialValue": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "scopeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "initialValue",
+          "id",
+          "tags",
+          "title",
+          "type",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "objects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string"
+          },
+          "combineable": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "noRecipeMessage": {
+            "type": "string"
+          },
+          "placements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "conditionsType": {
+                  "type": "string"
+                },
+                "variableConditions": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ],
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": false
+                  }
+                },
+                "objectConditions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "objectId": {
+                        "type": "string"
+                      },
+                      "location": {
+                        "type": "string"
+                      },
+                      "sceneId": {
+                        "type": "string"
+                      },
+                      "compare": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": false
+                      }
+                    },
+                    "required": [
+                      "objectId",
+                      "location",
+                      "compare"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "location",
+                "quantity"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "stackedAssetId": {
+            "type": "string"
+          },
+          "stackedTitle": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "takeable": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "combineable",
+          "description",
+          "id",
+          "placements",
+          "tags",
+          "takeable",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "recipes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "minItems": 4,
+              "maxItems": 4,
+              "items": false
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objectId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "consumed": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "objectId",
+                "quantity",
+                "consumed"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "message": {
+            "type": "string"
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objectId": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "number"
+                },
+                "destination": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "objectId",
+                "quantity",
+                "destination"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "inputs",
+          "outputs",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "objectConditions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "compare": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "minItems": 2,
+            "maxItems": 2,
+            "items": false
+          },
+          "id": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "objectId": {
+            "type": "string"
+          },
+          "pathId": {
+            "type": "string"
+          },
+          "sceneId": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "compare",
+          "id",
+          "location",
+          "objectId",
+          "pathId",
+          "tags",
+          "title",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "characterRelationships": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "directed": {
+            "type": "boolean"
+          },
+          "from": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "updated": {
+            "type": "number"
+          },
+          "variableId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "directed",
+          "from",
+          "id",
+          "tags",
+          "title",
+          "to",
+          "updated"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "_",
+    "characterRelationships",
+    "characters",
+    "choices",
+    "conditions",
+    "effects",
+    "events",
+    "folders",
+    "inputs",
+    "jumps",
+    "objectConditions",
+    "objects",
+    "paths",
+    "recipes",
+    "scenes",
+    "variables"
+  ],
+  "additionalProperties": false
+}

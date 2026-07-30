@@ -1,3 +1,25 @@
+/**
+ * Transport types for the 0.8.0 storyworld schema.
+ *
+ * A full copy of `types/0.7.0.ts` plus what 0.8.0 adds, rather than a re-export of
+ * it. `types/0.7.1.ts` re-exports 0.7.0 because 0.7.1 changed no field; 0.8.0
+ * changes the shape, so it gets a declaration of its own and is **frozen** here.
+ * These files describe JSON already on disk: once a 0.9.0 exists, nothing in this
+ * file may move, however tempting the duplication looks.
+ *
+ * That includes the enums. Two separately declared string enums are not assignable
+ * to one another in TypeScript even with identical members, which is why
+ * `upgrade/0.8.0.ts` casts at the seam the way `upgrade/0.7.0.ts` does — the cost
+ * of era isolation, paid deliberately.
+ *
+ * What 0.8.0 adds: `objects`, `recipes`, `objectConditions` and
+ * `characterRelationships` collections; `coverAssetId`,
+ * `objectNoRecipeMessage` and `choicePresentation` on the root;
+ * `choicePresentation` on an event; `notification` on a path; and `scope` /
+ * `scopeId` on a variable. Every added field on an existing element is optional,
+ * so the only reason this is a new schema at all is the four collections — the
+ * top-level object is `additionalProperties: false` with a `required` list.
+ */
 export enum ELEMENT_TYPE {
   CHARACTER = 'CHARACTER',
   CHOICE = 'CHOICE',
@@ -15,36 +37,6 @@ export enum ELEMENT_TYPE {
   VARIABLE = 'VARIABLE',
   WORLD = 'WORLD'
 }
-
-export enum CHOICE_PRESENTATION {
-  INLINE = 'INLINE',
-  LIST = 'LIST',
-  MODAL = 'MODAL'
-}
-
-export enum VARIABLE_SCOPE {
-  WORLD = 'WORLD',
-  SCENE = 'SCENE'
-}
-
-/** Where an object condition looks for its object. */
-export enum OBJECT_LOCATION_TYPE {
-  INVENTORY = 'INVENTORY',
-  CURRENT_SCENE = 'CURRENT_SCENE',
-  SCENE = 'SCENE'
-}
-
-export enum RECIPE_OUTPUT_DESTINATION {
-  INVENTORY = 'INVENTORY',
-  CURRENT_SCENE = 'CURRENT_SCENE'
-}
-
-/**
- * The inventory's key in the one location space shared with scene ids. Scene ids
- * are uuids, so it cannot collide; it follows the same convention as
- * `INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY` and `AUTO_ENGINE_BOOKMARK_KEY`.
- */
-export const INVENTORY_LOCATION_KEY = '___inventory___'
 
 export enum COMPARE_OPERATOR_TYPE {
   EQ = '=',
@@ -105,12 +97,15 @@ export type SceneChildRefs = Array<
 
 export interface RootData {
   children: WorldChildRefs
+  choicePresentation?: CHOICE_PRESENTATION
   copyright?: string
+  coverAssetId?: string
   description?: string
   designer: string
   engine: string
   id: string
   jump: string | null
+  objectNoRecipeMessage?: string
   schema: string
   studioId: StudioId
   studioTitle: string
@@ -119,6 +114,133 @@ export interface RootData {
   updated: number
   version: string
   website?: string
+}
+
+export enum CHOICE_PRESENTATION {
+  INLINE = 'INLINE',
+  LIST = 'LIST',
+  MODAL = 'MODAL'
+}
+
+export enum VARIABLE_SCOPE {
+  WORLD = 'WORLD',
+  SCENE = 'SCENE'
+}
+
+export enum OBJECT_LOCATION_TYPE {
+  INVENTORY = 'INVENTORY',
+  CURRENT_SCENE = 'CURRENT_SCENE',
+  SCENE = 'SCENE'
+}
+
+export enum RECIPE_OUTPUT_DESTINATION {
+  INVENTORY = 'INVENTORY',
+  CURRENT_SCENE = 'CURRENT_SCENE'
+}
+
+export const INVENTORY_LOCATION_KEY = '___inventory___'
+
+export type VariableCompare = [
+  ElementId,
+  COMPARE_OPERATOR_TYPE,
+  string,
+  VARIABLE_TYPE
+]
+
+export type VariableSet = [ElementId, SET_OPERATOR_TYPE, string, VARIABLE_TYPE]
+
+export type ObjectCompare = {
+  objectId: ElementId
+  location: OBJECT_LOCATION_TYPE
+  sceneId?: ElementId
+  compare: [COMPARE_OPERATOR_TYPE, number]
+}
+
+export interface ObjectPlacement {
+  /** a scene id, or INVENTORY_LOCATION_KEY */
+  location: ElementId
+  quantity: number
+  conditionsType?: PATH_CONDITIONS_TYPE
+  variableConditions?: VariableCompare[]
+  objectConditions?: ObjectCompare[]
+}
+
+export interface ObjectData {
+  assetId?: string
+  combineable: boolean
+  description: string
+  id: ElementId
+  noRecipeMessage?: string
+  placements: ObjectPlacement[]
+  stackedAssetId?: string
+  stackedTitle?: string
+  tags: string[]
+  takeable: boolean
+  title: string
+  updated: number
+}
+
+export interface ObjectCollection {
+  [objectId: string]: ObjectData
+}
+
+export interface RecipeInput {
+  objectId: ElementId
+  quantity: number
+  consumed: boolean
+}
+
+export interface RecipeOutput {
+  objectId: ElementId
+  quantity: number
+  destination: RECIPE_OUTPUT_DESTINATION
+}
+
+export interface RecipeData {
+  effects?: VariableSet[]
+  id: ElementId
+  inputs: RecipeInput[]
+  message?: string
+  outputs: RecipeOutput[]
+  tags: string[]
+  title: string
+  updated: number
+}
+
+export interface RecipeCollection {
+  [recipeId: string]: RecipeData
+}
+
+export interface ObjectConditionData {
+  compare: [COMPARE_OPERATOR_TYPE, number]
+  id: ElementId
+  location: OBJECT_LOCATION_TYPE
+  objectId: ElementId
+  pathId: ElementId
+  sceneId?: ElementId
+  tags: string[]
+  title: string
+  updated: number
+}
+
+export interface ObjectConditionCollection {
+  [conditionId: string]: ObjectConditionData
+}
+
+export interface CharacterRelationshipData {
+  description?: string
+  directed: boolean
+  from: ElementId
+  id: ElementId
+  tags: string[]
+  title: string
+  to: ElementId
+  updated: number
+  variableId?: ElementId
+}
+
+export interface CharacterRelationshipCollection {
+  [relationshipId: string]: CharacterRelationshipData
 }
 
 export enum CHARACTER_MASK_TYPE {
@@ -241,6 +363,7 @@ export type EventCharacterPersona = [
 export interface EventData {
   audio?: AudioProfile
   characters: ElementId[]
+  choicePresentation?: CHOICE_PRESENTATION
   choices: ElementId[]
   content: string
   composer?: {
@@ -248,8 +371,8 @@ export interface EventData {
     sceneMapPosY?: number
   }
   ending: boolean
-  images: string[]
   id: ElementId
+  images: string[] // asset id
   input?: ElementId // variable ID
   persona?: EventCharacterPersona
   sceneId: ElementId
@@ -318,6 +441,7 @@ export interface PathData {
   destinationType: ELEMENT_TYPE
   id: ElementId
   inputId?: ElementId
+  notification?: string
   originId: ElementId
   originType: ELEMENT_TYPE | EVENT_TYPE
   sceneId: ElementId
@@ -352,8 +476,21 @@ export interface SceneCollection {
 }
 
 export interface VariableData {
+  // Optional, and deliberately so: files written by the original 0.7.0 have no
+  // variable description, and adding a required property would make every one of
+  // them fail validation. The matching schema keeps it out of `required` for the
+  // same reason. This is the one addition to a transport type that is safe
+  // without a version bump — see the note on frozen schemas in CLAUDE.md.
+  description?: string
   id: ElementId
   initialValue: string
+  /**
+   * Absent means WORLD. SCENE resets the value to `initialValue` on entry to
+   * `scopeId`, and changes lifetime rather than namespace — titles stay unique
+   * across the world, because a template expression resolves a variable by title.
+   */
+  scope?: VARIABLE_SCOPE
+  scopeId?: ElementId
   tags: string[]
   title: string
   type: VARIABLE_TYPE
@@ -364,8 +501,11 @@ export interface VariableCollection {
   [variableId: string]: VariableData
 }
 
+// TODO: following duped from Storyteller
+
 export interface WorldDataJSON {
   _: RootData
+  characterRelationships: CharacterRelationshipCollection
   characters: CharacterCollection
   choices: ChoiceCollection
   conditions: ConditionCollection
@@ -374,7 +514,10 @@ export interface WorldDataJSON {
   folders: FolderCollection
   inputs: InputCollection
   jumps: JumpCollection
+  objectConditions: ObjectConditionCollection
+  objects: ObjectCollection
   paths: PathCollection
+  recipes: RecipeCollection
   scenes: SceneCollection
   variables: VariableCollection
 }
@@ -389,14 +532,14 @@ export enum ENGINE_FONT {
   SERIF = 'SERIF'
 }
 
-export enum ENGINE_MOTION {
-  FULL = 'FULL',
-  REDUCED = 'REDUCED'
-}
-
 export enum ENGINE_SIZE {
   DEFAULT = 'DEFAULT',
   LARGE = 'LARGE'
+}
+
+export enum ENGINE_MOTION {
+  FULL = 'FULL',
+  REDUCED = 'REDUCED'
 }
 
 export enum ENGINE_DEVTOOLS_LIVE_EVENT_TYPE {
@@ -503,14 +646,10 @@ export interface EngineEffectCollection {
 }
 
 export interface EngineEventData {
-  audio?: AudioProfile
-  characters: ElementId[]
-  choicePresentation?: CHOICE_PRESENTATION
   choices: ElementId[]
   content: string
   ending: boolean
   id: ElementId
-  images: string[]
   input?: ElementId
   persona?: EventCharacterPersona
   sceneId: ElementId
@@ -522,42 +661,108 @@ export interface EngineEventCollection {
   [eventId: ElementId]: EngineEventData
 }
 
-export type VariableCompare = [
-  ElementId,
-  COMPARE_OPERATOR_TYPE,
-  string,
-  VARIABLE_TYPE
-]
+export interface EngineLiveEventStateData {
+  title: string
+  type: VARIABLE_TYPE
+  value: string
+  worldId: WorldId
+}
 
-export type VariableSet = [ElementId, SET_OPERATOR_TYPE, string, VARIABLE_TYPE]
+export interface EngineLiveEventStateCollection {
+  [variableId: ElementId]: EngineLiveEventStateData
+}
 
-/** The evaluable core of an object condition, shared by path and placement gates. */
-export type ObjectCompare = {
-  objectId: ElementId
-  location: OBJECT_LOCATION_TYPE
+export type EngineLiveEventLocationData = [ElementId?, ElementId?] // scene, passage
+
+export enum ENGINE_LIVE_EVENT_TYPE {
+  GAME_OVER = 'GAME_OVER',
+  CHOICE = 'CHOICE',
+  CHOICE_LOOPBACK = 'CHOICE_LOOPBACK',
+  INITIAL = 'INITIAL',
+  INPUT = 'INPUT',
+  INPUT_LOOPBACK = 'INPUT_LOOPBACK',
+  OBJECT_COMBINE = 'OBJECT_COMBINE',
+  OBJECT_TAKE = 'OBJECT_TAKE',
+  RESTART = 'RESTART'
+}
+
+export type EngineLiveEventResult = {
+  id?: ElementId
+  value: string
+}
+
+/**
+ * Signed changes to what is where, keyed location then object.
+ *
+ * A **delta**, not a census. What is in a location is derived on read from the
+ * object's authored placement — whose gate is re-evaluated every time — plus this
+ * number, clamped at zero. That is what lets a placement gate turning true
+ * mid-play reveal an object with no write at all, and it keeps the snapshot small:
+ * a pristine world stores nothing.
+ */
+export interface EngineObjectDeltaCollection {
+  [location: string]: { [objectId: string]: number }
+}
+
+export interface EngineLiveEventData {
+  // TODO: may need to change to tuple with id and type
+  id: ElementId // or INITIAL_ENGINE_EVENT_ORIGIN_KEY
+  destination: ElementId // passage ID
+  next?: ElementId // event ID
+  /**
+   * Absent on every live event written before 0.8.0, and absent means "no
+   * deltas", so an old save reads as a pristine world rather than needing a
+   * migration. This is why the engine's v12 exists for the new tables and not for
+   * this field.
+   */
+  objects?: EngineObjectDeltaCollection
+  origin?: ElementId // passage ID or INITIAL_ENGINE_EVENT_ORIGIN_KEY
+  prev?: ElementId // event ID
+  result?: EngineLiveEventResult
+  state: EngineLiveEventStateCollection
+  type: ENGINE_LIVE_EVENT_TYPE
+  updated: number
+  version: string
+  worldId: WorldId
+}
+
+export interface EngineLiveEventCollection {
+  [liveEventId: ElementId | '___initial___']: EngineLiveEventData
+}
+
+export interface EngineInputData {
+  id: ElementId
+  eventId: ElementId
+  variableId?: ElementId
+  worldId: WorldId
+}
+
+export interface EngineInputCollection {
+  [inputId: ElementId]: EngineInputData
+}
+
+export interface EngineJumpData {
+  id: ElementId
+  path: [ElementId?, ElementId?]
   sceneId?: ElementId
-  compare: [COMPARE_OPERATOR_TYPE, number]
+  worldId: WorldId
 }
 
-export interface ObjectPlacement {
-  /** a scene id, or INVENTORY_LOCATION_KEY */
-  location: ElementId
-  quantity: number
-  conditionsType?: PATH_CONDITIONS_TYPE
-  variableConditions?: VariableCompare[]
-  objectConditions?: ObjectCompare[]
+export interface EngineJumpCollection {
+  [jumpId: ElementId]: EngineJumpData
 }
 
-export interface RecipeInput {
-  objectId: ElementId
-  quantity: number
-  consumed: boolean
-}
-
-export interface RecipeOutput {
-  objectId: ElementId
-  quantity: number
-  destination: RECIPE_OUTPUT_DESTINATION
+export interface EnginePathData {
+  choiceId?: ElementId
+  destinationId: ElementId
+  destinationType: ELEMENT_TYPE
+  id: ElementId
+  inputId?: ElementId
+  notification?: string
+  originId: ElementId
+  originType: ELEMENT_TYPE | EVENT_TYPE
+  sceneId: ElementId
+  worldId: WorldId
 }
 
 export interface EngineObjectData {
@@ -605,121 +810,11 @@ export interface EngineObjectConditionCollection {
   [conditionId: ElementId]: EngineObjectConditionData
 }
 
-/**
- * Signed changes to what is where, keyed location then object.
- *
- * A **delta**, not a census: what a location holds is derived on read from the
- * object's authored placement, whose gate is re-evaluated each time, plus this
- * number, clamped at zero. That is what lets a gate turning true mid-play reveal an
- * object with no write at all, and it keeps a pristine world storing nothing.
- */
-export interface EngineObjectDeltaCollection {
-  [location: string]: { [objectId: string]: number }
-}
-
-export interface EngineLiveEventStateData {
-  title: string
-  type: VARIABLE_TYPE
-  value: string
-  worldId: WorldId
-}
-
-export interface EngineLiveEventStateCollection {
-  [variableId: ElementId]: EngineLiveEventStateData
-}
-
-export type EngineLiveEventLocationData = [ElementId?, ElementId?] // scene, passage
-
-export enum ENGINE_LIVE_EVENT_TYPE {
-  GAME_OVER = 'GAME_OVER',
-  CHOICE = 'CHOICE',
-  CHOICE_LOOPBACK = 'CHOICE_LOOPBACK',
-  INITIAL = 'INITIAL',
-  INPUT = 'INPUT',
-  INPUT_LOOPBACK = 'INPUT_LOOPBACK',
-  JUMP = 'JUMP',
-  /**
-   * Taking or combining objects writes a live event of its own, with the same
-   * `destination` as the one it follows. Purely additive — no save written before
-   * 0.8.0 can contain either — so this needs no migration.
-   */
-  OBJECT_COMBINE = 'OBJECT_COMBINE',
-  OBJECT_TAKE = 'OBJECT_TAKE',
-  RESTART = 'RESTART'
-}
-
-export type EngineLiveEventResult = {
-  id?: ElementId
-  value: string
-}
-
-export interface EngineLiveEventData {
-  // TODO: may need to change to tuple with id and type
-  id: ElementId // or INITIAL_ENGINE_EVENT_ORIGIN_KEY
-  destination: ElementId // passage ID
-  next?: ElementId // event ID
-  /**
-   * Absent on every live event written before 0.8.0, and absent means "no
-   * deltas" — so an old save reads as a pristine world and needs no migration.
-   * `engine/src/lib/db/v12.ts` exists for the new definition tables, not for this.
-   */
-  objects?: EngineObjectDeltaCollection
-  origin?: ElementId // passage ID or INITIAL_ENGINE_EVENT_ORIGIN_KEY
-  prev?: ElementId // event ID
-  result?: EngineLiveEventResult
-  state: EngineLiveEventStateCollection
-  type: ENGINE_LIVE_EVENT_TYPE
-  updated: number
-  version: string
-  worldId: WorldId
-}
-
-export interface EngineLiveEventCollection {
-  [liveEventId: ElementId | '___initial___']: EngineLiveEventData
-}
-
-export interface EngineInputData {
-  id: ElementId
-  eventId: ElementId
-  variableId?: ElementId
-  worldId: WorldId
-}
-
-export interface EngineInputCollection {
-  [inputId: ElementId]: EngineInputData
-}
-
-export interface EngineJumpData {
-  id: ElementId
-  path: [ElementId?, ElementId?]
-  sceneId?: ElementId
-  worldId: WorldId
-}
-
-export interface EngineJumpCollection {
-  [jumpId: ElementId]: EngineJumpData
-}
-
-export interface EnginePathData {
-  choiceId?: ElementId
-  conditionsType: PATH_CONDITIONS_TYPE
-  destinationId: ElementId
-  destinationType: ELEMENT_TYPE
-  id: ElementId
-  inputId?: ElementId
-  notification?: string
-  originId: ElementId
-  originType: ELEMENT_TYPE | EVENT_TYPE
-  sceneId: ElementId
-  worldId: WorldId
-}
-
 export interface EnginePathCollection {
   [pathId: string]: EnginePathData
 }
 
 export interface EngineSceneData {
-  audio?: AudioProfile
   children: SceneChildRefs
   id: ElementId
   worldId: WorldId
@@ -746,7 +841,6 @@ export interface EngineSettingsCollection {
 export interface EngineVariableData {
   id: ElementId
   initialValue: string
-  /** absent means WORLD; SCENE resets to initialValue on entry to scopeId */
   scope?: VARIABLE_SCOPE
   scopeId?: ElementId
   title: string
@@ -773,7 +867,6 @@ export interface EngineWorldData {
   engine: string
   id: WorldId
   jump: ElementId
-  /** the storyteller's fallback when two objects have no matching recipe */
   objectNoRecipeMessage?: string
   schema: string
   studioId: StudioId
@@ -798,8 +891,9 @@ export interface ESGEngineCollectionData {
   events: EngineEventCollection
   inputs: EngineInputCollection
   jumps: EngineJumpCollection
-  // characterRelationships is deliberately absent — authoring metadata, never
-  // compiled into what the storyteller loads
+  // characterRelationships is deliberately absent: it is authoring metadata, so
+  // it is never compiled into what the storyteller loads. Anything of it that has
+  // to be visible at runtime goes through its optional variableId.
   objectConditions: EngineObjectConditionCollection
   objects: EngineObjectCollection
   paths: EnginePathCollection

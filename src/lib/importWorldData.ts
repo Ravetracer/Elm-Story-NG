@@ -14,6 +14,8 @@ import { GameDataJSON as GameDataJSON_050 } from './transport/types/0.5.0'
 import { GameDataJSON as GameDataJSON_051 } from './transport/types/0.5.1'
 import { WorldDataJSON as WorldDataJSON_060 } from './transport/types/0.6.0'
 import { WorldDataJSON as WorldDataJSON_070 } from './transport/types/0.7.0'
+import { WorldDataJSON as WorldDataJSON_071 } from './transport/types/0.7.1'
+import { WorldDataJSON as WorldDataJSON_080 } from './transport/types/0.8.0'
 
 import v020Upgrade from './transport/upgrade/0.2.0'
 import v040Upgrade from './transport/upgrade/0.4.0'
@@ -21,6 +23,7 @@ import v050Upgrade from './transport/upgrade/0.5.0'
 import v060Upgrade from './transport/upgrade/0.6.0'
 import v070Upgrade from './transport/upgrade/0.7.0'
 import v071Upgrade from './transport/upgrade/0.7.1'
+import v080Upgrade from './transport/upgrade/0.8.0'
 
 import { WINDOW_EVENT_TYPE } from './events'
 
@@ -43,6 +46,7 @@ export type IncomingWorldData =
   | GameDataJSON_051
   | WorldDataJSON_060
   | WorldDataJSON_070
+  | WorldDataJSON_080
 
 export default (
   worldData: IncomingWorldData,
@@ -152,11 +156,30 @@ export default (
           )
         }
 
+        /**
+         * 0.7.1 to 0.8.0, appended after the chain under its own gate, exactly as
+         * the 0.7.1 step above is — one gate per version, so the next upgrade has
+         * no special case to reason about.
+         *
+         * This step only adds the four new collections, empty. Everything else
+         * 0.8.0 introduces is an optional field on an element that already exists,
+         * so a file arriving without them is already valid against the 0.8.0
+         * schema; the collections are the only reason a new version was needed,
+         * because the top-level object is `additionalProperties: false` with a
+         * `required` list.
+         */
+        if (semver.lt(engineVersion, '0.8.0')) {
+          upgradedWorldData = v080Upgrade(
+            upgradedWorldData as WorldDataJSON_071
+          )
+        }
+
         // #411: always set to most recent version of app
-        upgradedWorldData._.engine = '0.7.1'
+        upgradedWorldData._.engine = '0.8.0'
 
         const {
           _,
+          characterRelationships,
           characters,
           choices,
           conditions,
@@ -165,11 +188,14 @@ export default (
           folders,
           inputs,
           jumps,
+          objectConditions,
+          objects,
           paths,
+          recipes,
           scenes,
           variables
           // @ts-ignore
-        } = upgradedWorldData as WorldDataJSON_070
+        } = upgradedWorldData as WorldDataJSON_080
 
         try {
           // Save characters
@@ -244,6 +270,7 @@ export default (
             {
               audio,
               characters,
+              choicePresentation,
               choices,
               content,
               composer,
@@ -262,6 +289,7 @@ export default (
             await api().events.saveEvent(_.studioId, {
               audio,
               characters,
+              choicePresentation,
               choices,
               content,
               composer,
@@ -338,6 +366,7 @@ export default (
               destinationType,
               id,
               inputId,
+              notification,
               originId,
               originType,
               sceneId,
@@ -353,6 +382,7 @@ export default (
               destinationType,
               id,
               inputId,
+              notification,
               originId,
               originType,
               sceneId,
@@ -381,14 +411,25 @@ export default (
             })
           }
 
-          // Save variables
+          /*
+           * Save variables.
+           *
+           * `description` is not a 0.8.0 addition — it has been exported since it
+           * was added, and was simply never read back here, so exporting a world
+           * and re-importing it silently dropped every variable note. Fixed in the
+           * same pass that adds `scope` and `scopeId`, since the omission is the
+           * same class of bug those two would have been.
+           */
           for await (const [
             __,
-            { id, initialValue, tags, title, type, updated }
+            { description, id, initialValue, scope, scopeId, tags, title, type, updated }
           ] of Object.entries(variables)) {
             await api().variables.saveVariable(_.studioId, {
+              description,
               id,
               initialValue,
+              scope,
+              scopeId,
               tags,
               title,
               type,
@@ -397,15 +438,112 @@ export default (
             })
           }
 
+          // Save objects
+          for await (const [
+            __,
+            {
+              assetId,
+              combineable,
+              description,
+              id,
+              noRecipeMessage,
+              placements,
+              stackedAssetId,
+              stackedTitle,
+              tags,
+              takeable,
+              title,
+              updated
+            }
+          ] of Object.entries(objects)) {
+            await api().objects.saveObject(_.studioId, {
+              assetId,
+              combineable,
+              description,
+              id,
+              noRecipeMessage,
+              placements,
+              stackedAssetId,
+              stackedTitle,
+              tags,
+              takeable,
+              title,
+              updated,
+              worldId: _.id
+            })
+          }
+
+          // Save recipes
+          for await (const [
+            __,
+            { effects: recipeEffects, id, inputs: recipeInputs, message, outputs, tags, title, updated }
+          ] of Object.entries(recipes)) {
+            await api().recipes.saveRecipe(_.studioId, {
+              effects: recipeEffects,
+              id,
+              inputs: recipeInputs,
+              message,
+              outputs,
+              tags,
+              title,
+              updated,
+              worldId: _.id
+            })
+          }
+
+          // Save object conditions
+          for await (const [
+            __,
+            { compare, id, location, objectId, pathId, sceneId, tags, title, updated }
+          ] of Object.entries(objectConditions)) {
+            await api().objectConditions.saveObjectCondition(_.studioId, {
+              compare,
+              id,
+              location,
+              objectId,
+              pathId,
+              sceneId,
+              tags,
+              title,
+              updated,
+              worldId: _.id
+            })
+          }
+
+          // Save character relationships
+          for await (const [
+            __,
+            { description, directed, from, id, tags, title, to, updated, variableId }
+          ] of Object.entries(characterRelationships)) {
+            await api().characterRelationships.saveCharacterRelationship(
+              _.studioId,
+              {
+                description,
+                directed,
+                from,
+                id,
+                tags,
+                title,
+                to,
+                updated,
+                variableId,
+                worldId: _.id
+              }
+            )
+          }
+
           // Save game data
           await api().worlds.saveWorld(_.studioId, {
             children: _.children,
+            choicePresentation: _.choicePresentation,
             copyright: _.copyright,
+            coverAssetId: _.coverAssetId,
             description: _.description,
             designer: _.designer,
             engine: _.engine,
             id: _.id,
             jump: _.jump,
+            objectNoRecipeMessage: _.objectNoRecipeMessage,
             tags: _.tags,
             template: WORLD_TEMPLATE.ADVENTURE,
             title: `${_.title} (Imported)`,
