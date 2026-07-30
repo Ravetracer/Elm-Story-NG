@@ -243,12 +243,22 @@ OBJECT_COMBINE = 'OBJECT_COMBINE'
 ```
 
 with the same `destination` as the event it follows, carrying the updated `state`
-and object deltas, chained through the existing `prev`/`next`. Every correctness
-property this engine has around rewind and save/load rests on "each state change
-is a live event carrying a full snapshot"; mutating the current live event in
-place would make a combination impossible to undo. It also puts the combination
-in the event stream where the player can see it, which is what `Recipe.message`
-is for. Inspecting an object changes no state and writes no live event.
+and object deltas, chained through the existing `prev`/`next`.
+
+Two reasons, and **neither of them is rewind** — that feature is decided against
+on principle, per `TODO.md`'s "Not included", so nobody should reach for it to
+justify anything here, and nobody should mutate the live event in place on the
+grounds that "we do not rewind anyway":
+
+- **The live event stream is the player's visible history.** `getRecentLiveEvents`
+  renders the chain, so a combination has to *be* an event to appear as a beat in
+  the prose. That is where `Recipe.message` is rendered. Mutating the current
+  event would apply the effect and narrate nothing.
+- **A bookmark names a live event id.** Resuming is unambiguous only while a live
+  event is immutable — an event that can change after a bookmark points at it
+  means the same saved id yields different state depending on when it is read.
+
+Inspecting an object changes no state and writes no live event.
 
 `ENGINE_LIVE_EVENT_TYPE` is persisted in `EngineLiveEventData.type`, but new
 members are purely additive — no existing save contains them — so this needs no

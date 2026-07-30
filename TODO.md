@@ -143,15 +143,19 @@ writing any of section 3; the items below are checked off against it.
       *(Yes — an optional `effects` array reusing `Effect.set`'s tuple inline. Free
       on a table this migration already creates, a whole second migration later.
       The engine consequence is the bigger half: applying a recipe writes a **new
-      live event** with the same destination, because rewind and save/load rest on
-      every state change being a live event carrying a full snapshot.)*
+      live event** with the same destination — the stream is the player's visible
+      history, so a combination has to be an event to narrate anything, and a
+      bookmark naming a live event id only resumes unambiguously while that event
+      is immutable. Not for rewind, which is decided against.)*
 - [x] What the storyteller says when two objects have no matching recipe. Silence
       reads as broken; a default message, overridable per object, reads as
       deliberate.
       *(Three levels: the object's own `noRecipeMessage`, then a new world-level
       default, then the engine's built-in "Nothing happens." The object that wins
       is the first selected — "use the key on the drawer" applies the key.)*
-- [x] Inventory state on live events, so rewind, save and load stay correct
+- [x] Inventory state on live events, so resuming a save stays correct
+      *(Was "so rewind, save and load stay correct". Rewind is decided against —
+      see "Not included" — and the snapshot is not what it was for.)*
       *(One optional `objects` field on `EngineLiveEventData`, which needs **no
       engine migration** — see the correction in section 3. It does need an object
       clause in `updateEngineDefaultWorldCollectionData`, the one place a save is
@@ -263,6 +267,27 @@ Deliberately after section 4, so the state snapshot already includes objects.
 Doing it earlier means building it twice. `EngineBookmarkData` already carries
 `id`, `title` and `liveEventId`, and a live event already carries a full state
 snapshot, so most of this is UI.
+
+**Open question, and it is the author's to answer, not a technical one.** Rewind
+is refused above because a decision the player has taken is final. **A reloadable
+save is a rewind with extra steps** — save before the fork, choose, reload, choose
+again — so "multiple bookmarks" as written is in tension with the principle that
+closed the rewind item. Three coherent positions, and the scope of this section
+differs sharply between them:
+
+1. **Resume only.** One automatic bookmark that moves forward and is never chosen
+   from, so a player can close the app and come back without being able to
+   revisit a decision. **This is what the engine already does today** via
+   `AUTO_ENGINE_BOOKMARK_KEY`, which would make this section nearly empty — UI to
+   surface it, and nothing else.
+2. **Named saves, one slot per run.** Several worlds or several playthroughs in
+   parallel, each still forward-only; a save is overwritten as you play, not
+   accumulated. Keeps the principle and adds the convenience.
+3. **Full save slots.** The conventional feature, and an explicit decision that
+   reloading is allowed even though rewinding is not.
+
+Not decided. Until it is, treat the checkboxes below as position 3's scope, which
+is the largest, and expect them to shrink.
 
 - [ ] Multiple storyworld bookmarks
 - [ ] Loading and saving a game state
@@ -645,8 +670,7 @@ interchangeable. That makes this enough:
 
 Coins increment. Batteries sit at two and display as a pile. The flashlight swaps
 definitions. No instance ids to allocate, and the live-event snapshot stays a
-small map of definition to count, which keeps rewind and save/load trivially
-correct.
+small map of definition to count, which keeps resuming a save trivially correct.
 
 A charged battery and an empty one are two definitions, not one battery in two
 states. That is why you can hold three charged and two empty as two stacks with
@@ -657,7 +681,7 @@ states across several devices means several recipes, which is what makes filteri
 in the recipe editor worth building properly.
 
 **No timing, and not only for simplicity.** The engine stores a complete state
-snapshot on every live event, which is what keeps rewind and save/load correct.
+snapshot on every live event, which is what makes resuming a save correct.
 Anything time-based would need a clock the engine does not have and would desync
 from those snapshots. Depletion would also mean two batteries of one definition
 holding different charge, which is exactly what forces true instances. Keeping the
@@ -697,9 +721,40 @@ conditional placement models revelation, which is the actual goal.
 - **Object variable type.** Dropped. It was ambiguous next to world objects, and
   making variable values structured would destabilise the expression, condition
   and effect code, all of which assume values are strings.
-- **Storyworld reverse/rewind.** Not listed, but close to free once inventory is
-  in the live-event snapshot: `EngineLiveEventData` already carries `prev`, `next`
-  and a full state snapshot per event. Worth reconsidering alongside section 5.
+- **Storyworld reverse/rewind. Decided against, not merely unscheduled.** The
+  original authors wanted it — `ROADMAP.md` calls it the highest value per hour on
+  its page — and it is nearly free, because `EngineLiveEventData` already carries
+  `prev`, `next` and a full state snapshot per event. It is still not being built,
+  on a design principle rather than a cost estimate: **a decision the player has
+  taken is final.** That is how the text adventures this owes its shape to
+  behaved, it is what makes a choice worth pausing over, and a world that can be
+  un-chosen is a world where nothing was ever really at stake. A mistake ends the
+  run and the run starts again.
+
+  This is already the engine's behaviour, not a change to it:
+  `ENGINE_LIVE_EVENT_TYPE.GAME_OVER` and `RESTART` exist, and `restartWorld` sits
+  next to the loopback button in `EventChoices.tsx`. So there is nothing to
+  remove — the item is closed rather than deferred.
+
+  **Do not "simplify" the live event chain on the strength of this.** Three
+  shipped things need `prev` and the per-event state snapshot, and none of them is
+  rewind:
+
+  - **The loopback button.** `EventChoices.tsx`'s `loopback()` requires
+    `liveEvent.prev && liveEvent.origin` to resubmit the origin path. That is an
+    *authored* return along a path the author drew (`CHOICE_LOOPBACK`), which is
+    the opposite of a rewind: it is a decision, not the undoing of one.
+  - **Resuming a save whose destination was deleted.**
+    `findLiveEventFromBookmarkWithExistingDestination` (`engine/src/lib/api.ts:293`)
+    walks `prev` until it finds an event that still exists, so editing a world does
+    not strand a player mid-story.
+  - **Patching a save forward on a version bump.**
+    `updateEngineDefaultWorldCollectionData` rebuilds live event state from the
+    current variables and carries old values across.
+
+  The snapshots were never built *for* rewind; rewind was noticed as cheap
+  *because* they exist. See also the note on save/load in section 5, which this
+  principle also bears on.
 - **Connected storyworlds.** The networked half was part of the dropped cloud
   platform. The local half — jumping between two worlds in one library — remains
   feasible if it is ever wanted.

@@ -111,12 +111,17 @@ therefore unusually safe.
 Mixed. Two of these are much cheaper than their placement suggests, and two are
 gated behind schema changes.
 
-- [ ] **Storyworld reverse/rewind.** Far cheaper than it looks, and the highest
-      value per hour on this page. `EngineLiveEventData` already carries `prev`,
-      `next` and a **complete `state` snapshot per live event**, and the engine
-      already renders a stream of past events with a loopback button. Stepping
-      backwards is restoring a previous event's state and resetting
-      `currentLiveEvent` — no schema change, no new persistence.
+- [x] ~~**Storyworld reverse/rewind.**~~ **Decided against. Not being built.** The
+      cost estimate below was right — `EngineLiveEventData` already carries `prev`,
+      `next` and a **complete `state` snapshot per live event**, so stepping
+      backwards would have been nearly free — but the feature is refused on a design
+      principle: a decision the player has taken is final, the way it was in the
+      text adventures this owes its shape to. Cheapness was never the argument
+      against it. `TODO.md`'s "Not included" carries the full reasoning **and the
+      list of shipped things that still need `prev` and the per-event snapshot** —
+      the loopback button, resuming a save whose destination was deleted, and
+      patching a save forward on a version bump. Do not read this closure as
+      permission to simplify the live event chain.
 - [ ] **Multiple storyworld bookmarks.** The `bookmarks` table exists and is
       already keyed per world; today only one automatic bookmark is written, via
       `AUTO_ENGINE_BOOKMARK_KEY`. Needs named bookmarks and UI, not new storage.
@@ -167,8 +172,10 @@ mid-change:
 
 1. The two documentation corrections above, and distraction-free mode. Hours, not
    days.
-2. Reverse/rewind, then multiple bookmarks. Both exploit data that is already
-   persisted, and both are user-visible immediately.
+2. ~~Reverse/rewind, then multiple bookmarks.~~ Rewind is refused on principle,
+   see above. Multiple bookmarks still exploit data that is already persisted, but
+   whether they are wanted at all is an open question for the same reason — a
+   reloadable save is a rewind with extra steps. `TODO.md` section 5 carries it.
 3. Transitions, then custom backgrounds and colours. Extends existing machinery.
 4. Scene Map copy/paste and auto layout. Editor-only, no schema risk, but the id
    remapper deserves tests.
