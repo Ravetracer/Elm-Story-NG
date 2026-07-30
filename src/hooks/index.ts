@@ -31,6 +31,7 @@ import usePathEffects, {
 import useEvents, { useEventsBySceneRef, useEvent } from './useEvents'
 import useChoices, { useChoice, useChoicesByEventRef } from './useChoices'
 import useInputs, { useInput } from './useInputs'
+import useObjects, { useObject } from './useObjects'
 import useVariables, { useVariable } from './useVariables'
 import useVariableUsage from './useVariableUsage'
 
@@ -74,6 +75,8 @@ export {
   useChoicesByEventRef,
   useInputs,
   useInput,
+  useObjects,
+  useObject,
   useVariables,
   useVariable,
   useVariableUsage

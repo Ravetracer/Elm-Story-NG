@@ -523,6 +523,10 @@ export async function removeDeadAudioAsset(
   filterOutEventIds?: ElementId[]
 ) {
   try {
+    // Events and scenes are the *complete* set of audio references, so the object
+    // and world-cover sources 0.8.0 added are deliberately not fetched here: both
+    // are image kinds and cannot name an mp3. Anything that adds a second audio
+    // writer does belong in this call.
     const [events, scenes] = await Promise.all([
       api().events.getEventsByWorldRef(studioId, worldId),
       api().scenes.getScenesByWorldRef(studioId, worldId)

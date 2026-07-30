@@ -3,6 +3,7 @@ import * as studios from './studios'
 
 // LIBRARY
 import * as assets from './assets'
+import * as characterRelationships from './characterRelationships'
 import * as characters from './characters'
 import * as choices from './choices'
 import * as clipboard from './clipboard'
@@ -12,13 +13,17 @@ import * as events from './events'
 import * as folders from './folders'
 import * as inputs from './inputs'
 import * as jumps from './jumps'
+import * as objectConditions from './objectConditions'
+import * as objects from './objects'
 import * as paths from './paths'
+import * as recipes from './recipes'
 import * as variables from './variables'
 import * as scenes from './scenes'
 import * as worlds from './worlds'
 
 export default () => ({
   assets,
+  characterRelationships,
   characters,
   choices,
   clipboard,
@@ -28,7 +33,10 @@ export default () => ({
   folders,
   inputs,
   jumps,
+  objectConditions,
+  objects,
   paths,
+  recipes,
   scenes,
   studios,
   variables,

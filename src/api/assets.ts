@@ -38,10 +38,12 @@ export async function removeAssetIfUnreferenced(
   filterOutEventIds?: ElementId[]
 ): Promise<boolean> {
   try {
-    const [characters, events, scenes] = await Promise.all([
+    const [characters, events, objects, scenes, world] = await Promise.all([
       api().characters.getCharactersByWorldRef(studioId, worldId),
       api().events.getEventsByWorldRef(studioId, worldId),
-      api().scenes.getScenesByWorldRef(studioId, worldId)
+      api().objects.getObjectsByWorldRef(studioId, worldId),
+      api().scenes.getScenesByWorldRef(studioId, worldId),
+      api().worlds.getWorld(studioId, worldId)
     ])
 
     const references =
@@ -50,7 +52,9 @@ export async function removeAssetIfUnreferenced(
         events: events.filter(
           (event) => event.id && !filterOutEventIds?.includes(event.id)
         ),
-        scenes
+        objects,
+        scenes,
+        world
       }).get(assetId) ?? []
 
     if (references.length > 0) return false

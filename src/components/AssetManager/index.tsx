@@ -19,7 +19,13 @@ import {
   totalAssetBytes
 } from '../../lib/assets'
 
-import { useCharacters, useEvents, useScenes } from '../../hooks'
+import {
+  useCharacters,
+  useEvents,
+  useObjects,
+  useScenes,
+  useWorld
+} from '../../hooks'
 
 import { Button, Dropdown, Menu, Popconfirm, Radio } from 'antd'
 import {
@@ -77,7 +83,9 @@ const AssetManager: React.FC<{
 }> = ({ studioId, worldId, selectKind, onSelect, selectedAssetId }) => {
   const characters = useCharacters(studioId, worldId, [worldId]),
     events = useEvents(studioId, worldId, [worldId]),
-    scenes = useScenes(studioId, worldId, [worldId])
+    objects = useObjects(studioId, worldId, [worldId]),
+    scenes = useScenes(studioId, worldId, [worldId]),
+    world = useWorld(studioId, worldId, [worldId])
 
   const [files, setFiles] = useState<AssetFile[] | undefined>(undefined),
     [filter, setFilter] = useState<ASSET_FILTER>(ASSET_FILTER.ALL),
@@ -111,8 +119,16 @@ const AssetManager: React.FC<{
 
   const assets = useMemo(
     () =>
-      files ? collateAssets(files, { characters, events, scenes }) : undefined,
-    [files, characters, events, scenes]
+      files
+        ? collateAssets(files, {
+            characters,
+            events,
+            objects,
+            scenes,
+            world
+          })
+        : undefined,
+    [files, characters, events, objects, scenes, world]
   )
 
   const unusedAssets = useMemo(
@@ -247,6 +263,47 @@ const AssetManager: React.FC<{
           await api().scenes.saveScene(studioId, {
             ...scene,
             audio: undefined
+          })
+
+          break
+        }
+        // An object's two image slots are separate reference types precisely so
+        // this can clear the right field — one type would not say which.
+        case ASSET_REFERENCE_TYPE.OBJECT_IMAGE:
+        case ASSET_REFERENCE_TYPE.OBJECT_STACKED_IMAGE: {
+          const object = await api().objects.getObject(
+            studioId,
+            reference.elementId
+          )
+
+          if (!object) break
+
+          const stacked =
+            reference.type === ASSET_REFERENCE_TYPE.OBJECT_STACKED_IMAGE
+
+          if ((stacked ? object.stackedAssetId : object.assetId) !== asset.id)
+            break
+
+          await api().objects.saveObject(studioId, {
+            ...object,
+            ...(stacked
+              ? { stackedAssetId: undefined }
+              : { assetId: undefined })
+          })
+
+          break
+        }
+        case ASSET_REFERENCE_TYPE.WORLD_COVER: {
+          const referencedWorld = await api().worlds.getWorld(
+            studioId,
+            reference.elementId
+          )
+
+          if (referencedWorld?.coverAssetId !== asset.id) break
+
+          await api().worlds.saveWorld(studioId, {
+            ...referencedWorld,
+            coverAssetId: undefined
           })
 
           break

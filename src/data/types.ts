@@ -18,7 +18,9 @@ export enum ELEMENT_TYPE {
   FOLDER = 'FOLDER',
   INPUT = 'INPUT',
   JUMP = 'JUMP',
+  OBJECT = 'OBJECT',
   PATH = 'PATH',
+  RECIPE = 'RECIPE',
   SCENE = 'SCENE',
   STUDIO = 'STUDIO',
   VARIABLE = 'VARIABLE',
@@ -199,11 +201,21 @@ export type WorldChildRefs = Array<
 export interface World extends Element {
   children: WorldChildRefs
   copyright?: string
+  /** ASSET_KIND.WORLD_COVER. Shown on the dashboard card and the engine title card. */
+  coverAssetId?: string
   description?: string
   designer: string
   engine: string
   id?: WorldId
   jump: ElementId | null // Jump
+  /**
+   * What the storyteller says when two objects have no matching recipe. Silence
+   * reads as broken. An object's own `noRecipeMessage` overrides this, and the
+   * engine falls back to its own constant when neither is set.
+   */
+  objectNoRecipeMessage?: string
+  /** Default for the world; an event may override it. */
+  choicePresentation?: CHOICE_PRESENTATION
   template: WORLD_TEMPLATE
   version: string
   website?: string
@@ -260,15 +272,38 @@ export interface Path extends Element {
   destinationId: ElementId
   destinationType: ELEMENT_TYPE
   inputId?: ElementId
+  /**
+   * A transient line shown when this path is taken. Template expressions work,
+   * since `getProcessedTemplate` takes a string.
+   */
+  notification?: string
   originId: ElementId
   originType: ELEMENT_TYPE | EVENT_TYPE
   sceneId: ElementId
   worldId: WorldId
 }
 
+/**
+ * A test against a variable's current value, and the assignment counterpart.
+ *
+ * Extracted so the one declaration can be reused wherever a variable is tested or
+ * set — a path condition, an object placement gate, a recipe's effects. Two
+ * separately declared tuples of identical shape are assignable in TypeScript,
+ * unlike two enums, so this is about having a single place to change rather than
+ * about the compiler catching a mismatch.
+ */
+export type VariableCompare = [
+  ElementId,
+  COMPARE_OPERATOR_TYPE,
+  string,
+  VARIABLE_TYPE
+]
+
+export type VariableSet = [ElementId, SET_OPERATOR_TYPE, string, VARIABLE_TYPE]
+
 // Path Condition
 export interface Condition extends Element {
-  compare: [ElementId, COMPARE_OPERATOR_TYPE, string, VARIABLE_TYPE] // variable ref
+  compare: VariableCompare // variable ref
   pathId: ElementId
   variableId: ElementId
   worldId: WorldId
@@ -279,7 +314,7 @@ export interface Effect extends Element {
   worldId: WorldId
   pathId: ElementId
   variableId: ElementId
-  set: [ElementId, SET_OPERATOR_TYPE, string, VARIABLE_TYPE] // variable ref
+  set: VariableSet // variable ref
 }
 
 export enum EVENT_TYPE {
@@ -294,6 +329,8 @@ export interface Event extends Element {
   audio?: AudioProfile
   characters: ElementId[]
   choices: ElementId[]
+  /** Overrides `World.choicePresentation` for this event's choices. */
+  choicePresentation?: CHOICE_PRESENTATION
   content: string
   ending: boolean // world end
   images: string[] // asset id
@@ -315,6 +352,11 @@ export interface Input extends Element {
   variableId?: ElementId
 }
 
+export enum VARIABLE_SCOPE {
+  WORLD = 'WORLD',
+  SCENE = 'SCENE'
+}
+
 export interface Variable extends Element {
   worldId: WorldId
   type: VARIABLE_TYPE
@@ -323,4 +365,178 @@ export interface Variable extends Element {
   // Dexie migration; it is carried through the transport schema as an optional
   // property, which leaves files written before it existed valid.
   description?: string
+  /**
+   * How long the value lives. Absent means WORLD, which is what every variable
+   * written before 0.8.0 is.
+   *
+   * SCENE means exactly one thing: the value resets to `initialValue` when the
+   * player enters `scopeId`. Scope changes lifetime, **not** namespace — titles
+   * stay unique across the whole world, because template expressions resolve a
+   * variable by title rather than by id, so two scene-scoped variables sharing a
+   * title would be ambiguous with whichever the map saw last winning.
+   */
+  scope?: VARIABLE_SCOPE
+  scopeId?: ElementId // the scene, when scope is SCENE
+}
+
+/** How a set of choices is offered to the player. */
+export enum CHOICE_PRESENTATION {
+  INLINE = 'INLINE',
+  LIST = 'LIST',
+  MODAL = 'MODAL'
+}
+
+/**
+ * A location an object can occupy: a scene id, or `INVENTORY_LOCATION_KEY`.
+ *
+ * One location space rather than two is what lets a starting inventory be
+ * authored as an ordinary placement and lets one derivation serve both "the
+ * player has" and "the scene contains". Scene ids are uuids, so the sentinel
+ * cannot collide; it follows the engine's existing `'___initial___'` and
+ * `'___auto___'` convention.
+ */
+export type ObjectLocation = ElementId | string
+
+export const INVENTORY_LOCATION_KEY = '___inventory___'
+
+/** Where an object condition looks for its object. */
+export enum OBJECT_LOCATION_TYPE {
+  INVENTORY = 'INVENTORY',
+  CURRENT_SCENE = 'CURRENT_SCENE',
+  SCENE = 'SCENE'
+}
+
+/**
+ * A test on how many of an object are in a place — the evaluable core of an
+ * object condition, reused by a path gate (`ObjectCondition`, a table row keyed
+ * on `pathId`) and by a placement gate (inline on the object). One evaluator
+ * serves both.
+ *
+ * The comparison is a count rather than a boolean because the coin scenario needs
+ * "has at least five". `[COMPARE_OPERATOR_TYPE.GTE, 1]` is "has one" and
+ * `[COMPARE_OPERATOR_TYPE.EQ, 0]` is absence.
+ */
+export type ObjectCompare = {
+  objectId: ElementId
+  location: OBJECT_LOCATION_TYPE
+  sceneId?: ElementId // required when location is SCENE; CURRENT_SCENE ignores it
+  compare: [COMPARE_OPERATOR_TYPE, number]
+}
+
+/**
+ * Where an object starts, and what has to be true for it to be there at all.
+ *
+ * Inline on the object rather than a table: a placement is owned by exactly one
+ * object, has no independent identity and is referenced by nothing, which is the
+ * same reasoning that keeps `Event.images` an array.
+ *
+ * A gate that turns true mid-play reveals the object, which is what replaces
+ * recursive containers — the battery in the locked drawer is a placement gated on
+ * the current scene containing an unlocked drawer. Gates should be **monotonic**:
+ * nothing enforces it, but one that turns true, then false, then true again hands
+ * the player a second copy of something they already took.
+ */
+export interface ObjectPlacement {
+  location: ObjectLocation
+  quantity: number // >= 1
+  conditionsType?: PATH_CONDITIONS_TYPE // default ALL
+  variableConditions?: VariableCompare[]
+  objectConditions?: ObjectCompare[]
+}
+
+/**
+ * A thing in the world that can be looked at, carried and combined.
+ *
+ * There are no object *instances*. A definition plus a count per location is
+ * enough, because two batteries are interchangeable and divergent state is
+ * modelled by swapping definitions — a charged flashlight is a different object
+ * from an empty one, not the same object in a different mood.
+ *
+ * `title` is the object's name and is a **display name, not an identifier**:
+ * recipes, placements and conditions all reference an object by id, so renaming
+ * one cascades nowhere. This is deliberately unlike `Variable.title`.
+ */
+export interface WorldObject extends Element {
+  worldId: WorldId
+  /**
+   * Shown when the object is inspected. Plain text rather than a serialized Slate
+   * document, and it still gets template expressions, because
+   * `getProcessedTemplate` takes a string. Required, but may be empty.
+   */
+  description: string
+  assetId?: string // ASSET_KIND.OBJECT_IMAGE
+  takeable: boolean
+  combineable: boolean
+  stackedTitle?: string // "a pile of coins", used when the count exceeds one
+  stackedAssetId?: string
+  /** Overrides `World.objectNoRecipeMessage` when this object is combined from. */
+  noRecipeMessage?: string
+  placements: ObjectPlacement[]
+}
+
+/** A path gate on object presence. Its own table, because it is queried by path. */
+export interface ObjectCondition extends Element, ObjectCompare {
+  worldId: WorldId
+  pathId: ElementId
+}
+
+export enum RECIPE_OUTPUT_DESTINATION {
+  INVENTORY = 'INVENTORY',
+  CURRENT_SCENE = 'CURRENT_SCENE'
+}
+
+export interface RecipeInput {
+  objectId: ElementId
+  quantity: number // >= 1
+  consumed: boolean
+}
+
+export interface RecipeOutput {
+  objectId: ElementId
+  quantity: number
+  destination: RECIPE_OUTPUT_DESTINATION
+}
+
+/**
+ * What combining objects produces.
+ *
+ * A table rather than an array on an object, because a recipe relates two or more
+ * objects and belongs to none of them — and the editor has to show it from either
+ * side of the relationship. Inputs and outputs stay inline for the opposite
+ * reason: they are owned and referenced by nothing.
+ *
+ * `inputs.length >= 1`, which makes decomposition the same code path with a
+ * different affordance — one input is "use", several is "combine". Matching is on
+ * the **exact** input set with quantities at least the recipe's; subset matching
+ * would fire a one-input recipe when two objects are combined.
+ */
+export interface Recipe extends Element {
+  worldId: WorldId
+  inputs: RecipeInput[]
+  outputs: RecipeOutput[]
+  /**
+   * Optional variable assignments applied when the recipe fires, so "combining
+   * these advances the quest counter" does not need a path invented to carry it.
+   * Inline rather than rows in the `effects` table, which is keyed on `pathId`.
+   */
+  effects?: VariableSet[]
+  message?: string // what the storyteller says on success
+}
+
+/**
+ * A labelled edge between two characters. `title` is the label — "sister of",
+ * "distrusts".
+ *
+ * **Editor-only.** It is authoring metadata, so it gets no engine table and is not
+ * compiled into the engine collection. Anything that has to be visible at runtime
+ * goes through the optional `variableId`: the relationship is metadata, the number
+ * is a variable the engine already reads.
+ */
+export interface CharacterRelationship extends Element {
+  worldId: WorldId
+  from: ElementId // characterId
+  to: ElementId // characterId
+  directed: boolean // false means mutual
+  description?: string
+  variableId?: ElementId
 }

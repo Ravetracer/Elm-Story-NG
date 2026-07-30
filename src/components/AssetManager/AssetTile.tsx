@@ -40,8 +40,14 @@ const referenceLabel = ({
       return `Event '${elementTitle}' content`
     case ASSET_REFERENCE_TYPE.EVENT_AUDIO:
       return `Event '${elementTitle}' audio`
+    case ASSET_REFERENCE_TYPE.OBJECT_IMAGE:
+      return `Object '${elementTitle}'`
+    case ASSET_REFERENCE_TYPE.OBJECT_STACKED_IMAGE:
+      return `Object '${elementTitle}' (stacked)`
     case ASSET_REFERENCE_TYPE.SCENE_AUDIO:
       return `Scene '${elementTitle}' audio`
+    case ASSET_REFERENCE_TYPE.WORLD_COVER:
+      return `Storyworld '${elementTitle}' cover`
   }
 }
 

@@ -4,6 +4,7 @@ import Dexie from 'dexie'
 import logger from '../lib/logger'
 
 import {
+  Element,
   Studio,
   StudioId,
   Editor,
@@ -31,7 +32,11 @@ import {
   EVENT_TYPE,
   Input,
   Character,
-  Path
+  CharacterRelationship,
+  ObjectCondition,
+  Path,
+  Recipe,
+  WorldObject
 } from '../data/types'
 import {
   EngineBookmarkData,
@@ -39,6 +44,7 @@ import {
   EngineSettingsData
 } from '../lib/transport/types/0.5.1'
 import { WINDOW_EVENT_TYPE } from '../lib/events'
+import { ASSET_KIND, ASSET_KINDS } from '../lib/assets'
 
 // DATABASE VERSIONS / UPGRADES
 import v1 from './v1'
@@ -52,6 +58,7 @@ import v8 from './v8'
 import v9 from './v9'
 import v10 from './v10' // 0.7.0
 import v11 from './v11' // 0.7.1
+import v12 from './v12' // 0.8.0
 
 import api from '../api'
 
@@ -67,6 +74,7 @@ export enum APP_TABLE {
 
 export enum LIBRARY_TABLE {
   BOOKMARKS = 'bookmarks',
+  CHARACTER_RELATIONSHIPS = 'characterRelationships',
   CHARACTERS = 'characters',
   CHOICES = 'choices',
   CONDITIONS = 'conditions',
@@ -76,7 +84,10 @@ export enum LIBRARY_TABLE {
   INPUTS = 'inputs',
   JUMPS = 'jumps',
   LIVE_EVENTS = 'live_events',
+  OBJECT_CONDITIONS = 'objectConditions',
+  OBJECTS = 'objects',
   PATHS = 'paths',
+  RECIPES = 'recipes',
   SCENES = 'scenes',
   SETTINGS = 'settings',
   VARIABLES = 'variables',
@@ -172,6 +183,7 @@ export class AppDatabase extends Dexie {
 
 export class LibraryDatabase extends Dexie {
   public bookmarks: Dexie.Table<EngineBookmarkData, string>
+  public characterRelationships: Dexie.Table<CharacterRelationship, string>
   public characters: Dexie.Table<Character, string>
   public choices: Dexie.Table<Choice, string>
   public conditions: Dexie.Table<Condition, string>
@@ -181,7 +193,10 @@ export class LibraryDatabase extends Dexie {
   public jumps: Dexie.Table<Jump, string>
   public inputs: Dexie.Table<Input, string>
   public live_events: Dexie.Table<EngineEventData, string>
+  public objectConditions: Dexie.Table<ObjectCondition, string>
+  public objects: Dexie.Table<WorldObject, string>
   public paths: Dexie.Table<Path, string>
+  public recipes: Dexie.Table<Recipe, string>
   public scenes: Dexie.Table<Scene, string>
   public settings: Dexie.Table<EngineSettingsData, string>
   public variables: Dexie.Table<Variable, string>
@@ -203,10 +218,14 @@ export class LibraryDatabase extends Dexie {
     v9(this)
     v10(this)
     v11(this)
+    v12(this)
 
     this.tables.map((table) => table.name)
 
     this.bookmarks = this.table(LIBRARY_TABLE.BOOKMARKS)
+    this.characterRelationships = this.table(
+      LIBRARY_TABLE.CHARACTER_RELATIONSHIPS
+    )
     this.characters = this.table(LIBRARY_TABLE.CHARACTERS)
     this.choices = this.table(LIBRARY_TABLE.CHOICES)
     this.conditions = this.table(LIBRARY_TABLE.CONDITIONS)
@@ -216,7 +235,10 @@ export class LibraryDatabase extends Dexie {
     this.inputs = this.table(LIBRARY_TABLE.INPUTS)
     this.jumps = this.table(LIBRARY_TABLE.JUMPS)
     this.live_events = this.table(LIBRARY_TABLE.LIVE_EVENTS)
+    this.objectConditions = this.table(LIBRARY_TABLE.OBJECT_CONDITIONS)
+    this.objects = this.table(LIBRARY_TABLE.OBJECTS)
     this.paths = this.table(LIBRARY_TABLE.PATHS)
+    this.recipes = this.table(LIBRARY_TABLE.RECIPES)
     this.scenes = this.table(LIBRARY_TABLE.SCENES)
     this.settings = this.table(LIBRARY_TABLE.SETTINGS)
     this.variables = this.table(LIBRARY_TABLE.VARIABLES)
@@ -256,11 +278,23 @@ export class LibraryDatabase extends Dexie {
           const element = await this.getElement(table, elementId)
 
           if (element) {
-            await this[table].update(elementId, {
-              ...element,
-              title,
-              updated: Date.now()
-            })
+            /*
+             * Narrowed deliberately. `this[table]` is a union over every table's
+             * row type, and `update()` with a spread produces a union of the
+             * update shapes — which tipped over TS2590 ("union type that is too
+             * complex to represent") when 0.8.0 took the table count from 15 to
+             * 19. Every row type here extends `Element` and the only fields
+             * written are `title` and `updated`, both declared on `Element`, so
+             * the cast is sound rather than a suppression.
+             */
+            await (this[table] as Dexie.Table<Element, string>).update(
+              elementId,
+              {
+                ...element,
+                title,
+                updated: Date.now()
+              }
+            )
           } else {
             throw new Error('Unable to rename element. Component missing.')
           }
@@ -340,6 +374,21 @@ export class LibraryDatabase extends Dexie {
        * without counting, when two masks are allowed to name one image.
        */
       let deadMaskAssets: { assetId: string; worldId: WorldId }[] = []
+
+      /*
+       * 0.8.0: a relationship is an edge, so losing either end makes it
+       * meaningless. Removed before the character, since it is read by character
+       * id. The pre-existing gap noted in `TODO.md` — content character-reference
+       * nodes and `CharacterRefs` are still not cascaded — is untouched here.
+       */
+      const relationships = await this.getCharacterRelationshipsByCharacterRef(
+        characterId
+      )
+
+      for (const relationship of relationships) {
+        relationship.id &&
+          (await this.removeCharacterRelationship(relationship.id))
+      }
 
       await this.transaction('rw', this.characters, async () => {
         const character = await this.characters.get(characterId)
@@ -1169,7 +1218,11 @@ export class LibraryDatabase extends Dexie {
 
     try {
       const conditions = await this.conditions.where({ pathId }).toArray(),
-        effects = await this.effects.where({ pathId }).toArray()
+        effects = await this.effects.where({ pathId }).toArray(),
+        // 0.8.0: object gates are rows on the path too, and outlive it otherwise
+        objectConditions = await this.objectConditions
+          .where({ pathId })
+          .toArray()
 
       await Promise.all([
         conditions.map(
@@ -1178,6 +1231,10 @@ export class LibraryDatabase extends Dexie {
         ),
         effects.map(
           async (effect) => effect.id && (await this.removeEffect(effect.id))
+        ),
+        objectConditions.map(
+          async (condition) =>
+            condition.id && (await this.removeObjectCondition(condition.id))
         )
       ])
 
@@ -2201,6 +2258,63 @@ export class LibraryDatabase extends Dexie {
         )
       ])
 
+      /*
+       * 0.8.0 added three more places a variable is named, and all three are
+       * invisible to the reader above: two are inline arrays rather than rows with
+       * a `variableId` index, so nothing would report them as broken. A recipe
+       * effect or a placement gate naming a deleted variable would be evaluated
+       * against a variable that is not in the live event state at all.
+       */
+      const variable = await this.variables.get(variableId)
+
+      if (variable) {
+        const { worldId } = variable
+
+        const [recipes, objects, relationships] = await Promise.all([
+          this.recipes.where({ worldId }).toArray(),
+          this.objects.where({ worldId }).toArray(),
+          this.characterRelationships.where({ worldId }).toArray()
+        ])
+
+        for (const recipe of recipes) {
+          if (!recipe.id) continue
+
+          const remaining = recipe.effects?.filter(
+            (effect) => effect[0] !== variableId
+          )
+
+          if ((remaining?.length ?? 0) !== (recipe.effects?.length ?? 0))
+            await this.saveRecipe({ ...recipe, effects: remaining })
+        }
+
+        for (const object of objects) {
+          if (!object.id) continue
+
+          const placements = object.placements.map((placement) => ({
+            ...placement,
+            variableConditions: placement.variableConditions?.filter(
+              (condition) => condition[0] !== variableId
+            )
+          }))
+
+          const changed = placements.some(
+            (placement, index) =>
+              (placement.variableConditions?.length ?? 0) !==
+              (object.placements[index].variableConditions?.length ?? 0)
+          )
+
+          if (changed) await this.saveObject({ ...object, placements })
+        }
+
+        for (const relationship of relationships) {
+          if (relationship.id && relationship.variableId === variableId)
+            await this.saveCharacterRelationship({
+              ...relationship,
+              variableId: undefined
+            })
+        }
+      }
+
       await this.transaction('rw', this.variables, async () => {
         if (await this.getElement(LIBRARY_TABLE.VARIABLES, variableId)) {
           logger.info(
@@ -2304,5 +2418,416 @@ export class LibraryDatabase extends Dexie {
         throw new Error('Unable to save variable initialValue. Missing ID.')
       }
     })
+  }
+
+  // WORLD OBJECTS
+
+  public async getObject(objectId: ElementId): Promise<WorldObject> {
+    try {
+      const object = await this.objects.get(objectId)
+
+      if (object) {
+        return object
+      } else {
+        throw new Error(
+          `Unable to get object with ID: ${objectId}. Does not exist.`
+        )
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async getObjectsByWorldRef(worldId: WorldId): Promise<WorldObject[]> {
+    try {
+      return await this.objects.where({ worldId }).toArray()
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveObject(object: WorldObject): Promise<ElementId> {
+    if (!object.worldId)
+      throw new Error('Unable to save object to database. Missing world ID.')
+    if (!object.id)
+      throw new Error('Unable to save object to database. Missing ID.')
+
+    try {
+      await this.transaction('rw', this.objects, async () => {
+        if (await this.getElement(LIBRARY_TABLE.OBJECTS, object.id as string)) {
+          await this.objects.update(object.id as string, {
+            ...object,
+            updated: Date.now()
+          })
+        } else {
+          await this.objects.add({
+            ...object,
+            updated: object.updated || Date.now()
+          })
+        }
+      })
+    } catch (error) {
+      throw error
+    }
+
+    return object.id
+  }
+
+  /**
+   * Removes an object and everything that names it.
+   *
+   * The cascade is wide on purpose, and it is why the editor has to state the
+   * consequences before it runs — the same reasoning as `confirmRemoveVariable`.
+   * A recipe naming a deleted object could never fire again, and an object
+   * condition naming one would gate a path on something that cannot exist, so
+   * both are removed rather than left dangling. Placements on *other* objects
+   * that gate on this one are cleaned too, which is the non-obvious half: a gate
+   * is an inline array, so nothing would report it as broken.
+   *
+   * `Promise.all` is deliberately not used for the placement rewrites. Each is a
+   * read-modify-write of one object's own `placements` array, and two rewrites of
+   * *different* objects are independent — but the loop is cheap and sequential
+   * writes here keep the shape identical to the scene-children rule, where a
+   * parallel version silently lost updates.
+   */
+  public async removeObject(objectId: ElementId) {
+    logger.info(`LibraryDatabase->removeObject:${objectId}`)
+
+    try {
+      const object = await this.objects.get(objectId)
+
+      if (!object)
+        throw new Error(
+          `LibraryDatabase->removeObject->Unable to remove object with ID: '${objectId}'. Does not exist.`
+        )
+
+      const { worldId } = object
+
+      const [recipes, objectConditions, allObjects] = await Promise.all([
+        this.recipes.where({ worldId }).toArray(),
+        this.objectConditions.where({ objectId }).toArray(),
+        this.objects.where({ worldId }).toArray()
+      ])
+
+      const deadRecipes = recipes.filter(
+        (recipe) =>
+          recipe.inputs.some((input) => input.objectId === objectId) ||
+          recipe.outputs.some((output) => output.objectId === objectId)
+      )
+
+      for (const recipe of deadRecipes) {
+        recipe.id && (await this.removeRecipe(recipe.id))
+      }
+
+      for (const condition of objectConditions) {
+        condition.id && (await this.removeObjectCondition(condition.id))
+      }
+
+      // placement gates on other objects that reference this one
+      for (const other of allObjects) {
+        if (!other.id || other.id === objectId) continue
+
+        const placements = other.placements.map((placement) => ({
+          ...placement,
+          objectConditions: placement.objectConditions?.filter(
+            (condition) => condition.objectId !== objectId
+          )
+        }))
+
+        const changed = placements.some(
+          (placement, index) =>
+            (placement.objectConditions?.length ?? 0) !==
+            (other.placements[index].objectConditions?.length ?? 0)
+        )
+
+        if (changed) await this.saveObject({ ...other, placements })
+      }
+
+      const deadAsset = object.assetId,
+        deadStackedAsset = object.stackedAssetId
+
+      await this.transaction('rw', this.objects, async () => {
+        await this.objects.delete(objectId)
+      })
+
+      // sequentially, so each count sees what the one before it trashed, and
+      // after the reference is gone — the count is read back out of the database
+      for (const assetId of [deadAsset, deadStackedAsset]) {
+        if (!assetId) continue
+
+        await api().assets.removeAssetIfUnreferenced(
+          this.studioId,
+          worldId,
+          assetId,
+          ASSET_KINDS[ASSET_KIND.OBJECT_IMAGE].ext
+        )
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  // RECIPES
+
+  public async getRecipe(recipeId: ElementId): Promise<Recipe> {
+    try {
+      const recipe = await this.recipes.get(recipeId)
+
+      if (recipe) {
+        return recipe
+      } else {
+        throw new Error(
+          `Unable to get recipe with ID: ${recipeId}. Does not exist.`
+        )
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async getRecipesByWorldRef(worldId: WorldId): Promise<Recipe[]> {
+    try {
+      return await this.recipes.where({ worldId }).toArray()
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveRecipe(recipe: Recipe): Promise<ElementId> {
+    if (!recipe.worldId)
+      throw new Error('Unable to save recipe to database. Missing world ID.')
+    if (!recipe.id)
+      throw new Error('Unable to save recipe to database. Missing ID.')
+
+    try {
+      await this.transaction('rw', this.recipes, async () => {
+        if (await this.getElement(LIBRARY_TABLE.RECIPES, recipe.id as string)) {
+          await this.recipes.update(recipe.id as string, {
+            ...recipe,
+            updated: Date.now()
+          })
+        } else {
+          await this.recipes.add({
+            ...recipe,
+            updated: recipe.updated || Date.now()
+          })
+        }
+      })
+    } catch (error) {
+      throw error
+    }
+
+    return recipe.id
+  }
+
+  public async removeRecipe(recipeId: ElementId) {
+    logger.info(`LibraryDatabase->removeRecipe:${recipeId}`)
+
+    try {
+      await this.transaction('rw', this.recipes, async () => {
+        if (await this.getElement(LIBRARY_TABLE.RECIPES, recipeId)) {
+          await this.recipes.delete(recipeId)
+        } else {
+          throw new Error(
+            `LibraryDatabase->removeRecipe->Unable to remove recipe with ID: '${recipeId}'. Does not exist.`
+          )
+        }
+      })
+    } catch (error) {
+      throw error
+    }
+  }
+
+  // OBJECT CONDITIONS
+
+  public async getObjectCondition(
+    conditionId: ElementId
+  ): Promise<ObjectCondition> {
+    try {
+      const condition = await this.objectConditions.get(conditionId)
+
+      if (condition) {
+        return condition
+      } else {
+        throw new Error(
+          `Unable to get object condition with ID: ${conditionId}. Does not exist.`
+        )
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async getObjectConditionsByWorldRef(
+    worldId: WorldId
+  ): Promise<ObjectCondition[]> {
+    try {
+      return await this.objectConditions.where({ worldId }).toArray()
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async getObjectConditionsByPathRef(
+    pathId: ElementId
+  ): Promise<ObjectCondition[]> {
+    try {
+      return await this.objectConditions.where({ pathId }).toArray()
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveObjectCondition(
+    condition: ObjectCondition
+  ): Promise<ElementId> {
+    if (!condition.worldId)
+      throw new Error(
+        'Unable to save object condition to database. Missing world ID.'
+      )
+    if (!condition.id)
+      throw new Error('Unable to save object condition to database. Missing ID.')
+
+    try {
+      await this.transaction('rw', this.objectConditions, async () => {
+        if (
+          await this.getElement(
+            LIBRARY_TABLE.OBJECT_CONDITIONS,
+            condition.id as string
+          )
+        ) {
+          await this.objectConditions.update(condition.id as string, {
+            ...condition,
+            updated: Date.now()
+          })
+        } else {
+          await this.objectConditions.add({
+            ...condition,
+            updated: condition.updated || Date.now()
+          })
+        }
+      })
+    } catch (error) {
+      throw error
+    }
+
+    return condition.id
+  }
+
+  public async removeObjectCondition(conditionId: ElementId) {
+    logger.info(`LibraryDatabase->removeObjectCondition:${conditionId}`)
+
+    try {
+      await this.transaction('rw', this.objectConditions, async () => {
+        if (await this.getElement(LIBRARY_TABLE.OBJECT_CONDITIONS, conditionId))
+          await this.objectConditions.delete(conditionId)
+      })
+    } catch (error) {
+      throw error
+    }
+  }
+
+  // CHARACTER RELATIONSHIPS
+
+  public async getCharacterRelationship(
+    relationshipId: ElementId
+  ): Promise<CharacterRelationship> {
+    try {
+      const relationship = await this.characterRelationships.get(relationshipId)
+
+      if (relationship) {
+        return relationship
+      } else {
+        throw new Error(
+          `Unable to get character relationship with ID: ${relationshipId}. Does not exist.`
+        )
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async getCharacterRelationshipsByWorldRef(
+    worldId: WorldId
+  ): Promise<CharacterRelationship[]> {
+    try {
+      return await this.characterRelationships.where({ worldId }).toArray()
+    } catch (error) {
+      throw error
+    }
+  }
+
+  /** Both directions, since an undirected relationship is stored one way only. */
+  public async getCharacterRelationshipsByCharacterRef(
+    characterId: ElementId
+  ): Promise<CharacterRelationship[]> {
+    try {
+      const [from, to] = await Promise.all([
+        this.characterRelationships.where({ from: characterId }).toArray(),
+        this.characterRelationships.where({ to: characterId }).toArray()
+      ])
+
+      return [...from, ...to.filter((relationship) => relationship.from !== characterId)]
+    } catch (error) {
+      throw error
+    }
+  }
+
+  public async saveCharacterRelationship(
+    relationship: CharacterRelationship
+  ): Promise<ElementId> {
+    if (!relationship.worldId)
+      throw new Error(
+        'Unable to save character relationship to database. Missing world ID.'
+      )
+    if (!relationship.id)
+      throw new Error(
+        'Unable to save character relationship to database. Missing ID.'
+      )
+
+    try {
+      await this.transaction('rw', this.characterRelationships, async () => {
+        if (
+          await this.getElement(
+            LIBRARY_TABLE.CHARACTER_RELATIONSHIPS,
+            relationship.id as string
+          )
+        ) {
+          await this.characterRelationships.update(relationship.id as string, {
+            ...relationship,
+            updated: Date.now()
+          })
+        } else {
+          await this.characterRelationships.add({
+            ...relationship,
+            updated: relationship.updated || Date.now()
+          })
+        }
+      })
+    } catch (error) {
+      throw error
+    }
+
+    return relationship.id
+  }
+
+  public async removeCharacterRelationship(relationshipId: ElementId) {
+    logger.info(
+      `LibraryDatabase->removeCharacterRelationship:${relationshipId}`
+    )
+
+    try {
+      await this.transaction('rw', this.characterRelationships, async () => {
+        if (
+          await this.getElement(
+            LIBRARY_TABLE.CHARACTER_RELATIONSHIPS,
+            relationshipId
+          )
+        )
+          await this.characterRelationships.delete(relationshipId)
+      })
+    } catch (error) {
+      throw error
+    }
   }
 }

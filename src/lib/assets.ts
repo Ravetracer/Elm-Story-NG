@@ -3,7 +3,9 @@ import {
   CHARACTER_MASK_TYPE,
   ElementId,
   Event,
-  Scene
+  Scene,
+  World,
+  WorldObject
 } from '../data/types'
 
 /**
@@ -60,7 +62,16 @@ export enum ASSET_REFERENCE_TYPE {
   CHARACTER_MASK = 'CHARACTER_MASK',
   EVENT_IMAGE = 'EVENT_IMAGE',
   EVENT_AUDIO = 'EVENT_AUDIO',
-  SCENE_AUDIO = 'SCENE_AUDIO'
+  /**
+   * An object's two image slots are two reference types over one kind, the way
+   * event and scene audio are. They have to be distinguishable, because clearing
+   * a reference means clearing a *named field* — `assetId` or `stackedAssetId` —
+   * and a single type would leave the manager unable to tell which.
+   */
+  OBJECT_IMAGE = 'OBJECT_IMAGE',
+  OBJECT_STACKED_IMAGE = 'OBJECT_STACKED_IMAGE',
+  SCENE_AUDIO = 'SCENE_AUDIO',
+  WORLD_COVER = 'WORLD_COVER'
 }
 
 /** Where a storyworld points at an asset. */
@@ -122,6 +133,36 @@ export const EVENT_IMAGE_PIPELINE: ImageAssetPipeline = {
 }
 
 /**
+ * Square, because one asset has to serve both an inventory tile and the inspect
+ * panel. A 16:9 crop in a tile is mostly padding.
+ */
+export const OBJECT_IMAGE_PIPELINE: ImageAssetPipeline = {
+  aspectRatio: 1,
+  size: { width: 400, height: 400 },
+  format: 'webp',
+  quality: 0.8
+}
+
+/**
+ * Deliberately identical to `EVENT_IMAGE_PIPELINE`, and a separate constant
+ * rather than an alias so changing one does not silently change the other.
+ *
+ * Sharing the numbers is not the "nearly right" hazard the character mask comment
+ * warns about — that is about an asset processed *differently* from what a read
+ * site expects. Two kinds with byte-identical processing are interchangeable by
+ * construction, and since the picker filters on extension, an event image can be
+ * chosen as a cover. That is a convenience rather than a bug. The kind still
+ * exists separately so the import menu can label it, because nothing on disk
+ * distinguishes a webp meant as a cover from one meant as an event image.
+ */
+export const WORLD_COVER_PIPELINE: ImageAssetPipeline = {
+  aspectRatio: 16 / 9,
+  size: { width: 655 * 2, height: 368 * 2 },
+  format: 'webp',
+  quality: 0.7
+}
+
+/**
  * What an asset *is*, as opposed to where it is referenced from.
  *
  * The distinction only appears once an asset can be uploaded before it is
@@ -133,6 +174,8 @@ export const EVENT_IMAGE_PIPELINE: ImageAssetPipeline = {
 export enum ASSET_KIND {
   CHARACTER_MASK = 'CHARACTER_MASK',
   EVENT_IMAGE = 'EVENT_IMAGE',
+  OBJECT_IMAGE = 'OBJECT_IMAGE',
+  WORLD_COVER = 'WORLD_COVER',
   AUDIO = 'AUDIO'
 }
 
@@ -165,6 +208,18 @@ export const ASSET_KINDS: Record<ASSET_KIND, AssetKindProfile> = {
     accept: 'image/*',
     pipeline: CHARACTER_MASK_PIPELINE
   },
+  [ASSET_KIND.OBJECT_IMAGE]: {
+    label: 'Object Image',
+    ext: 'webp',
+    accept: 'image/*',
+    pipeline: OBJECT_IMAGE_PIPELINE
+  },
+  [ASSET_KIND.WORLD_COVER]: {
+    label: 'Storyworld Cover',
+    ext: 'webp',
+    accept: 'image/*',
+    pipeline: WORLD_COVER_PIPELINE
+  },
   [ASSET_KIND.AUDIO]: {
     label: 'Audio',
     ext: 'mp3',
@@ -180,6 +235,11 @@ export const assetKindForReference = (
       return ASSET_KIND.CHARACTER_MASK
     case ASSET_REFERENCE_TYPE.EVENT_IMAGE:
       return ASSET_KIND.EVENT_IMAGE
+    case ASSET_REFERENCE_TYPE.OBJECT_IMAGE:
+    case ASSET_REFERENCE_TYPE.OBJECT_STACKED_IMAGE:
+      return ASSET_KIND.OBJECT_IMAGE
+    case ASSET_REFERENCE_TYPE.WORLD_COVER:
+      return ASSET_KIND.WORLD_COVER
     case ASSET_REFERENCE_TYPE.EVENT_AUDIO:
     case ASSET_REFERENCE_TYPE.SCENE_AUDIO:
       return ASSET_KIND.AUDIO
@@ -196,17 +256,29 @@ export const isAssetUnused = ({ references }: ManagedAsset): boolean =>
 export interface AssetReferenceSources {
   characters?: Character[]
   events?: Event[]
+  objects?: WorldObject[]
   scenes?: Scene[]
+  /** the storyworld record itself, for its cover */
+  world?: World
 }
 
 /**
- * Every place a storyworld can name an asset, keyed by asset id. There are four:
- * Character.masks[].assetId, Event.images[], Event.audio[0] and Scene.audio[0].
+ * Every place a storyworld can name an asset, keyed by asset id. There are seven
+ * as of 0.8.0: Character.masks[].assetId, Event.images[], Event.audio[0],
+ * Scene.audio[0], WorldObject.assetId, WorldObject.stackedAssetId and
+ * World.coverAssetId.
+ *
+ * **This function has to cover all of them or the manager offers to delete a file
+ * that is in use**, which is why a new writer belongs here in the same change that
+ * introduces it. Note that a caller passing an incomplete `sources` gets an
+ * incomplete count — every field is optional, so an omission is silent.
  */
 export const collectAssetReferences = ({
   characters,
   events,
-  scenes
+  objects,
+  scenes,
+  world
 }: AssetReferenceSources): Map<string, AssetReference[]> => {
   const references = new Map<string, AssetReference[]>()
 
@@ -245,6 +317,20 @@ export const collectAssetReferences = ({
     })
   })
 
+  objects?.forEach((object) => {
+    add(object.assetId, {
+      type: ASSET_REFERENCE_TYPE.OBJECT_IMAGE,
+      elementId: object.id as ElementId,
+      elementTitle: object.title
+    })
+
+    add(object.stackedAssetId, {
+      type: ASSET_REFERENCE_TYPE.OBJECT_STACKED_IMAGE,
+      elementId: object.id as ElementId,
+      elementTitle: object.title
+    })
+  })
+
   scenes?.forEach((scene) =>
     add(scene.audio?.[0], {
       type: ASSET_REFERENCE_TYPE.SCENE_AUDIO,
@@ -252,6 +338,13 @@ export const collectAssetReferences = ({
       elementTitle: scene.title
     })
   )
+
+  if (world)
+    add(world.coverAssetId, {
+      type: ASSET_REFERENCE_TYPE.WORLD_COVER,
+      elementId: world.id as ElementId,
+      elementTitle: world.title
+    })
 
   return references
 }
