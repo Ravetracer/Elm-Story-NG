@@ -9,11 +9,18 @@ paid for three times.
 touches. Its *ordering* is superseded by this file.
 
 **Two persisted stores, two migration chains.** The editor's library lives in
-`src/db/v*.ts` (currently through v11) and the engine's runtime state in
-`engine/src/lib/db/v*.ts` (v6 through v11). Anything stored on a live event, which
-includes inventory state, needs an engine migration as well as an editor one.
-Every schema change therefore costs: a new transport schema, an
-`importWorldData` branch, an export path change, and up to two migrations.
+`src/db/v*.ts` (currently through v12) and the engine's runtime state in
+`engine/src/lib/db/v*.ts` (v6 through v12). Every schema change therefore costs: a
+new transport schema, an `importWorldData` branch, an export path change, and up
+to two migrations.
+
+The sentence that used to end that paragraph — "anything stored on a live event,
+which includes inventory state, needs an engine migration as well as an editor
+one" — was **wrong about the second half**, and section 3 proved it. A live event
+gained the inventory delta map with no engine migration at all, because Dexie
+declares indexes rather than shapes: an optional unindexed property on an existing
+table is simply stored, and a save written before it existed reads as absent.
+What needs a migration is a new **table** or a new **index**.
 
 **One class of field is much cheaper than that**, established by adding
 `Variable.description`: an optional, unindexed, editor-only field needs no
@@ -202,24 +209,46 @@ Ship the fields before anything uses them. Adding them unused now is far cheaper
 than a second migration later; the cost is that the shape has to be right, which
 is what section 2 is for.
 
-**`DESIGN.md` ends with a per-file list of exactly this work.** Four new editor
-tables, three new engine tables — `characterRelationships` is editor-only.
+**Done.** Four new editor tables, three new engine tables —
+`characterRelationships` is editor-only. `DESIGN.md`'s closing per-file list is
+what was built; see `CLAUDE.md`, "The 0.8.0 shape", for what is now easy to get
+wrong.
 
-- [ ] Transport schema `0.8.0`, plus the `importWorldData` branch and the export
+- [x] Transport schema `0.8.0`, plus the `importWorldData` branch and the export
       path. Note the chain now ends at 0.7.1, so the new step upgrades from there;
       `types/0.7.1.ts` re-exports 0.7.0 rather than declaring a shape, so `0.8.0`
       is the first file in a while that gets a real declaration of its own. The new
       gate is **appended after** the existing chain, in the shape the 0.7.1 step
       already uses, rather than widening the `< 0.7.0` gate.
-- [ ] Editor migration `src/db/v12.ts` — **v11 is taken**, by the 0.7.1 schema
+      *(The schema JSON was derived from 0.7.0's programmatically and then frozen,
+      with a check that every pre-existing collection came out structurally
+      identical — the diff is the four collections plus seven optional properties.
+      The 0.8.0 step is **idempotent**, unlike 0.7.0's, and a test holds that
+      rather than the docstring merely claiming it.)*
+- [x] Editor migration `src/db/v12.ts` — **v11 is taken**, by the 0.7.1 schema
       restamp adopted from the 0.7.1 archive
-- [ ] Engine migration `engine/src/lib/db/v12.ts`, same renumbering. **Not for the
+- [x] Engine migration `engine/src/lib/db/v12.ts`, same renumbering. **Not for the
       inventory state** — that was the assumption when this list was written and
       the design pass disproved it. The state is an optional unindexed field on the
       existing `live_events` table, and Dexie declares indexes rather than shapes,
       so it needs no version at all; an old save that lacks it reads as a pristine
       world. What forces the file is the new **definition** tables — `objects`,
       `recipes` and `objectConditions` have to be declared in `.stores()`.
+
+**Three bugs the compiler found here, worth knowing because none was reasoned
+out:** `main.ts` typed the PWA export path against 0.7.1 while handing it data
+`getWorldDataJSON` had just written, so an export would have packed a world with
+the new collections missing — the failure `CLAUDE.md` says only shows up when
+someone actually exports, caught at compile time instead. `saveElementTitle` hit
+TS2590 once the table count reached 19. And `AssetTile`'s reference-label switch
+stopped compiling under `noImplicitReturns` when the asset enum grew, which is the
+editor's stricter `tsconfig` catching an exhaustiveness gap the engine's would
+have waved through.
+
+**One bug that predated all of this:** `importWorldData` never read
+`Variable.description` back, though the exporter has written it since it was
+added, so exporting a world and re-importing it silently dropped every variable
+note. Fixed in the same pass as `scope` and `scopeId`.
 
 ## 4. World objects and inventory
 

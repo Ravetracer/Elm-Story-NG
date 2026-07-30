@@ -809,6 +809,75 @@ coupled to the engine's build output in ways that break quietly:
 Changes here fail only when someone actually exports a storyworld, so exercise
 that path.
 
+## The 0.8.0 shape
+
+`DESIGN.md` is the settled design and the reasoning behind every field; this
+section is only what is easy to get wrong now that it exists. The schema version is
+**0.8.0** and it adds four editor tables — `objects`, `recipes`,
+`objectConditions`, `characterRelationships` — of which the engine gets three.
+**No UI and no runtime behaviour yet**: section 3 shipped the fields, section 4
+builds against them.
+
+- **`compiler/format.ts` decides what the engine can ever see.** It `pick`s an
+  explicit property list per collection, so a field declared correctly in *both*
+  `src/data/types.ts` and `engine/src/types/index.ts` is still invisible at
+  runtime until it is named there. This is the cheapest place in the repository to
+  add a field and believe it works. `characterRelationships` is deliberately
+  absent — authoring metadata, never compiled — and anything of it that must reach
+  the engine goes through its optional `variableId`.
+- **A new table needs a Dexie version; a new field almost never does.** Dexie
+  declares indexes, not shapes, so `World.coverAssetId`, `Variable.scope`,
+  `Path.notification`, `Event.choicePresentation` and
+  `EngineLiveEventData.objects` all cost nothing in either migration chain. Both
+  `v12.ts` files exist for their *tables*. In particular the engine's is **not**
+  for the inventory state, which is an optional unindexed property on the existing
+  `live_events` table — an old save simply lacks it, and absent means "no deltas",
+  so it reads as a pristine world.
+- **Object quantity is derived, never stored as a census.** What a location holds
+  is the authored placement (with its gate re-evaluated *now*) plus a signed
+  delta, clamped at zero. That is what makes a gate turning true mid-play reveal an
+  object with no write at all. It also means **placement gates should be
+  monotonic**: one that turns true, then false, then true again hands the player a
+  second copy of what they already took. Nothing enforces it.
+- **`isPathOpen` fails open, which is why object conditions are their own table.**
+  It skips a condition whose variable it cannot find, and `[].every()` is `true`
+  under `PATH_CONDITIONS_TYPE.ALL`, so an unrecognised condition *opens* the path.
+  Object conditions are therefore a distinct concept with an evaluator that has to
+  be called explicitly, rather than a variant row in `conditions` that every
+  missed reader would wave through — in the direction that unlocks content. When
+  that evaluator is written, `totalConditions` must count object conditions too,
+  or a path gated only on objects loses the feedback#105 preference for
+  conditional paths.
+- **Most of the new references are invisible to a reader expecting indexed foreign
+  keys.** A recipe's `effects`, a placement's two gate arrays and an object's
+  `placements` are all inline, so nothing reports them as broken. `removeObject`,
+  `removeVariable`, `removePath` and `removeCharacter` each cascade into them;
+  anything that adds a fifth writer of an object or variable id belongs in the
+  matching cascade.
+- **`collectAssetReferences` now covers seven writers, not four**: character
+  masks, event images, event audio, scene audio, an object's image, an object's
+  *stacked* image, and the storyworld cover. Every field on
+  `AssetReferenceSources` is optional, so a caller that omits one gets a silently
+  incomplete count — and an incomplete count means the asset manager offering to
+  delete a file that is in use. `removeDeadAudioAsset` omits the image sources on
+  purpose and says so, because objects and covers cannot name an mp3.
+- **An object has two image slots and therefore two `ASSET_REFERENCE_TYPE`s.**
+  Clearing a reference means clearing a named field, and one type could not say
+  whether that was `assetId` or `stackedAssetId`. `ASSET_KIND.WORLD_COVER`'s
+  pipeline is deliberately identical to the event image's — a separate constant
+  rather than an alias — since the kind exists to label the import menu, not to
+  process differently.
+- **`saveElementTitle` carries a cast that is load-bearing.** `this[table]` is a
+  union over 19 row types and `update()` with a spread tipped over TS2590. It is
+  narrowed to `Dexie.Table<Element, string>`, which is sound rather than a
+  suppression: every row type extends `Element` and only `title` and `updated` are
+  written. Adding more tables will make this worse, not better.
+- **`AppContext`'s `version` is `'0.8.0'` and `main.ts` imports its transport
+  types from `0.8.0`.** Those move together with the schema map entry and the
+  upgrade step. `main.ts` typing the export path against a stale version is not a
+  compile-time no-op — it silently packs a PWA whose newest collections are
+  missing, which is why the import there now carries a note.
+
 ## The import upgrade chain
 
 `src/lib/importWorldData.ts` walks an imported file from its own engine version up
@@ -882,7 +951,7 @@ silently. The imported world is also renamed to `<title> (Imported)`.
   the app's.** `package.json`'s `version` is the release, is read by nothing at
   runtime and is the one to bump — patch for fixes, minor for features, major for
   impactful changes. `AppContext`'s `defaultAppState.version` is the **storyworld
-  schema version**, now `0.7.1`: `ExportWorldMenu` passes it to
+  schema version**, now `0.8.0`: `ExportWorldMenu` passes it to
   `getWorldDataJSON` as `schemaVersion`, it is written into an exported world's
   `_.engine`, and `transport/validate` looks that up in a static schema map — so
   bumping it without adding the map entry makes the app refuse to import its own

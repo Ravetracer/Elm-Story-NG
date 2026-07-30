@@ -609,11 +609,32 @@ new engine tables** — `characterRelationships` is editor-only.
 - `engine/src/lib/db/v12.ts` — `.stores()` for the three tables. **This file
   exists for the definition tables, not for the inventory state**, which is an
   optional unindexed field and needs no version
-- `engine/src/lib/db/index.ts` — tables and save methods
-- `engine/src/lib/api.ts` — the derivation function, `isPathOpen` extended for
-  object conditions **including its `totalConditions` count**, the take and
-  combine writers, and the object clause in
-  `updateEngineDefaultWorldCollectionData`
+- `engine/src/lib/db/index.ts` — tables and save methods, and
+  `saveEngineCollectionData` passing the three new collections through
 
 Sections 4 to 7 then add UI against fields that already exist. Nothing in that
 list is a second migration, which was the point of doing this pass first.
+
+### Corrected while building it: the runtime work is section 4, not section 3
+
+This list originally ended with `engine/src/lib/api.ts` — the derivation function,
+`isPathOpen` extended for object conditions, the take and combine writers, and the
+object clause in `updateEngineDefaultWorldCollectionData`. **All of that moved to
+section 4**, and the reason is section 3's own principle: it ships *fields* early
+because a second migration is expensive, and evaluation logic needs no migration
+at any point. Written in section 3 it would have been dead code with nothing able
+to produce a single delta to act on, and therefore untestable.
+
+So four items are outstanding and belong with the UI that drives them:
+
+- **The derivation function** — placement plus signed delta, clamped at zero,
+  with placement gates re-evaluated on every read.
+- **`isPathOpen` extended for object conditions.** Two changes, not one: the
+  booleans join the same `isOpenAgg` so ALL/ANY still composes across both kinds,
+  **and `totalConditions` must count object conditions too**, or a path gated only
+  on objects loses the feedback#105 preference for conditional paths.
+- **The take and combine writers**, each appending a live event rather than
+  mutating the current one.
+- **The object clause in `updateEngineDefaultWorldCollectionData`** — drop deltas
+  naming an object that no longer exists, keep the rest. Nothing can create a
+  delta until the writers exist, which is exactly why it waits for them.
