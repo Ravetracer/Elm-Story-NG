@@ -94,10 +94,11 @@ therefore unusually safe.
       work is id remapping: a pasted subtree needs fresh ids everywhere, and
       paths must be rewritten to point at the new ids rather than the originals.
       Straightforward but detail-heavy, and worth unit testing the remapper.
-- [ ] **Scene Map: auto layout.** react-flow-renderer 9 has no built-in layout.
-      Needs a layout pass (dagre or elk) writing back to each event's
-      `composer.sceneMapPosX/Y`. Note `react-flow-renderer` is pinned at 9 by the
-      React 17 constraint, so check any layout helper's peer requirements.
+- [x] **Scene Map: auto layout.** Done with `@dagrejs/dagre`, which has no React
+      peer dependency and so is safe against the React 17 pin. Writes back to
+      each event's and jump's `composer.sceneMapPosX/Y`, anchored to where the
+      scene already sat, with an undo beside it in the toolbar. See `CLAUDE.md`,
+      "Scene map auto layout".
 - [ ] **Storyworld Map.** A navigable view of folders, scenes and jumps above the
       Scene Map. New route and view; reuses `useFolders`/`useScenes`/`useJumps`.
 

@@ -7,6 +7,10 @@ import {
   SceneMapClipboard,
   SCENE_MAP_CLIPBOARD_COMMAND
 } from '../lib/sceneMapClipboard'
+import {
+  SceneMapLayoutUndo,
+  SCENE_MAP_LAYOUT_COMMAND
+} from '../lib/sceneMapLayout'
 
 interface ComposerState {
   savedElement: {
@@ -94,6 +98,21 @@ interface ComposerState {
    */
   sceneMapClipboardCommand: SCENE_MAP_CLIPBOARD_COMMAND | null
   /**
+   * An automatic layout, or an undo of one, asked for from outside the scene
+   * map. Same shape as the clipboard command above and cleared the same way.
+   */
+  sceneMapLayoutCommand: SCENE_MAP_LAYOUT_COMMAND | null
+  /**
+   * Where the elements of a scene sat before the last automatic layout moved
+   * them, so it can be taken back.
+   *
+   * Held here rather than in the scene map because the tools menu decides
+   * whether to offer the undo at all, and it is a sibling of the map rather than
+   * a child. It names its own scene for the same reason the clipboard names its
+   * world: every open scene tab shares this context.
+   */
+  sceneMapLayoutUndo: SceneMapLayoutUndo | null
+  /**
    * Elements added to a scene together, which a scene map paste is the only
    * producer of.
    *
@@ -135,6 +154,8 @@ export enum COMPOSER_ACTION_TYPE {
   CONTENT_EDITOR_CLOSED = 'CONTENT_EDITOR_CLOSED',
   SET_SCENE_MAP_CLIPBOARD = 'SET_SCENE_MAP_CLIPBOARD',
   SCENE_MAP_CLIPBOARD_COMMAND = 'SCENE_MAP_CLIPBOARD_COMMAND',
+  SCENE_MAP_LAYOUT_COMMAND = 'SCENE_MAP_LAYOUT_COMMAND',
+  SET_SCENE_MAP_LAYOUT_UNDO = 'SET_SCENE_MAP_LAYOUT_UNDO',
   ELEMENTS_SAVE = 'ELEMENTS_SAVE'
 }
 
@@ -281,6 +302,14 @@ type ComposerActionType =
   | {
       type: COMPOSER_ACTION_TYPE.ELEMENTS_SAVE
       savedElements: { id: ElementId; type: ELEMENT_TYPE }[]
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.SCENE_MAP_LAYOUT_COMMAND
+      sceneMapLayoutCommand: SCENE_MAP_LAYOUT_COMMAND | null
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.SET_SCENE_MAP_LAYOUT_UNDO
+      sceneMapLayoutUndo: SceneMapLayoutUndo | null
     }
 
 /*
@@ -457,6 +486,16 @@ export const composerReducer = (
         ...state,
         savedElements: action.savedElements
       }
+    case COMPOSER_ACTION_TYPE.SCENE_MAP_LAYOUT_COMMAND:
+      return {
+        ...state,
+        sceneMapLayoutCommand: action.sceneMapLayoutCommand
+      }
+    case COMPOSER_ACTION_TYPE.SET_SCENE_MAP_LAYOUT_UNDO:
+      return {
+        ...state,
+        sceneMapLayoutUndo: action.sceneMapLayoutUndo
+      }
     case COMPOSER_ACTION_TYPE.CONTENT_EDITOR_CLOSED:
       return {
         ...state,
@@ -523,6 +562,8 @@ export const defaultComposerState: ComposerState = {
   },
   sceneMapClipboard: null,
   sceneMapClipboardCommand: null,
+  sceneMapLayoutCommand: null,
+  sceneMapLayoutUndo: null,
   savedElements: []
 }
 

@@ -309,6 +309,41 @@ Two more things worth knowing:
   keyboard also stands down inside a text field and while a text selection exists,
   so copying words out of an event preview still works.
 
+## Scene map auto layout
+
+**Auto Layout** in the scene map's toolbar arranges the whole scene, and **Undo
+Auto Layout (n)** beside it puts it back. `lib/sceneMapLayout.ts` is the model
+and is **pure**, like `sceneMapClipboard`, with `src/__tests__/sceneMapLayout.test.ts`
+covering the geometry — a layout that is subtly wrong draws plausibly and shows
+up only in numbers.
+
+- **react-flow-renderer 9 has no layout**, so this wraps `@dagrejs/dagre`. It is
+  a plain graph library with no React peer dependency, which is what makes it
+  safe against the React 17 pin, and it ships its own types.
+- **dagre reports centres, react-flow wants top-left corners**, and each node's
+  own *measured* size is what converts between them. Measured, not assumed: an
+  event node's height varies with its choices, its character references and
+  whether it is an input, so laying out against `DEFAULT_NODE_SIZE` overlaps the
+  tall ones. The sizes come from the react-flow store's `__rf`, which is why the
+  command is performed by the map rather than by the toolbar that asks for it —
+  the same split as the clipboard.
+- **The result is anchored to where the scene already was**, not to (0, 0).
+  `sceneMapLayoutOrigin` takes the top-left of the current positions and the
+  layout is translated onto it, so the author is not left looking at empty canvas
+  with their scene somewhere off screen.
+- **Nodes are sorted and edges deduplicated before dagre sees them.** dagre
+  iterates its own insertion order, so without this two runs over one scene
+  disagree. Self-edges are dropped — a choice looping back to its own event
+  constrains nothing. With this, a second run over an already-laid-out scene
+  moves nothing and leaves the existing undo intact.
+- **The undo payload names its scene**, for the same reason the clipboard names
+  its world: `ComposerContext` is shared by every open scene tab and rc-dock
+  keeps them all mounted. The toolbar only offers the undo when the payload
+  belongs to the scene the outline has selected.
+- **`Promise.all` over the position writes is safe here**, unlike a multi-element
+  cut: these are writes to distinct event and jump records, not repeated
+  read-modify-write cycles over the single `Scene.children` array.
+
 ## The scene map's viewport, and how it used to stall
 
 The per-gesture stall is fixed; `TODO.md`'s "Why the scene map stalled while you

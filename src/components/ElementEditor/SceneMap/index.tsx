@@ -9,13 +9,22 @@ import isHotkey from 'is-hotkey'
 import {
   ElementId,
   ELEMENT_TYPE,
+  Event,
   EVENT_TYPE,
+  Jump,
   PLATFORM_TYPE,
   Scene,
   StudioId,
   PATH_CONDITIONS_TYPE
 } from '../../../data/types'
 import { DEFAULT_EVENT_CONTENT } from '../../../data/eventContentTypes'
+import {
+  layoutSceneMap,
+  sceneMapLayoutOrigin,
+  SceneMapLayoutUndo,
+  SceneMapPosition,
+  SCENE_MAP_LAYOUT_COMMAND
+} from '../../../lib/sceneMapLayout'
 import {
   describeSceneMapClipboard,
   isSceneMapClipboardEmpty,
@@ -66,9 +75,11 @@ import {
   BlockOutlined,
   CloseOutlined,
   CopyOutlined,
+  PartitionOutlined,
   PlusOutlined,
   ScissorOutlined,
-  SnippetsOutlined
+  SnippetsOutlined,
+  UndoOutlined
 } from '@ant-design/icons'
 
 import ContextMenu from './ContextMenu'
@@ -197,6 +208,19 @@ export const SceneMapTools: React.FC<{
       type: COMPOSER_ACTION_TYPE.SCENE_MAP_CLIPBOARD_COMMAND,
       sceneMapClipboardCommand: command
     })
+
+  const requestLayoutCommand = (command: SCENE_MAP_LAYOUT_COMMAND) =>
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SCENE_MAP_LAYOUT_COMMAND,
+      sceneMapLayoutCommand: command
+    })
+
+  // the undo names the scene it belongs to, so a layout run in one scene does
+  // not offer to be undone from another
+  const layoutUndoCount =
+    composer.sceneMapLayoutUndo?.sceneId === sceneId
+      ? composer.sceneMapLayoutUndo.positions.length
+      : 0
 
   return (
     <>
@@ -349,6 +373,31 @@ export const SceneMapTools: React.FC<{
                   <SnippetsOutlined />
                   Paste {pasteDescription}
                   <span className={styles.toolHotkey}>{pasteHotkey}</span>
+                </Menu.Item>
+              )}
+
+              {/*
+                Arranging the whole scene replaces every position the author set
+                by hand, so the undo sits beside it rather than being offered
+                only after the fact — and says how much it would put back.
+              */}
+              <Menu.Item
+                onClick={() =>
+                  requestLayoutCommand(SCENE_MAP_LAYOUT_COMMAND.LAYOUT)
+                }
+              >
+                <PartitionOutlined />
+                Auto Layout
+              </Menu.Item>
+
+              {layoutUndoCount > 0 && (
+                <Menu.Item
+                  onClick={() =>
+                    requestLayoutCommand(SCENE_MAP_LAYOUT_COMMAND.UNDO)
+                  }
+                >
+                  <UndoOutlined />
+                  Undo Auto Layout ({layoutUndoCount})
                 </Menu.Item>
               )}
             </>
@@ -994,20 +1043,153 @@ const SceneMap: React.FC<{
     })
   }
 
+  /*
+   * Automatic placement.
+   *
+   * Performed here rather than in the tools menu for the same reason the
+   * clipboard is: the layout needs each node's *measured* size, which only the
+   * react-flow store knows. An event node's height depends on how many choices
+   * it has, whether it carries character references and whether it is an input,
+   * so laying out against DEFAULT_NODE_SIZE would overlap the tall ones.
+   */
+  const measuredSize = (id: ElementId): { width: number; height: number } => {
+    const found = nodes.find((node) => node.id === id)
+
+    return {
+      width: found?.__rf?.width || DEFAULT_NODE_SIZE.EVENT_WIDTH,
+      height: found?.__rf?.height || DEFAULT_NODE_SIZE.EVENT_HEIGHT
+    }
+  }
+
+  const currentPosition = (element: Event | Jump): SceneMapPosition => ({
+    x: element.composer?.sceneMapPosX ?? 0,
+    y: element.composer?.sceneMapPosY ?? 0
+  })
+
   /**
-   * Whether this scene map should act on a clipboard command or a keypress. The
+   * Writes a position to each element that has one, in one pass.
+   *
+   * `Promise.all` is safe here in a way it is not for a multi-element cut: these
+   * are writes to distinct event and jump records, not repeated read-modify-write
+   * cycles over the single `Scene.children` array.
+   */
+  const savePositions = async (
+    positions: Map<ElementId, SceneMapPosition>
+  ) => {
+    await Promise.all([
+      ...(jumps || []).map(async (jump) => {
+        const position = jump.id && positions.get(jump.id)
+
+        if (!position) return
+
+        await api().jumps.saveJump(studioId, {
+          ...jump,
+          composer: { sceneMapPosX: position.x, sceneMapPosY: position.y }
+        })
+      }),
+      ...(events || []).map(async (event) => {
+        const position = event.id && positions.get(event.id)
+
+        if (!position) return
+
+        await api().events.saveEvent(studioId, {
+          ...event,
+          composer: { sceneMapPosX: position.x, sceneMapPosY: position.y }
+        })
+      })
+    ])
+  }
+
+  const autoLayout = async () => {
+    if (!scene?.id || !events || !jumps || !paths) return
+
+    const elements: (Event | Jump)[] = [...jumps, ...events]
+
+    if (elements.length === 0) return
+
+    const layoutNodes = elements
+      .filter((element): element is Event | Jump => Boolean(element.id))
+      .map((element) => ({
+        id: element.id as ElementId,
+        ...measuredSize(element.id as ElementId)
+      }))
+
+    const positions = layoutSceneMap(
+      layoutNodes,
+      paths.map(({ originId, destinationId }) => ({
+        source: originId,
+        target: destinationId
+      })),
+      // anchored where the scene already sat, so the author is not left looking
+      // at empty canvas while their scene is somewhere off screen
+      sceneMapLayoutOrigin(elements.map(currentPosition))
+    )
+
+    // captured before the write, and only for what actually moves
+    const undo: SceneMapLayoutUndo = {
+      sceneId: scene.id,
+      positions: elements
+        .filter((element) => {
+          const moved = element.id && positions.get(element.id)
+
+          if (!moved) return false
+
+          const was = currentPosition(element)
+
+          return was.x !== moved.x || was.y !== moved.y
+        })
+        .map((element) => [element.id as ElementId, currentPosition(element)])
+    }
+
+    if (undo.positions.length === 0) {
+      logger.info('SceneMap->autoLayout: already laid out; nothing moved')
+
+      return
+    }
+
+    await savePositions(positions)
+
+    logger.info(
+      `SceneMap->autoLayout: moved ${undo.positions.length} of ${elements.length} element(s)`
+    )
+
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SET_SCENE_MAP_LAYOUT_UNDO,
+      sceneMapLayoutUndo: undo
+    })
+  }
+
+  const undoAutoLayout = async () => {
+    const undo = composer.sceneMapLayoutUndo
+
+    if (!undo || undo.sceneId !== sceneId) return
+
+    await savePositions(new Map(undo.positions))
+
+    logger.info(
+      `SceneMap->undoAutoLayout: restored ${undo.positions.length} element(s)`
+    )
+
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SET_SCENE_MAP_LAYOUT_UNDO,
+      sceneMapLayoutUndo: null
+    })
+  }
+
+  /**
+   * Whether this scene map should act on a command or a keypress. The
    * outline's selection decides, because rc-dock keeps every open scene tab
    * mounted in its pane cache — without this, one paste would land in every scene
    * that has ever been opened.
    */
-  const ownsClipboardCommands = (): boolean =>
+  const ownsSceneMapCommands = (): boolean =>
     composer.selectedWorldOutlineElement.id === sceneId &&
     !editorTab.eventForEditing.visible
 
   useEffect(() => {
     const command = composer.sceneMapClipboardCommand
 
-    if (!command || !ownsClipboardCommands()) return
+    if (!command || !ownsSceneMapCommands()) return
 
     // cleared before running, so a command cannot be left set by a failure and
     // block the next one
@@ -1038,10 +1220,37 @@ const SceneMap: React.FC<{
     run()
   }, [composer.sceneMapClipboardCommand])
 
+  useEffect(() => {
+    const command = composer.sceneMapLayoutCommand
+
+    if (!command || !ownsSceneMapCommands()) return
+
+    // cleared before running, so a failed command cannot block the next one
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SCENE_MAP_LAYOUT_COMMAND,
+      sceneMapLayoutCommand: null
+    })
+
+    const run = async () => {
+      switch (command) {
+        case SCENE_MAP_LAYOUT_COMMAND.LAYOUT:
+          await autoLayout()
+          break
+        case SCENE_MAP_LAYOUT_COMMAND.UNDO:
+          await undoAutoLayout()
+          break
+        default:
+          break
+      }
+    }
+
+    run()
+  }, [composer.sceneMapLayoutCommand])
+
   useEventListener(
     'keydown',
     (event: KeyboardEvent) => {
-      if (!ownsClipboardCommands()) return
+      if (!ownsSceneMapCommands()) return
 
       const target = event.target as HTMLElement | null
 

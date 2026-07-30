@@ -45,7 +45,10 @@ below. The asset manager comes first because objects will mint a lot of images.
 - [x] Scene Map: node and path cut, copy, paste and duplicate — see `CLAUDE.md`,
       "The scene map clipboard". The remapper is `lib/sceneMapClipboard.ts`, pure
       and covered by `src/__tests__/sceneMapClipboard.test.ts`.
-- [ ] Scene Map: auto layout
+- [x] Scene Map: auto layout — see `CLAUDE.md`, "Scene map auto layout". The
+      model is `lib/sceneMapLayout.ts`, pure and covered by
+      `src/__tests__/sceneMapLayout.test.ts`; **Auto Layout** and **Undo Auto
+      Layout (n)** are in the scene map's toolbar.
 - [ ] Storyworld Map: navigable map of the entire world
 - [x] Improve editor performance, if possible. It's currently laggy sometimes when moving around
       a scene
