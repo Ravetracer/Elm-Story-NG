@@ -1,0 +1,139 @@
+.StoryworldMap {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 620px;
+  // rc-dock's .dock-panel sets a near-black colour that anything without its own
+  // inherits. This renders in a modal rather than a dock panel, but the colour is
+  // set explicitly for the same reason the other panels now do.
+  color: hsl(0, 0%, 85%);
+
+  .canvas {
+    position: relative;
+    overflow: hidden;
+    background: hsl(0, 0%, 4%);
+  }
+
+  .empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+    text-align: center;
+    color: hsl(0, 0%, 50%);
+  }
+
+  .controls {
+    :global .react-flow__controls-button {
+      background: hsl(0, 0%, 10%);
+      border-bottom: 1px solid hsl(0, 0%, 16%);
+
+      svg {
+        fill: hsl(0, 0%, 70%);
+      }
+    }
+  }
+
+  .miniMap {
+    background: hsl(0, 0%, 8%);
+  }
+
+  .footer {
+    display: flex;
+    gap: 16px;
+    padding: 8px 12px;
+    border-top: 1px solid hsl(0, 0%, 12%);
+    font-size: 13px;
+    color: hsl(0, 0%, 55%);
+
+    .unreachable {
+      color: var(--warning-color);
+    }
+
+    .hint {
+      margin-left: auto;
+      color: hsl(0, 0%, 40%);
+    }
+  }
+}
+
+// Declared at the top level rather than inside .StoryworldMap: react-flow renders
+// nodes into its own container, and CSS modules hash the class name but do not
+// rewrite the selector's structure, so a nested rule would never match.
+.SceneNode {
+  width: 220px;
+  height: 96px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  background: hsl(0, 0%, 9%);
+  border: 1px solid hsl(0, 0%, 18%);
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--highlight-color);
+  }
+
+  &.isStart {
+    border-color: var(--highlight-color);
+  }
+
+  &.hasNoWayIn {
+    border-color: var(--warning-color);
+  }
+
+  .handle {
+    // the connections are jumps, authored inside a scene; nothing is drawn from
+    // here, but react-flow needs a handle to terminate an edge on
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .folderPath {
+    font-size: 11px;
+    color: hsl(0, 0%, 42%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0 6px;
+    font-size: 13px;
+    color: hsl(0, 0%, 88%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .sceneIcon {
+      color: hsl(0, 0%, 45%);
+      flex-shrink: 0;
+    }
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: hsl(0, 0%, 50%);
+
+    .start {
+      color: var(--highlight-color);
+    }
+
+    .selfJumps {
+      color: hsl(0, 0%, 60%);
+    }
+
+    .noWayIn {
+      color: var(--warning-color);
+    }
+  }
+}

@@ -49,7 +49,11 @@ below. The asset manager comes first because objects will mint a lot of images.
       model is `lib/sceneMapLayout.ts`, pure and covered by
       `src/__tests__/sceneMapLayout.test.ts`; **Auto Layout** and **Undo Auto
       Layout (n)** are in the scene map's toolbar.
-- [ ] Storyworld Map: navigable map of the entire world
+- [x] Storyworld Map: navigable map of the entire world — see `CLAUDE.md`, "The
+      storyworld map". The graph model is `lib/storyworldMap.ts`, pure and covered
+      by `src/__tests__/storyworldMap.test.ts`; it opens from the node button in
+      the outline's title bar and is laid out by `lib/sceneMapLayout.ts` on every
+      open rather than persisted, which is what keeps it clear of a schema change.
 - [x] Improve editor performance, if possible. It's currently laggy sometimes when moving around
       a scene
       *(Done for the scene map: the per-gesture stall is gone — zoom p95 60–65ms → 10ms and no

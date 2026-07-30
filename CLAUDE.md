@@ -309,6 +309,41 @@ Two more things worth knowing:
   keyboard also stands down inside a text field and while a text selection exists,
   so copying words out of an event preview still works.
 
+## The storyworld map
+
+`components/StoryworldMap`, opened from the node button in the storyworld
+outline's title bar. Scenes as nodes, jumps between them as edges, folder path
+and element count on each node, and clicking one opens that scene.
+
+- **The graph is inferred, not stored**, which is why `lib/storyworldMap.ts` is a
+  pure module with tests: a jump's origin is the scene it happens to sit in
+  (`Jump.sceneId`) and its destination the first element of its `path`. Getting
+  that inference wrong produces a map that looks authoritative and is quietly
+  missing connections.
+- **A scene is only ever reached by a jump.** A `Path` joins two events inside
+  one scene, so nothing crosses a scene boundary except a `Jump`. That is what
+  makes "no way in" a fact the map can state rather than a guess.
+- **Three kinds of jump are deliberately not edges**: one with no `sceneId` has
+  no origin to draw from (the storyworld's opening jump is the ordinary
+  example, and it marks its destination as the start instead); one whose
+  destination is unset or deleted is dangling; and one leading back into its own
+  scene would be a zero-length self-loop in react-flow 9, so it is counted on the
+  node. Jumps leading the same way collapse into one edge carrying the count.
+- **It is laid out on every open and never stored.** The map is derived, so there
+  is no authored position to remember and nothing to drift. It reuses
+  `layoutSceneMap`, which is deterministic, so the same storyworld draws the same
+  way every time — that is what makes an unremembered layout tolerable. It also
+  keeps the feature clear of a schema change: `Element.composer` has
+  `sceneMapPosX/Y`, but those mean "position in the SceneMap" and reusing them
+  here would be a lie.
+- **Scene nodes are a fixed size**, so the layout is handed the same numbers the
+  stylesheet uses rather than measuring the DOM as the scene map has to. Keep
+  `SCENE_NODE_WIDTH`/`SCENE_NODE_HEIGHT` and the stylesheet in step, or nodes
+  overlap.
+- `.SceneNode` is declared at the top level of the stylesheet, not nested inside
+  `.StoryworldMap`: react-flow renders nodes into its own container, and CSS
+  modules hash the class name without rewriting the selector's structure.
+
 ## Scene map auto layout
 
 **Auto Layout** in the scene map's toolbar arranges the whole scene, and **Undo

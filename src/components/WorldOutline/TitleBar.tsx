@@ -1,21 +1,27 @@
 import React, { useContext, useState } from 'react'
 import { useHistory } from 'react-router'
 
-import { ELEMENT_TYPE, World, WorldId, StudioId } from '../../data/types'
+import { ElementId, ELEMENT_TYPE, World, WorldId, StudioId } from '../../data/types'
 import { OnAddElement } from '.'
 
 import { APP_LOCATION } from '../../contexts/AppContext'
-import { ComposerContext } from '../../contexts/ComposerContext'
+import {
+  ComposerContext,
+  COMPOSER_ACTION_TYPE
+} from '../../contexts/ComposerContext'
 
 import { Button, Tooltip } from 'antd'
 import {
   ExportOutlined,
   LeftOutlined,
+  NodeIndexOutlined,
   PictureOutlined,
   PlusOutlined
 } from '@ant-design/icons'
 
-import { AssetsModal } from '../Modal'
+import { AssetsModal, StoryworldMapModal } from '../Modal'
+
+import api from '../../api'
 import ExportWorldMenu from './ExportWorldMenu'
 import AddElementMenu from './AddElementMenu'
 
@@ -29,9 +35,35 @@ const TitleBar: React.FC<{
 }> = ({ studioId, world, onAdd, onWorldSelect }) => {
   const history = useHistory()
 
-  const { composer } = useContext(ComposerContext)
+  const { composer, composerDispatch } = useContext(ComposerContext)
 
-  const [assetsModalVisible, setAssetsModalVisible] = useState(false)
+  const [assetsModalVisible, setAssetsModalVisible] = useState(false),
+    [mapModalVisible, setMapModalVisible] = useState(false)
+
+  /**
+   * Opening a scene from the map is the same selection the outline makes when a
+   * scene row is clicked: the element editor opens or focuses the scene's tab
+   * from `selectedWorldOutlineElement`, and the outline highlights the row from
+   * the same value. The title is read back because the dispatch carries it and
+   * the map only knows the id.
+   */
+  const openScene = async (sceneId: ElementId) => {
+    const scene = await api().scenes.getScene(studioId, sceneId)
+
+    if (!scene?.id) return
+
+    setMapModalVisible(false)
+
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.WORLD_OUTLINE_SELECT,
+      selectedWorldOutlineElement: {
+        id: scene.id,
+        title: scene.title,
+        type: ELEMENT_TYPE.SCENE,
+        expanded: true
+      }
+    })
+  }
 
   return (
     <>
@@ -41,6 +73,15 @@ const TitleBar: React.FC<{
         subject={world.title}
         visible={assetsModalVisible}
         onCancel={() => setAssetsModalVisible(false)}
+      />
+
+      <StoryworldMapModal
+        studioId={studioId}
+        worldId={world.id as WorldId}
+        subject={world.title}
+        visible={mapModalVisible}
+        onSelectScene={openScene}
+        onCancel={() => setMapModalVisible(false)}
       />
 
       <div className={styles.TitleBar}>
@@ -71,6 +112,17 @@ const TitleBar: React.FC<{
         </span>
 
         <div className={styles.worldButtons}>
+          <Tooltip
+            title="Storyworld Map..."
+            placement="right"
+            align={{ offset: [-6, 0] }}
+            mouseEnterDelay={1}
+          >
+            <Button type="link" onClick={() => setMapModalVisible(true)}>
+              <NodeIndexOutlined />
+            </Button>
+          </Tooltip>
+
           <Tooltip
             title="Manage Assets..."
             placement="right"

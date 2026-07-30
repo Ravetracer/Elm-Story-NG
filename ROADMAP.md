@@ -99,8 +99,11 @@ therefore unusually safe.
       each event's and jump's `composer.sceneMapPosX/Y`, anchored to where the
       scene already sat, with an undo beside it in the toolbar. See `CLAUDE.md`,
       "Scene map auto layout".
-- [ ] **Storyworld Map.** A navigable view of folders, scenes and jumps above the
-      Scene Map. New route and view; reuses `useFolders`/`useScenes`/`useJumps`.
+- [x] **Storyworld Map.** Done as a modal rather than a route, matching the asset
+      and variable managers: the rc-dock tab machinery is keyed on element ids and
+      the world id already belongs to the Preview tab. Reuses
+      `useFolders`/`useScenes`/`useJumps` as expected, and `lib/sceneMapLayout.ts`
+      to arrange itself. See `CLAUDE.md`, "The storyworld map".
 
 ## 1.X.0
 
