@@ -24,6 +24,23 @@
     z-index: 1;
   }
 
+  /*
+   * The crop stage, sized to the crop's aspect and centred in whatever room the
+   * caller gave `.cropContainer`. `aspect-ratio` comes in as an inline style from
+   * the component, since only it knows the ratio.
+   *
+   * `position: relative` is required rather than tidy: react-easy-crop's own
+   * container is `position: absolute` with all four insets at zero, so it needs a
+   * positioned ancestor or it escapes to the nearest one and stops matching the
+   * stage it is supposed to fill.
+   */
+  .cropStage {
+    position: relative;
+    height: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
   .controls {
     position: absolute;
     width: 100%;
