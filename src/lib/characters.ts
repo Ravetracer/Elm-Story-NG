@@ -7,7 +7,6 @@ import {
   WorldId
 } from '../data/types'
 
-import { Area } from 'react-easy-crop/types'
 
 import { names, uniqueNamesGenerator } from 'unique-names-generator'
 
@@ -74,48 +73,6 @@ export const getCharacterDominateMakeup = (activeMasks: CharacterMask[]) => {
       agency: CHARACTER_MASK_TYPE.NEUTRAL
     }
   }
-}
-
-// TODO: abstract and move to index
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new Image()
-
-    image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', (error) => reject(error))
-
-    image.src = url
-  })
-
-// TODO: abstract and move to index
-export const getCroppedImageData = async (
-  src: string,
-  pixelCrop: Area
-): Promise<{ data: Blob | null; url: string } | null> => {
-  const image = await createImage(src),
-    canvas = document.createElement('canvas'),
-    context = canvas.getContext('2d')
-
-  canvas.width = 200
-  canvas.height = 250
-
-  context?.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    200,
-    250
-  )
-
-  return new Promise((resolve) => {
-    canvas.toBlob((file) => {
-      resolve({ data: file, url: canvas.toDataURL('image/jpeg') })
-    }, 'image/jpeg')
-  })
 }
 
 export const createGenericCharacter = async (

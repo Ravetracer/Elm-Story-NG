@@ -106,6 +106,38 @@ export const extensionForReference = (
 export const isAssetUnused = ({ references }: ManagedAsset): boolean =>
   references.length === 0
 
+/**
+ * What an image slot does to a file on the way in.
+ *
+ * Every asset is processed to fixed dimensions and a fixed format, which is what
+ * makes a stored asset interchangeable with a freshly imported one — the whole
+ * premise of assigning an existing asset rather than importing a new file. The
+ * numbers were the two crop call sites' own literals; they live here so the asset
+ * manager can produce an asset that is indistinguishable from one imported in
+ * place, rather than a second, near-miss variety.
+ */
+export interface ImageAssetPipeline {
+  aspectRatio: number
+  size: { width: number; height: number }
+  format: Extract<REFERENCED_EXTENSION, 'jpeg' | 'webp'>
+  quality: number
+}
+
+export const CHARACTER_MASK_PIPELINE: ImageAssetPipeline = {
+  aspectRatio: 4 / 5,
+  size: { width: 200, height: 250 },
+  format: 'jpeg',
+  quality: 1
+}
+
+export const EVENT_IMAGE_PIPELINE: ImageAssetPipeline = {
+  aspectRatio: 16 / 9,
+  // the composer's writing column is 655px wide; twice that is the retina size
+  size: { width: 655 * 2, height: 368 * 2 },
+  format: 'webp',
+  quality: 0.7
+}
+
 export interface AssetReferenceSources {
   characters?: Character[]
   events?: Event[]

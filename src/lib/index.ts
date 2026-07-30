@@ -25,7 +25,10 @@ export const getCroppedImageData = async (
     width: number
     height: number
   },
-  format?: 'png' | 'webp',
+  // 'jpeg' is the fallback below and is what character masks are saved as, so
+  // it belongs in the union; leaving it out meant the mask path could not name
+  // its own format and kept a second copy of this function instead
+  format?: 'png' | 'webp' | 'jpeg',
   quality?: number
 ): Promise<{ data: Blob | null; url: string } | null> => {
   const image = await createImage(src),

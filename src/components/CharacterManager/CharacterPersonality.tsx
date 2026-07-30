@@ -9,10 +9,10 @@ import React, {
   useCallback
 } from 'react'
 
-import {
-  getCharacterDominateMakeup,
-  getCroppedImageData
-} from '../../lib/characters'
+import { getCroppedImageData } from '../../lib'
+import { getCharacterDominateMakeup } from '../../lib/characters'
+
+import { CHARACTER_MASK_PIPELINE } from '../../lib/assets'
 
 import {
   Character,
@@ -215,7 +215,10 @@ const ImportMaskImage = React.forwardRef<
     if (maskImageData && croppedAreaPixels) {
       const maskData = await getCroppedImageData(
         maskImageData as string,
-        croppedAreaPixels
+        croppedAreaPixels,
+        CHARACTER_MASK_PIPELINE.size,
+        CHARACTER_MASK_PIPELINE.format,
+        CHARACTER_MASK_PIPELINE.quality
       )
 
       maskType &&

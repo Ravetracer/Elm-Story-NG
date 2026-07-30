@@ -4,6 +4,7 @@ import { getSvgUrl } from '../../../../lib'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
+import { EVENT_IMAGE_PIPELINE } from '../../../../lib/assets'
 import { WINDOW_EVENT_TYPE } from '../../../../lib/events'
 import { StudioId, WorldId } from '../../../../data/types'
 import { ImageElement } from '../../../../data/eventContentTypes'
@@ -108,8 +109,9 @@ const ImageElementSelect: React.FC<{
           border: 'none'
         }}
         containerStyle={{ background: 'transparent' }}
-        aspectRatio={16 / 9}
-        quality={0.7}
+        aspectRatio={EVENT_IMAGE_PIPELINE.aspectRatio}
+        format={EVENT_IMAGE_PIPELINE.format}
+        quality={EVENT_IMAGE_PIPELINE.quality}
         onImportImageData={() => setCroppingImage(true)}
         onImportImageCropComplete={async (image) => {
           if (image) {
@@ -126,7 +128,7 @@ const ImageElementSelect: React.FC<{
           setLoadingImage(false)
         }}
         onSelectNewImage={() => importInlineImageRef.current?.import()}
-        size={{ width: 655 * 2, height: 368 * 2 }}
+        size={EVENT_IMAGE_PIPELINE.size}
       />
 
       {element.asset_id && imagePath && (

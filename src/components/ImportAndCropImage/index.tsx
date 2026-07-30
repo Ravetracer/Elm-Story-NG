@@ -1,4 +1,5 @@
 import { getCroppedImageData } from '../../lib'
+import { ImageAssetPipeline } from '../../lib/assets'
 import React, {
   useCallback,
   useEffect,
@@ -38,6 +39,9 @@ const ImportAndCropImage = React.forwardRef<
     controlStyle?: React.CSSProperties
     aspectRatio?: number
     size: { width: number; height: number }
+    // what the file is encoded as on save. Defaults to webp, which is what the
+    // event content image slot has always written; character masks are jpeg.
+    format?: ImageAssetPipeline['format']
     quality?: number
     onImportImageData: () => void
     onImportImageCropComplete: (image: CroppedImage | null) => void
@@ -53,6 +57,7 @@ const ImportAndCropImage = React.forwardRef<
       controlStyle,
       aspectRatio,
       size,
+      format,
       quality,
       onImportImageData,
       onImportImageCropComplete,
@@ -95,7 +100,7 @@ const ImportAndCropImage = React.forwardRef<
           imageData as string,
           croppedAreaPixels,
           size,
-          'webp',
+          format || 'webp',
           quality
         )
 
@@ -105,7 +110,7 @@ const ImportAndCropImage = React.forwardRef<
             ...croppedImageData
           })
       }
-    }, [imageType, imageData, croppedAreaPixels])
+    }, [imageType, imageData, croppedAreaPixels, size, format, quality])
 
     const resetState = () => {
       if (importImageInputRef.current) importImageInputRef.current.value = ''
