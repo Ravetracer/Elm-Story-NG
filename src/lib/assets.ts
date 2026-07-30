@@ -89,23 +89,6 @@ export interface ManagedAsset extends AssetFile {
 export const isReferenceClearable = (type: ASSET_REFERENCE_TYPE): boolean =>
   type !== ASSET_REFERENCE_TYPE.EVENT_IMAGE
 
-export const extensionForReference = (
-  type: ASSET_REFERENCE_TYPE
-): REFERENCED_EXTENSION => {
-  switch (type) {
-    case ASSET_REFERENCE_TYPE.CHARACTER_MASK:
-      return 'jpeg'
-    case ASSET_REFERENCE_TYPE.EVENT_IMAGE:
-      return 'webp'
-    case ASSET_REFERENCE_TYPE.EVENT_AUDIO:
-    case ASSET_REFERENCE_TYPE.SCENE_AUDIO:
-      return 'mp3'
-  }
-}
-
-export const isAssetUnused = ({ references }: ManagedAsset): boolean =>
-  references.length === 0
-
 /**
  * What an image slot does to a file on the way in.
  *
@@ -137,6 +120,78 @@ export const EVENT_IMAGE_PIPELINE: ImageAssetPipeline = {
   format: 'webp',
   quality: 0.7
 }
+
+/**
+ * What an asset *is*, as opposed to where it is referenced from.
+ *
+ * The distinction only appears once an asset can be uploaded before it is
+ * assigned: `ASSET_REFERENCE_TYPE` answers "who points at this file", which an
+ * unassigned asset has no answer to, while a kind answers "what was this
+ * processed as", which is fixed the moment it is written to disk. Event audio
+ * and scene audio are two reference types and one kind.
+ */
+export enum ASSET_KIND {
+  CHARACTER_MASK = 'CHARACTER_MASK',
+  EVENT_IMAGE = 'EVENT_IMAGE',
+  AUDIO = 'AUDIO'
+}
+
+export interface AssetKindProfile {
+  label: string
+  /**
+   * What a file of this kind is stored as. Assets are stored flat as
+   * `<id>.<ext>` and every read site asks for the extension it expects rather
+   * than looking at disk, so this is also what a picker has to filter on: a
+   * `.png` assigned to a mask would be requested as `.jpeg`, come back missing,
+   * and CharacterMask would then silently clear the assignment.
+   */
+  ext: REFERENCED_EXTENSION
+  /** the file input's accept attribute */
+  accept: string
+  /** absent for audio, which is stored exactly as imported */
+  pipeline?: ImageAssetPipeline
+}
+
+export const ASSET_KINDS: Record<ASSET_KIND, AssetKindProfile> = {
+  [ASSET_KIND.EVENT_IMAGE]: {
+    label: 'Event Image',
+    ext: 'webp',
+    accept: 'image/*',
+    pipeline: EVENT_IMAGE_PIPELINE
+  },
+  [ASSET_KIND.CHARACTER_MASK]: {
+    label: 'Character Mask',
+    ext: 'jpeg',
+    accept: 'image/*',
+    pipeline: CHARACTER_MASK_PIPELINE
+  },
+  [ASSET_KIND.AUDIO]: {
+    label: 'Audio',
+    ext: 'mp3',
+    accept: 'audio/mp3'
+  }
+}
+
+export const assetKindForReference = (
+  type: ASSET_REFERENCE_TYPE
+): ASSET_KIND => {
+  switch (type) {
+    case ASSET_REFERENCE_TYPE.CHARACTER_MASK:
+      return ASSET_KIND.CHARACTER_MASK
+    case ASSET_REFERENCE_TYPE.EVENT_IMAGE:
+      return ASSET_KIND.EVENT_IMAGE
+    case ASSET_REFERENCE_TYPE.EVENT_AUDIO:
+    case ASSET_REFERENCE_TYPE.SCENE_AUDIO:
+      return ASSET_KIND.AUDIO
+  }
+}
+
+export const extensionForReference = (
+  type: ASSET_REFERENCE_TYPE
+): REFERENCED_EXTENSION => ASSET_KINDS[assetKindForReference(type)].ext
+
+export const isAssetUnused = ({ references }: ManagedAsset): boolean =>
+  references.length === 0
 
 export interface AssetReferenceSources {
   characters?: Character[]

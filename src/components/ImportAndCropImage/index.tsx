@@ -36,6 +36,9 @@ const ImportAndCropImage = React.forwardRef<
     showGrid?: boolean
     cropAreaStyle?: React.CSSProperties
     containerStyle?: React.CSSProperties
+    // the crop stage is declared 16:9 in this component's stylesheet, which suits
+    // the event image slot it was written for and nothing else
+    cropContainerStyle?: React.CSSProperties
     controlStyle?: React.CSSProperties
     aspectRatio?: number
     size: { width: number; height: number }
@@ -54,6 +57,7 @@ const ImportAndCropImage = React.forwardRef<
       showGrid,
       cropAreaStyle,
       containerStyle,
+      cropContainerStyle,
       controlStyle,
       aspectRatio,
       size,
@@ -163,7 +167,10 @@ const ImportAndCropImage = React.forwardRef<
 
             {imageData && (
               <>
-                <div className={styles.cropContainer}>
+                <div
+                  className={styles.cropContainer}
+                  style={{ ...cropContainerStyle }}
+                >
                   <Cropper
                     style={{
                       cropAreaStyle: {

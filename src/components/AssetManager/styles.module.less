@@ -16,13 +16,32 @@
     border-bottom: 1px solid hsl(0, 0%, 12%);
   }
 
+  .toolbarActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  // ImportAndCropImage absolutely fills its parent, so the grid and the crop
+  // stage share one positioned box rather than the crop stage being a third row
+  // that resizes the modal when it appears.
+  .body {
+    position: relative;
+    overflow: hidden;
+  }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     align-content: start;
     gap: 10px;
     padding: 12px;
+    height: 100%;
     overflow-y: auto;
+
+    &.hidden {
+      display: none;
+    }
   }
 
   .empty {
