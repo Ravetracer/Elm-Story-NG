@@ -77,4 +77,17 @@
     width: 100%;
     overflow: auto;
   }
+
+  // Distraction-free writing. The view is positioned against the toolbar's
+  // height rather than laid out after it, so hiding one without moving the other
+  // would leave a 32px band of nothing above the writing column.
+  &.distractionFree {
+    .TabContentToolbar {
+      display: none;
+    }
+
+    .TabContentView {
+      top: 0px;
+    }
+  }
 }

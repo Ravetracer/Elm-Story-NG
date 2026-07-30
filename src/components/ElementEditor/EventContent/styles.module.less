@@ -15,6 +15,16 @@
   height: 100%;
   z-index: 6;
   background: hsla(0, 0%, 1%, 0.9);
+
+  /*
+   * Distraction-free writing. The 0.9 alpha above leaves the scene map, its
+   * zoom controls and its minimap legible behind the writing column — faint,
+   * but a graph of the whole scene is exactly what this mode is for hiding. They
+   * sit below this overlay rather than beside it, so opacity is all it takes.
+   */
+  &.distractionFree {
+    background: hsl(0, 0%, 1%);
+  }
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0 10px;
@@ -48,6 +58,27 @@
       top: 0px;
       z-index: 7;
       margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: hsl(0, 0%, 55%);
+
+      .titleText {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .distractionFreeButton {
+        cursor: pointer;
+        color: hsl(0, 0%, 45%);
+        transition: color 0.2s;
+
+        &:hover {
+          color: var(--highlight-color);
+        }
+      }
     }
 
     .EventContentToolbar {

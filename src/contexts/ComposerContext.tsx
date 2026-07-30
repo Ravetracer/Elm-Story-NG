@@ -65,6 +65,22 @@ interface ComposerState {
   }
   draggableEventContentElement: string | null
   /**
+   * Distraction-free writing. Held here rather than in the content editor
+   * because the chrome it hides — the outline, the inspector and the dock tab
+   * bar — is rendered by the Composer route, two levels above it.
+   *
+   * `active` is what the layout reads and is only ever true while a content
+   * editor is open, so closing one cannot stand the author in a composer with
+   * no panels and nothing to write in. `preferred` outlives that, so the next
+   * event opens straight back into it. The button and the shortcut set both;
+   * escape clears only `active`, which is what makes the preference worth
+   * having. Neither is persisted, so a restart begins with the full chrome.
+   */
+  distractionFreeMode: {
+    active: boolean
+    preferred: boolean
+  }
+  /**
    * What the scene map last cut or copied, held in memory rather than on the
    * system clipboard: the payload names variables, characters and assets by
    * world-scoped id, so it only means anything inside the storyworld it came
@@ -113,6 +129,10 @@ export enum COMPOSER_ACTION_TYPE {
   OPEN_CHARACTER_MODAL = 'OPEN_CHARACTER_MODAL',
   CLOSE_CHARACTER_MODAL = 'CLOSE_CHARACTER_MODAL',
   SET_DRAGGABLE_EVENT_CONTENT_ELEMENT = 'SET_DRAGGABLE_EVENT_CONTENT_ELEMENT',
+  TOGGLE_DISTRACTION_FREE_MODE = 'TOGGLE_DISTRACTION_FREE_MODE',
+  EXIT_DISTRACTION_FREE_MODE = 'EXIT_DISTRACTION_FREE_MODE',
+  CONTENT_EDITOR_OPENED = 'CONTENT_EDITOR_OPENED',
+  CONTENT_EDITOR_CLOSED = 'CONTENT_EDITOR_CLOSED',
   SET_SCENE_MAP_CLIPBOARD = 'SET_SCENE_MAP_CLIPBOARD',
   SCENE_MAP_CLIPBOARD_COMMAND = 'SCENE_MAP_CLIPBOARD_COMMAND',
   ELEMENTS_SAVE = 'ELEMENTS_SAVE'
@@ -239,6 +259,18 @@ type ComposerActionType =
       id: string | null
     }
   | {
+      type: COMPOSER_ACTION_TYPE.TOGGLE_DISTRACTION_FREE_MODE
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.EXIT_DISTRACTION_FREE_MODE
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.CONTENT_EDITOR_OPENED
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.CONTENT_EDITOR_CLOSED
+    }
+  | {
       type: COMPOSER_ACTION_TYPE.SET_SCENE_MAP_CLIPBOARD
       sceneMapClipboard: SceneMapClipboard | null
     }
@@ -251,7 +283,12 @@ type ComposerActionType =
       savedElements: { id: ElementId; type: ELEMENT_TYPE }[]
     }
 
-const composerReducer = (
+/*
+ * Exported for src/__tests__/distractionFreeMode.test.ts, which holds the
+ * distraction-free semantics in place: which exit keeps the preference armed and
+ * which clears it is not obvious from either call site.
+ */
+export const composerReducer = (
   state: ComposerState,
   action: ComposerActionType
 ): ComposerState => {
@@ -368,6 +405,43 @@ const composerReducer = (
         ...state,
         draggableEventContentElement: action.id
       }
+    /*
+     * The button and the shortcut are the deliberate switch, so they set the
+     * preference to whatever they just did: turning the mode off means the next
+     * event opens with its chrome. Escape is not that switch — see
+     * EXIT_DISTRACTION_FREE_MODE.
+     */
+    case COMPOSER_ACTION_TYPE.TOGGLE_DISTRACTION_FREE_MODE:
+      return {
+        ...state,
+        distractionFreeMode: {
+          active: !state.distractionFreeMode.active,
+          preferred: !state.distractionFreeMode.active
+        }
+      }
+    /*
+     * Escape means "give me the panels back for a moment", not "stop writing
+     * this way". It leaves the preference armed, so escaping out and then
+     * opening the next event returns to distraction-free — which is the only
+     * route by which the preference outlives an editor at all, since every other
+     * way of closing one is behind the chrome the mode hides.
+     */
+    case COMPOSER_ACTION_TYPE.EXIT_DISTRACTION_FREE_MODE:
+      return {
+        ...state,
+        distractionFreeMode: {
+          ...state.distractionFreeMode,
+          active: false
+        }
+      }
+    case COMPOSER_ACTION_TYPE.CONTENT_EDITOR_OPENED:
+      return {
+        ...state,
+        distractionFreeMode: {
+          ...state.distractionFreeMode,
+          active: state.distractionFreeMode.preferred
+        }
+      }
     case COMPOSER_ACTION_TYPE.SET_SCENE_MAP_CLIPBOARD:
       return {
         ...state,
@@ -383,6 +457,14 @@ const composerReducer = (
         ...state,
         savedElements: action.savedElements
       }
+    case COMPOSER_ACTION_TYPE.CONTENT_EDITOR_CLOSED:
+      return {
+        ...state,
+        distractionFreeMode: {
+          ...state.distractionFreeMode,
+          active: false
+        }
+      }
     default:
       return state
   }
@@ -393,7 +475,7 @@ interface ComposerContextType {
   composerDispatch: React.Dispatch<ComposerActionType>
 }
 
-const defaultComposerState: ComposerState = {
+export const defaultComposerState: ComposerState = {
   savedElement: {
     id: undefined,
     type: undefined
@@ -435,6 +517,10 @@ const defaultComposerState: ComposerState = {
     id: undefined
   },
   draggableEventContentElement: null,
+  distractionFreeMode: {
+    active: false,
+    preferred: false
+  },
   sceneMapClipboard: null,
   sceneMapClipboardCommand: null,
   savedElements: []

@@ -50,4 +50,28 @@
     min-width: 300px;
     max-width: 300px;
   }
+
+  /*
+   * Distraction-free writing, set by ComposerContext's distractionFreeMode.
+   * Only the writing column is left: the outline, the inspector and the editor's
+   * tab strip go, while the title bar stays because it carries the window
+   * controls and the UI size picker on a frameless window.
+   */
+  &.distractionFree {
+    .worldOutlinePanel,
+    .inspectorPanel {
+      display: none;
+    }
+
+    // rc-dock renders a divider between each pair of DividerBox children.
+    // Scoped to direct children so the dividers inside the editor's own docks
+    // are left alone.
+    & > :global(.dock-divider) {
+      display: none;
+    }
+
+    :global .dock-bar {
+      display: none;
+    }
+  }
 }

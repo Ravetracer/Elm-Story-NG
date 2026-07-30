@@ -1,6 +1,6 @@
 import logger from '../../../lib/logger'
 
-import React, { useEffect } from 'react'
+import React, { useContext, useEffect } from 'react'
 
 import {
   ElementId,
@@ -12,6 +12,7 @@ import {
 
 import { useDebouncedResizeObserver, useWorld, useScene } from '../../../hooks'
 
+import { ComposerContext } from '../../../contexts/ComposerContext'
 import ElementEditorTabProvider from '../../../contexts/ElementEditorTabContext'
 
 import TabContentToolbar from './TabContentToolbar'
@@ -26,6 +27,8 @@ const TabContent: React.FC<{
   tools: JSX.Element
 }> = ({ studioId, id, type, tools, view }) => {
   let component: { type: ELEMENT_TYPE; data: World | Scene | undefined }
+
+  const { composer } = useContext(ComposerContext)
 
   const {
     ref: tabContentViewRef,
@@ -66,7 +69,17 @@ const TabContent: React.FC<{
 
   return (
     <ElementEditorTabProvider>
-      <div className={styles.TabContent}>
+      {/*
+       * The per-tab toolbar goes with the rest of the chrome in
+       * distraction-free mode. It has to be done from here rather than from the
+       * Composer route's stylesheet, because these are CSS module class names
+       * and the hash is not addressable from another module.
+       */}
+      <div
+        className={`${styles.TabContent} ${
+          composer.distractionFreeMode.active ? styles.distractionFree : ''
+        }`}
+      >
         {/* #356 */}
         <TabContentToolbar component={component}>{tools}</TabContentToolbar>
         <div

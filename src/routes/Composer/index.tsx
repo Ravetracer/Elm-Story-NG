@@ -83,7 +83,19 @@ const Composer: React.FC = () => {
 
       {/* Editor */}
       {app.selectedStudioId && selectedWorld && (
-        <DividerBox mode="horizontal" className={styles.Composer}>
+        <DividerBox
+          mode="horizontal"
+          /*
+           * The panels are hidden by CSS rather than by dropping them from the
+           * DividerBox. Unmounting them would discard the outline's tree and the
+           * properties form and rebuild the inspector's own DockLayout on every
+           * toggle, and both side panels are pinned to 300px, so hiding them is
+           * enough for the editor between them to take the space.
+           */
+          className={`${styles.Composer} ${
+            composer.distractionFreeMode.active ? styles.distractionFree : ''
+          }`}
+        >
           <DividerBox mode="vertical" className={styles.worldOutlinePanel}>
             <WorldInspector
               studioId={app.selectedStudioId}

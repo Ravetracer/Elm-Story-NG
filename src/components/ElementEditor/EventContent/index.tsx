@@ -26,7 +26,13 @@ import { getTemplateExpressionRanges } from '../../../lib/templates'
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 
 import { WINDOW_EVENT_TYPE } from '../../../lib/events'
-import { ElementId, ELEMENT_TYPE, Scene, StudioId } from '../../../data/types'
+import {
+  ElementId,
+  ELEMENT_TYPE,
+  PLATFORM_TYPE,
+  Scene,
+  StudioId
+} from '../../../data/types'
 import {
   CustomRange,
   HOTKEY_EXPRESSION,
@@ -43,8 +49,11 @@ import {
 
 import { DragStart, DropResult } from 'react-beautiful-dnd'
 
+import { CompressOutlined, ExpandOutlined } from '@ant-design/icons'
+
 import { useEvent } from '../../../hooks'
 
+import { AppContext } from '../../../contexts/AppContext'
 import {
   ComposerContext,
   COMPOSER_ACTION_TYPE
@@ -101,6 +110,13 @@ const defaultCommandMenuProps = {
   index: 0
 }
 
+/**
+ * Free of the content editor's own bindings (`mod+b/i/u/s/\``, `mod+a`, the
+ * bracket keys) and of the app menu's (`mod+alt+=/-/0`, `mod+r/w/o`). Declared
+ * once so the binding and the label in the header cannot drift apart.
+ */
+const DISTRACTION_FREE_HOTKEY = 'mod+shift+f'
+
 const EventContent: React.FC<{
   studioId: StudioId
   scene: Scene
@@ -126,7 +142,8 @@ const EventContent: React.FC<{
     )
   )
 
-  const { composer, composerDispatch } = useContext(ComposerContext)
+  const { app } = useContext(AppContext),
+    { composer, composerDispatch } = useContext(ComposerContext)
 
   const [selectedExpression, setSelectedExpression] = useState({
       isInside: false,
@@ -332,6 +349,26 @@ const EventContent: React.FC<{
     })
   }, [])
 
+  /**
+   * The Composer route hides its panels while distraction-free mode is active,
+   * and it has no other way to know a content editor is open — this component is
+   * mounted by the SceneMap, two levels below it. Reporting the close is what
+   * brings the chrome back rather than leaving the author with no panels and
+   * nothing to write in.
+   */
+  useEffect(() => {
+    composerDispatch({ type: COMPOSER_ACTION_TYPE.CONTENT_EDITOR_OPENED })
+
+    return () => {
+      composerDispatch({ type: COMPOSER_ACTION_TYPE.CONTENT_EDITOR_CLOSED })
+    }
+  }, [])
+
+  const toggleDistractionFreeMode = () =>
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.TOGGLE_DISTRACTION_FREE_MODE
+    })
+
   const close = () => {
     if (composer.selectedWorldOutlineElement.id === scene.id || !scene.id)
       onClose()
@@ -496,6 +533,18 @@ const EventContent: React.FC<{
             return
           }
 
+          // one layer at a time: the command menu above, then the mode, then the
+          // editor itself, so a single press never discards more than one thing.
+          // This exits without clearing the preference, so escaping out and
+          // opening the next event writes distraction-free again.
+          if (composer.distractionFreeMode.active) {
+            composerDispatch({
+              type: COMPOSER_ACTION_TYPE.EXIT_DISTRACTION_FREE_MODE
+            })
+
+            return
+          }
+
           close()
           return
         default:
@@ -507,7 +556,10 @@ const EventContent: React.FC<{
       isAllSelected,
       commandMenuProps,
       totalCommandMenuItems,
-      selectedCommandMenuItem
+      selectedCommandMenuItem,
+      // without this the escape branch reads the mode as it was on mount and
+      // closes the editor instead of stepping out of distraction-free
+      composer.distractionFreeMode.active
     ]
   )
 
@@ -515,6 +567,17 @@ const EventContent: React.FC<{
     'keydown',
     (event: KeyboardEvent) => {
       if (event) {
+        // handled here rather than in HOTKEYS, which Editable only consults
+        // while the caret is in the text: the toggle has to work after a click
+        // on the empty field beside the writing column too
+        if (isHotkey(DISTRACTION_FREE_HOTKEY, event)) {
+          event.preventDefault()
+
+          toggleDistractionFreeMode()
+
+          return
+        }
+
         switch (event.key) {
           case 'Escape':
             // TODO: should hide command menu and toolbar first...
@@ -671,7 +734,9 @@ const EventContent: React.FC<{
     <>
       {event && (
         <div
-          className={styles.EventContent}
+          className={`${styles.EventContent} ${
+            composer.distractionFreeMode.active ? styles.distractionFree : ''
+          }`}
           onClick={() =>
             composer.selectedWorldOutlineElement.id !== scene.id &&
             composerDispatch({
@@ -686,9 +751,34 @@ const EventContent: React.FC<{
           }
         >
           <div className={`${styles.contentContainer}`}>
-            {/* <div className={styles.eventTitle}>
-              {scene.title} | {event.title}
-            </div> */}
+            {/*
+             * The authors left this header commented out. It is restored because
+             * distraction-free mode needs a visible way in and out — the View
+             * menu carrying the shortcut is never rendered on a frameless
+             * window — and because it answers which event is being edited, which
+             * the overlay otherwise hides.
+             */}
+            <div className={styles.eventTitle}>
+              <span className={styles.titleText}>
+                {scene.title} | {event.title}
+              </span>
+
+              <div
+                className={styles.distractionFreeButton}
+                title={`${
+                  composer.distractionFreeMode.active ? 'Exit' : 'Enter'
+                } distraction-free mode (${
+                  app.platform === PLATFORM_TYPE.MACOS ? 'Cmd' : 'Ctrl'
+                }+Shift+F)`}
+                onClick={toggleDistractionFreeMode}
+              >
+                {composer.distractionFreeMode.active ? (
+                  <CompressOutlined />
+                ) : (
+                  <ExpandOutlined />
+                )}
+              </div>
+            </div>
 
             <SlateContext
               editor={editor}
