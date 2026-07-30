@@ -5,6 +5,12 @@ narrative storyworlds.
 
 Copyright (c) 2022 Elm Story Games
 
+Source code is released under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt);
+see `LICENSE` for the full text and `CREDITS` for the original authors.
+Storyworld content data remains the copyright and property of its own authors:
+exported data may be used for non-commercial and commercial purposes, but
+embedded and distributed license and copyright data must not be modified.
+
 This is a revival of the abandoned 0.7.0 release. The build toolchain has been
 modernized so the project runs on current Node and Electron; the application
 code and its UI dependencies are deliberately unchanged. See
