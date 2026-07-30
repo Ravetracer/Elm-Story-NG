@@ -20,6 +20,7 @@ import v040Upgrade from './transport/upgrade/0.4.0'
 import v050Upgrade from './transport/upgrade/0.5.0'
 import v060Upgrade from './transport/upgrade/0.6.0'
 import v070Upgrade from './transport/upgrade/0.7.0'
+import v071Upgrade from './transport/upgrade/0.7.1'
 
 import { WINDOW_EVENT_TYPE } from './events'
 
@@ -92,7 +93,7 @@ export default (
         }
 
         // #288
-        // Upgrade from 0.2.0+ to 0.6.0
+        // Upgrade from 0.2.0+ to 0.7.0
         if (
           semver.gte(engineVersion, '0.2.0') &&
           semver.lt(engineVersion, '0.7.0')
@@ -125,8 +126,30 @@ export default (
         if (!upgradedWorldData)
           throw new Error('Unable to import game data. Version conflict.')
 
+        /**
+         * 0.7.0 to 0.7.1. Whichever branch above ran, the data is 0.7.0-shaped by
+         * this point, so this is one step rather than a member of each chain.
+         *
+         * The gate is deliberately separate from the `lt('0.7.0')` one above.
+         * Upstream's 0.7.1 instead widened that gate to `lt('0.7.1')` and appended
+         * this call inside it, which sends a 0.7.0 file back through
+         * `v070Upgrade` — and that is not idempotent. It resets every event's
+         * `characters` and `images` to `[]`, appends the variable type onto each
+         * condition's `compare` and each effect's `set` a second time, and pushes
+         * the scene's jump child refs in again. The duplicated refs alone are
+         * fatal on next open, since @atlaskit/tree dereferences every child while
+         * flattening the outline.
+         */
+        if (semver.lt(engineVersion, '0.7.1')) {
+          // 0.7.0-shaped by now whichever branch ran, so this casts to the era
+          // rather than suppressing the union mismatch with a @ts-ignore
+          upgradedWorldData = v071Upgrade(
+            upgradedWorldData as WorldDataJSON_070
+          )
+        }
+
         // #411: always set to most recent version of app
-        upgradedWorldData._.engine = '0.7.0'
+        upgradedWorldData._.engine = '0.7.1'
 
         const {
           _,

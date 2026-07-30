@@ -42,7 +42,7 @@ import {
   WORLD_EXPORT_TYPE,
   PLATFORM_TYPE
 } from './data/types'
-import { WorldDataJSON } from './lib/transport/types/0.7.0'
+import { WorldDataJSON } from './lib/transport/types/0.7.1'
 
 // A named rather than default export: the main entry otherwise mixes named and
 // default exports, which Rollup warns about.

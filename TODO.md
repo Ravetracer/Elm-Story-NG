@@ -9,8 +9,8 @@ paid for three times.
 touches. Its *ordering* is superseded by this file.
 
 **Two persisted stores, two migration chains.** The editor's library lives in
-`src/db/v*.ts` (currently through v10) and the engine's runtime state in
-`engine/src/lib/db/v*.ts` (v6 through v10). Anything stored on a live event, which
+`src/db/v*.ts` (currently through v11) and the engine's runtime state in
+`engine/src/lib/db/v*.ts` (v6 through v11). Anything stored on a live event, which
 includes inventory state, needs an engine migration as well as an editor one.
 Every schema change therefore costs: a new transport schema, an
 `importWorldData` branch, an export path change, and up to two migrations.
@@ -114,9 +114,13 @@ than a second migration later; the cost is that the shape has to be right, which
 is what section 2 is for.
 
 - [ ] Transport schema `0.8.0`, plus the `importWorldData` branch and the export
-      path
-- [ ] Editor migration `src/db/v11.ts`
-- [ ] Engine migration `engine/src/lib/db/v11.ts` for inventory state
+      path. Note the chain now ends at 0.7.1, so the new step upgrades from there;
+      `types/0.7.1.ts` re-exports 0.7.0 rather than declaring a shape, so `0.8.0`
+      is the first file in a while that gets a real declaration of its own.
+- [ ] Editor migration `src/db/v12.ts` — **v11 is taken**, by the 0.7.1 schema
+      restamp adopted from the 0.7.1 archive
+- [ ] Engine migration `engine/src/lib/db/v12.ts` for inventory state, same
+      renumbering
 
 ## 4. World objects and inventory
 
@@ -636,3 +640,52 @@ because the dispatch itself logs nothing.
 Re-measure the same way before and after, on the same scene **and the same
 outline state**: numbers from the running app, not from reasoning about the render
 tree.
+
+## What the 0.7.1 archive contained
+
+A second archive marked 0.7.1 was compared against this repository's initial
+commit in full. Recorded here because the answer is mostly "nothing", and that is
+worth being able to look up rather than re-derive.
+
+It is a **version-string release**. `schema/0.7.1.json` and `types/0.7.1.ts` are
+byte-identical to the 0.7.0 pair; `upgrade/0.7.1.ts` returns its input field for
+field. Fourteen of the twenty changed source files are nothing but the
+`types/0.7.0` → `types/0.7.1` import path change against that identical file.
+
+### Taken
+
+- `LICENSE`, the full GPLv3 text. This repository had only the copyright line, so
+  the license the source is released under was recorded nowhere. Verified verbatim
+  FSF text, no project-specific insertions.
+- `CREDITS`, naming the founders. Copied unaltered.
+- The `RobotSerif.txt` → `roboto-serif-ofl.txt` rename, which also fixes the
+  missing "o" and matches `inter-ofl.txt` beside it.
+- The 0.7.1 schema version, on both the import and export sides — see
+  [The import upgrade chain](CLAUDE.md) for the two places upstream's own
+  implementation of it is wrong.
+
+### Deliberately not taken
+
+- **`ErrorModal.tsx`**, the release's only new feature, does not work. It is
+  `import React from 'React'`, which does not resolve on a case-sensitive
+  filesystem; its antd `Modal` has no `onCancel` or `onOk`, so nothing can dismiss
+  it; and **nothing anywhere dispatches `SHOW_ERROR_MODAL`**, so it never appears.
+  `AppContext` gained the state and the two actions for it. Unfinished work, not a
+  feature — though it does record that the authors intended a global error surface,
+  which this app still lacks.
+- **Both `v11.ts` files**, as written. See CLAUDE.md: `version(10)` instead of
+  `version(11)` replaces v10's migration outright. A corrected `version(11)` is
+  what landed here.
+- **The widened `< 0.7.1` upgrade gate**, which pushes a 0.7.0 file back through
+  the non-idempotent `v070Upgrade`. Also in CLAUDE.md.
+- **`.gitattributes`.** Theirs is a strict subset of this repository's, missing
+  `*.ttf` and `*.mp3` among others — which is why **their binaries are the
+  corrupted ones and ours are intact**, the reverse of what a newer archive
+  suggests. `engine/data/0-7-test/assets/b604aaa6-….mp3` is 4 bytes short and is
+  exactly ours with CRLF collapsed to LF; `engine/public/fonts/RobotoSerif.ttf` is
+  8 bytes short, `0d 0d 0a` here against `0a` there, 14709 CR bytes against 14701.
+  Neither file was copied.
+- **`CONTRIBUTING`**, whose entire content is the string `WIP`.
+- The `AppMenu` deletion was not applied, so that dead `#137` component and the
+  `menuOpen`/`modalOpen` state it uses are still here. Harmless, still unrendered
+  beyond `App.tsx`, and available as a cleanup.

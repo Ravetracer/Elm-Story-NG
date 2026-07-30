@@ -1,6 +1,6 @@
 {
   "name": "@elmstorygames/storyteller",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "The ESG Storyteller engine.",
   "repository": {
     "type": "git",
@@ -10,7 +10,7 @@
     "name": "Elm Story Games",
     "email": "elmstorygames@gmail.com"
   },
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "rimraf ../assets/engine-dist && vite build",
     "typecheck": "tsc --noEmit",

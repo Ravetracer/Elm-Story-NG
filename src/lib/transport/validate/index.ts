@@ -10,6 +10,8 @@ import { GameDataJSON as GameDataJSON_040 } from '../types/0.4.0'
 import { GameDataJSON as GameDataJSON_050 } from '../types/0.5.0'
 import { GameDataJSON as GameDataJSON_051 } from '../types/0.5.1'
 import { WorldDataJSON as WorldDataJSON_060 } from '../types/0.6.0'
+// 0.7.1 declares no shape of its own — `types/0.7.1` re-exports this one — so it
+// needs no separate member in the parameter union below.
 import { WorldDataJSON as WorldDataJSON_070 } from '../types/0.7.0'
 
 import schema013 from '../schema/0.1.3.json'
@@ -37,6 +39,13 @@ import schema070 from '../schema/0.7.0.json'
  * Static imports also mean the schemas are bundled rather than read from disk,
  * which is what a packaged build needs: nothing resolves `src/lib/transport/schema`
  * at that point.
+ *
+ * A version absent from this map is rejected as unsupported, which is what used to
+ * happen to any file written by a real 0.7.1 build even though 0.7.1 describes the
+ * same bytes as 0.7.0. It shares the 0.7.0 schema rather than carrying a copy:
+ * upstream shipped `schema/0.7.1.json` byte-identical to `schema/0.7.0.json`, and a
+ * duplicate of a 40 KB document that must stay in step is a liability with nothing
+ * to gain. The map is the contract here, so an alias satisfies it.
  */
 const SCHEMAS: { [version: string]: Schema } = {
   '0.1.3': schema013,
@@ -47,7 +56,8 @@ const SCHEMAS: { [version: string]: Schema } = {
   '0.5.0': schema050,
   '0.5.1': schema051,
   '0.6.0': schema060,
-  '0.7.0': schema070
+  '0.7.0': schema070,
+  '0.7.1': schema070
 }
 
 export type ValidationError = {

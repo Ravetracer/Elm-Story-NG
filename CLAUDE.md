@@ -5,6 +5,15 @@ A visual editor for branching narrative storyworlds. Abandoned by its authors at
 code has not. Read `README.md` first for setup and scripts — this file covers
 what is easy to get wrong.
 
+This revival started from 0.7.0. A **0.7.1** archive also survives, and what it
+does and does not contain is recorded under
+[The import upgrade chain](#the-import-upgrade-chain) and in `TODO.md`. The short
+version: it is a version-string release whose only new feature is an `ErrorModal`
+that nothing dispatches and that would not compile here, its `db/v11.ts` clobbers
+v10's migration, and its `.gitattributes` corrupted the repository's `.ttf` and
+`.mp3`. Its schema version is accepted on import and stamped on export; nothing
+else from it was taken.
+
 ## Two applications, one repository
 
 **The editor** is the Electron app at the repository root. `src/main.ts` is the
@@ -722,7 +731,7 @@ that path.
 ## The import upgrade chain
 
 `src/lib/importWorldData.ts` walks an imported file from its own engine version up
-to 0.7.0 through `lib/transport/upgrade/*`. The schemas in `lib/transport/types/*`
+to 0.7.1 through `lib/transport/upgrade/*`. The schemas in `lib/transport/types/*`
 are **frozen descriptions of JSON already on disk**, which makes them the one
 place in this repository where a rename must *not* be applied:
 
@@ -741,6 +750,33 @@ place in this repository where a rename must *not* be applied:
   `LIBRARY_TABLE` has no member for it after v8 copies it to `worlds` and v9 drops
   it. Resolving one of those to `LIBRARY_TABLE.WORLDS` reads the wrong table on a
   real upgrade and is invisible until a user with old data opens the app.
+
+**0.7.1 changed no field of the exported shape**, which makes it the one version
+worth describing before someone reads the code and assumes otherwise. Upstream's
+`schema/0.7.1.json` and `types/0.7.1.ts` are byte-identical to the 0.7.0 pair and
+its `upgrade/0.7.1.ts` returns its input field for field, so:
+
+- `types/0.7.1.ts` **re-exports** `0.7.0` rather than forking 658 identical lines,
+  which is also what keeps the one enum declaration shared per the point above.
+  `validate/index.ts` maps `'0.7.1'` to the 0.7.0 schema object for the same
+  reason, rather than carrying a duplicate 40 KB JSON that has to stay in step. A
+  version that genuinely changes the shape gets its own file, copied and frozen.
+- **The `< 0.7.0` gate on the 0.6.0-to-0.7.0 branch must stay `0.7.0`.** Upstream
+  widened it to `< 0.7.1` and appended the new step inside it, which sends a 0.7.0
+  file back through `v070Upgrade` — and that is **not idempotent**. It resets every
+  event's `characters` and `images` to `[]`, appends the variable type onto each
+  condition's `compare` and each effect's `set` a second time, and pushes the
+  scene's jump child refs in again. Duplicated child refs are fatal on next open,
+  per the scene map clipboard section. The 0.7.1 step is therefore applied *after*
+  the chain, under its own `< 0.7.1` gate, where the data is 0.7.0-shaped whichever
+  branch ran.
+- **`db/v11.ts` says `version(11)`, and upstream's says `version(10)`.** Dexie 3's
+  `version(n)` returns the *existing* Version instance for a number already
+  declared and `.upgrade()` assigns `_cfg.contentUpgrade`, so upstream's call
+  silently replaces v10's entire migration — anyone upgrading from v9 or earlier
+  skips all of it. Both the editor's and the engine's copy are corrected here.
+  Nothing reads `World.engine`; it is bookkeeping, which is why the migration only
+  restamps it.
 
 Validation loads its schema from a static map in `validate/index.ts`, keyed on the
 file's `_.engine`. It used to be `require(`../schema/${version}.json`)`, which only
@@ -765,13 +801,17 @@ silently. The imported world is also renamed to `<title> (Imported)`.
   the app's.** `package.json`'s `version` is the release, is read by nothing at
   runtime and is the one to bump — patch for fixes, minor for features, major for
   impactful changes. `AppContext`'s `defaultAppState.version` is the **storyworld
-  schema version**: `ExportWorldMenu` passes it to `getWorldDataJSON` as
-  `schemaVersion`, it is written into an exported world's `_.engine`, and
-  `transport/validate` looks that up in a static schema map — so bumping it makes
-  the app refuse to import its own exports, reported as an unsupported schema. It
-  moves only alongside a new `transport/schema/*.json` and an `upgrade/*` step.
-  The About box shows both, the release from `package.json` (imported for its
-  `version`, tree-shaken to that one field) and the schema version beside it.
+  schema version**, now `0.7.1`: `ExportWorldMenu` passes it to
+  `getWorldDataJSON` as `schemaVersion`, it is written into an exported world's
+  `_.engine`, and `transport/validate` looks that up in a static schema map — so
+  bumping it without adding the map entry makes the app refuse to import its own
+  exports, reported as an unsupported schema. It moves only alongside a
+  `transport/schema` entry and an `upgrade/*` step, and it costs compatibility in
+  one direction: an older build rejects a version it has never heard of, so a bump
+  needs a reason. `validateWorldData.test.ts` holds it to being a schema this app
+  can itself import. The About box shows both, the release from `package.json`
+  (imported for its `version`, tree-shaken to that one field) and the schema
+  version beside it.
 - Type checking **is** in the build path, as of both projects reaching zero
   errors: the editor went 127 → 39 → 0, `engine/` was already clean. `npm run
   typecheck` covers both projects and `build` runs it after `engine:sync` and

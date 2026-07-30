@@ -12,8 +12,12 @@ interface AppState {
    * The storyworld schema version, not the app's release version: it is passed
    * to getWorldDataJSON as `schemaVersion` and written into an exported world's
    * `_.engine`, which lib/transport/validate looks up in a static schema map.
-   * Bumping it makes this app refuse to import its own exports. The release
-   * version lives in package.json.
+   *
+   * Bumping it without adding the matching entry to that map makes this app
+   * refuse to import its own exports, reported as an unsupported schema. It also
+   * costs compatibility in one direction only: an older build rejects a file
+   * stamped with a version it has never heard of, so a bump should come with a
+   * reason. The release version lives in package.json.
    */
   version: string
   build: string
@@ -109,9 +113,11 @@ interface AppContextType {
   appDispatch: React.Dispatch<AppActionType>
 }
 
-const defaultAppState: AppState = {
+// exported for src/__tests__/validateWorldData.test.ts, which holds `version` to
+// being a schema this app can actually import
+export const defaultAppState: AppState = {
   release,
-  version: '0.7.0',
+  version: '0.7.1',
   build: 'd6f6b568',
   uiScale: DEFAULT_UI_SCALE,
   platform: undefined,

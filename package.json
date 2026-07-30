@@ -2,13 +2,13 @@
   "name": "esg-app",
   "productName": "Elm Story",
   "description": "The Elm Story Platform app.",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "author": {
     "name": "Elm Story Games",
     "email": "elmstorygames@gmail.com"
   },
   "private": true,
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
   "main": "./out/main/index.js",
   "engines": {
     "node": ">=20.19.0"

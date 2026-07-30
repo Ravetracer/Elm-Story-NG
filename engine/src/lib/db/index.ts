@@ -55,6 +55,7 @@ import v7 from './v7'
 import v8 from './v8'
 import v9 from './v9'
 import v10 from './v10'
+import v11 from './v11'
 
 export const DB_NAME = 'esg-library'
 
@@ -82,6 +83,7 @@ export class LibraryDatabase extends Dexie {
     v8(this)
     v9(this)
     v10(this)
+    v11(this)
 
     this.bookmarks = this.table(LIBRARY_TABLE.BOOKMARKS)
     this.characters = this.table(LIBRARY_TABLE.CHARACTERS)

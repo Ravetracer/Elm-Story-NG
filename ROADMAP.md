@@ -10,7 +10,8 @@ finished than the roadmap implies, and **what it touches**, since a few are gate
 behind the two things in this repository that are expensive to change: the frozen
 transport schemas (`src/lib/transport/types/*`, one per released version) and the
 versioned IndexedDB migrations (`src/db/v*.ts`). Anything needing a new field on a
-persisted element needs both, plus a new schema file and a new `v11`.
+persisted element needs both, plus a new schema file and a new migration — `v12`,
+since v11 is taken by the 0.7.1 schema restamp.
 
 Read `CLAUDE.md` before starting any of these.
 
@@ -62,7 +63,7 @@ machinery that is present rather than adding new machinery.
       git-ignored, so author-chosen colours have to arrive as CSS custom
       properties set at runtime, not as generated stylesheets.
 - [ ] **Storyworld cover image.** Needs a new field on `World`, which means a new
-      transport schema, a `v11` migration and an `importWorldData` branch.
+      transport schema, a `v12` migration and an `importWorldData` branch.
       Assets themselves are already handled: they live under `userData`, are
       served over `esg-asset://`, and are copied on import and export.
 - [ ] **Animated images.** Assets are currently fixed to `.jpeg` for masks and
@@ -137,7 +138,7 @@ gated behind schema changes.
       Depends on the transitions work above being in place first.
 - [ ] **Character relationship mapping.** Characters already have `masks` and
       `refs`. Relationships between characters are new persisted data, so: new
-      schema, `v11`, import branch. Design the shape before writing any of it,
+      schema, `v12`, import branch. Design the shape before writing any of it,
       since it is the kind of model that is painful to change once storyworlds
       contain it.
 - [ ] **Character inventory.** Overlaps heavily with **object variable type** and
@@ -172,7 +173,7 @@ mid-change:
 4. Scene Map copy/paste and auto layout. Editor-only, no schema risk, but the id
    remapper deserves tests.
 5. Asset manager. Self-contained, and useful before any of the media features.
-6. Anything requiring a `v11` migration, in one batch rather than one at a time:
+6. Anything requiring a `v12` migration, in one batch rather than one at a time:
    cover image, character relationships, scoped variables. Batching means one
    migration and one transport schema instead of three.
 7. Object variable type and character inventory last, after scoped variables has
