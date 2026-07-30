@@ -1174,6 +1174,34 @@ export const getPathFromDestination = async (
   }
 }
 
+export const getObjects = async (studioId: StudioId, worldId: WorldId) => {
+  try {
+    return await new LibraryDatabase(studioId).objects
+      .where({ worldId })
+      .toArray()
+  } catch (error) {
+    throw error
+  }
+}
+
+/**
+ * Every recipe in the world.
+ *
+ * Read whole and matched in memory rather than queried by input, because a
+ * recipe's inputs are an array of objects and a Dexie multi-entry index cannot
+ * reach inside them. Recipe counts are in the tens; if that stops being true, an
+ * index costs one Dexie version and no change of shape.
+ */
+export const getRecipes = async (studioId: StudioId, worldId: WorldId) => {
+  try {
+    return await new LibraryDatabase(studioId).recipes
+      .where({ worldId })
+      .toArray()
+  } catch (error) {
+    throw error
+  }
+}
+
 export const getObjectConditionsByPaths = async (
   studioId: StudioId,
   pathIds: ElementId[]

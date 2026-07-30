@@ -22,6 +22,7 @@ import LiveEventStream from './LiveEventStream'
 
 import EventXRay, { ENGINE_XRAY_CONTAINER_HEIGHT } from './EventXRay'
 import ErrorNotification from './ErrorNotification'
+import ObjectPanel from './ObjectPanel'
 
 const Renderer: React.FC = React.memo(() => {
   const { engine, engineDispatch } = useContext(EngineContext)
@@ -93,6 +94,14 @@ const Renderer: React.FC = React.memo(() => {
             <>
               {!engine.isComposer && <EventStreamTitleBar />}
               <LiveEventStream />
+
+              {/*
+                Renders nothing when the world has no objects, which is how every
+                storyworld written before 0.8.0 keeps exactly the presentation it
+                has today. Mounted outside the composer branch because it belongs
+                to the played world rather than to the preview.
+              */}
+              <ObjectPanel />
 
               {engine.isComposer && (
                 <>

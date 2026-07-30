@@ -129,6 +129,21 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
               state || // TODO: handles input loopback
               liveEvent?.state ||
               data.state,
+            /*
+             * Object deltas are carried forward the way variable state is, or the
+             * inventory would empty itself on the next choice — every live event
+             * carries the whole snapshot, so a field this one omits is a field the
+             * player has lost.
+             *
+             * An explicit ternary rather than the `||` chain above, because an
+             * initial live event legitimately has *no* deltas: `undefined || x`
+             * would fall through to the carried value and hand a restarted world
+             * back the inventory it was supposed to lose.
+             */
+            objects:
+              liveEventType === ENGINE_LIVE_EVENT_TYPE.RESTART
+                ? initialLiveEventFromRestart?.objects
+                : liveEvent?.objects ?? data.objects,
             prev: data.id,
             type: liveEventType,
             updated: Date.now(),
