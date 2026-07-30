@@ -33,6 +33,7 @@ import useChoices, { useChoice, useChoicesByEventRef } from './useChoices'
 import useInputs, { useInput } from './useInputs'
 import useObjects, { useObject } from './useObjects'
 import useRecipes, { useRecipesByObjectRef } from './useRecipes'
+import { useObjectConditionsByPathRef } from './useObjectConditions'
 import useVariables, { useVariable } from './useVariables'
 import useVariableUsage from './useVariableUsage'
 
@@ -80,6 +81,7 @@ export {
   useObject,
   useRecipes,
   useRecipesByObjectRef,
+  useObjectConditionsByPathRef,
   useVariables,
   useVariable,
   useVariableUsage

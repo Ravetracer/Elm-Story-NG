@@ -12,7 +12,12 @@ import {
 
 import { ASSET_KIND } from '../../lib/assets'
 
-import { useObjects, useRecipesByObjectRef, useScenes } from '../../hooks'
+import {
+  useObjects,
+  useRecipesByObjectRef,
+  useScenes,
+  useVariables
+} from '../../hooks'
 
 import { Button, Checkbox, Empty, Input, InputNumber, Select, Tooltip } from 'antd'
 import {
@@ -23,6 +28,7 @@ import {
 
 import { AssetsModal } from '../Modal'
 import confirmRemoveObject from './confirmRemoveObject'
+import PlacementConditions from './PlacementConditions'
 import { describeRecipe } from './Recipes'
 
 import api from '../../api'
@@ -63,7 +69,8 @@ const Objects: React.FC<{
   onOpenRecipe
 }) => {
   const objects = useObjects(studioId, worldId, [worldId]),
-    scenes = useScenes(studioId, worldId, [worldId])
+    scenes = useScenes(studioId, worldId, [worldId]),
+    variables = useVariables(studioId, worldId, [worldId])
 
   const objectRecipes = useRecipesByObjectRef(
     studioId,
@@ -364,60 +371,72 @@ const Objects: React.FC<{
                   </span>
                 )}
 
-                {selected.placements.map((placement, index) => (
-                  <div key={placement.location} className={styles.placement}>
-                    <Select
-                      value={placement.location}
-                      className={styles.placementLocation}
-                      onChange={(location) => {
-                        const placements = [...selected.placements]
+                {selected.placements.map((placement, index) => {
+                  const replace = (next: ObjectPlacement) => {
+                    const placements = [...selected.placements]
 
-                        placements[index] = { ...placement, location }
+                    placements[index] = next
 
-                        setPlacements(placements)
-                      }}
-                      options={locations.filter(
-                        ({ value }) =>
-                          value === placement.location ||
-                          !selected.placements.some(
-                            (other) => other.location === value
-                          )
-                      )}
-                    />
+                    setPlacements(placements)
+                  }
 
-                    <InputNumber
-                      min={1}
-                      value={placement.quantity}
-                      onChange={(quantity) => {
-                        const placements = [...selected.placements]
+                  return (
+                    <div
+                      key={placement.location}
+                      className={styles.placementGroup}
+                    >
+                      <div className={styles.placement}>
+                        <Select
+                          value={placement.location}
+                          className={styles.placementLocation}
+                          onChange={(location) =>
+                            replace({ ...placement, location })
+                          }
+                          options={locations.filter(
+                            ({ value }) =>
+                              value === placement.location ||
+                              !selected.placements.some(
+                                (other) => other.location === value
+                              )
+                          )}
+                        />
 
-                        placements[index] = {
-                          ...placement,
-                          quantity: Number(quantity) || 1
-                        }
+                        <InputNumber
+                          min={1}
+                          value={placement.quantity}
+                          onChange={(quantity) =>
+                            replace({
+                              ...placement,
+                              quantity: Number(quantity) || 1
+                            })
+                          }
+                        />
 
-                        setPlacements(placements)
-                      }}
-                    />
+                        <Button
+                          type="link"
+                          icon={<DeleteOutlined />}
+                          onClick={() =>
+                            setPlacements(
+                              selected.placements.filter(
+                                (other) =>
+                                  other.location !== placement.location
+                              )
+                            )
+                          }
+                        />
+                      </div>
 
-                    <Button
-                      type="link"
-                      icon={<DeleteOutlined />}
-                      onClick={() =>
-                        setPlacements(
-                          selected.placements.filter(
-                            (other) => other.location !== placement.location
-                          )
-                        )
-                      }
-                    />
-                  </div>
-                ))}
-
-                <span className={styles.fieldHint}>
-                  Conditions that gate a placement are not editable here yet — see
-                  TODO.md section 4.
-                </span>
+                      <PlacementConditions
+                        placement={placement}
+                        objects={objectList}
+                        ownerId={selected.id}
+                        scenes={scenes ?? []}
+                        variables={variables ?? []}
+                        onChange={replace}
+                      />
+                    </div>
+                  )
+                })}
               </div>
 
               {/*

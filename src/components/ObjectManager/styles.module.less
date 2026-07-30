@@ -109,11 +109,54 @@
   justify-content: space-between;
 }
 
+.placementGroup {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed hsla(0, 0%, 100%, 0.08);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
 .placement {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
+}
+
+.conditions {
+  padding-left: 12px;
+  border-left: 2px solid hsla(0, 0%, 100%, 0.08);
+}
+
+.conditionsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  // the hint carries its own bottom margin, which reads as a gap in a flex row
+  .fieldHint {
+    margin: 0;
+  }
+}
+
+.conditionRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.conditionLabel {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.conditionWide {
+  min-width: 120px;
 }
 
 .placementLocation {

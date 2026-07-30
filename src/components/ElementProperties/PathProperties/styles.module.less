@@ -66,3 +66,14 @@
     }
   }
 }
+
+// Object condition rows carry more controls than a variable condition row — a
+// location, sometimes a scene, the object, an operator and a count — so they wrap
+// rather than sharing the fixed column widths the variable rows use.
+.objectConditionRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}

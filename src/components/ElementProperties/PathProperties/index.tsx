@@ -27,6 +27,7 @@ import {
 import { Select } from 'antd'
 
 import ElementHelpButton from '../../ElementHelpButton'
+import PathObjectConditions from './PathObjectConditions'
 import { VariableRow, VARIABLE_ROW_TYPE } from '../../WorldVariables'
 
 import parentStyles from '../styles.module.less'
@@ -437,6 +438,18 @@ const PathDetails: React.FC<{
                 </>
               </div>
             </div>
+            {/*
+              PATH OBJECT CONDITIONS
+
+              Governed by the same Match All / Any toggle above: isPathOpen puts
+              variable and object conditions in one aggregate, so ALL means every
+              condition of both kinds.
+            */}
+            <PathObjectConditions
+              studioId={studioId}
+              worldId={path.worldId}
+              pathId={pathId}
+            />
             {/* ROUTE EFFECTS */}
             <div className={styles.routeFeature}>
               <div className={styles.featureHeader}>
