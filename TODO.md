@@ -255,6 +255,41 @@ note. Fixed in the same pass as `scope` and `scopeId`.
 The headline feature. Everything it persists was migrated in section 3, so this
 is application code only.
 
+**In progress. The model is done and tested; nothing has a user interface yet.**
+
+- [x] **The model** — `engine/src/lib/objects.ts`, pure, with the variable
+      comparison and assignment rules split into `engine/src/lib/state.ts` so a
+      path condition, a placement gate and a recipe effect share one
+      implementation. `src/__tests__/objectModel.test.ts` covers both in 49 tests,
+      including the drawer scenario end to end, the coin stack, the retained key
+      across two drawers, decomposition and the no-recipe message chain.
+- [x] **The four runtime items deferred out of section 3** — derivation,
+      `isPathOpen` extended for object conditions *including* its
+      `totalConditions` count, and the object clause in
+      `updateEngineDefaultWorldCollectionData`. The take and combine helpers are
+      written and tested as pure functions; **what remains is the caller that
+      turns their result into a live event.**
+
+Three things the model turned up that the design pass had not: two objects each
+gated on the other's presence is authorable and recursed until the stack gave out
+(cycles now resolve to absent); a gate typed ANY with no conditions would have
+hidden its object, because `[].some()` is false; and both `isPathOpen` and
+`processEffectsByRoute` read a state entry before checking it existed, so a
+condition or effect naming a variable missing from a save threw rather than being
+skipped.
+
+**Still to do, in order:**
+
+1. **The engine's writers** — `OBJECT_TAKE` and `OBJECT_COMBINE` live events, so a
+   take or a combination appends rather than mutating. The pure half is done; this
+   is the persistence and the event-stream entry.
+2. **The storyteller UI** — the inventory panel beside the event stream, inspect,
+   and the combine affordance. Note `displayTitle`/`displayAssetId` already decide
+   the stacked presentation.
+3. **The editor UI** — an object manager in the shape of `VariableManager`, a
+   recipe editor that shows a recipe from either side, a placement editor, and
+   object-condition rows in `ElementProperties/PathProperties`.
+
 - [ ] World objects
   - [ ] placed on a scene, static or takeable
   - [ ] has a name
