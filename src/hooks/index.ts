@@ -32,6 +32,7 @@ import useEvents, { useEventsBySceneRef, useEvent } from './useEvents'
 import useChoices, { useChoice, useChoicesByEventRef } from './useChoices'
 import useInputs, { useInput } from './useInputs'
 import useObjects, { useObject } from './useObjects'
+import useRecipes, { useRecipesByObjectRef } from './useRecipes'
 import useVariables, { useVariable } from './useVariables'
 import useVariableUsage from './useVariableUsage'
 
@@ -77,6 +78,8 @@ export {
   useInput,
   useObjects,
   useObject,
+  useRecipes,
+  useRecipesByObjectRef,
   useVariables,
   useVariable,
   useVariableUsage

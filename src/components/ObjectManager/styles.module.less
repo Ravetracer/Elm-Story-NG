@@ -1,8 +1,29 @@
+.tabs {
+  // The panes are the scrolling surface, not the modal, so the tab strip stays put
+  // while a long recipe is edited.
+  :global(.ant-tabs-content) {
+    height: 100%;
+  }
+}
+
 .ObjectManager {
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 16px;
   height: 520px;
+}
+
+.alert {
+  margin-bottom: 12px;
+}
+
+.recipeRef {
+  margin: 6px 0;
+
+  a {
+    display: block;
+    font-size: 13px;
+  }
 }
 
 .list {
