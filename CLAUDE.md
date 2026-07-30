@@ -634,6 +634,18 @@ answer to that, offering Small through Huge as Chromium zoom factors.
   fullscreen (`index !== 1` on macOS, `index !== 2` elsewhere, because the array
   is mirrored) with a check on the type, which no longer breaks when the order
   changes.
+- **The storyworld outline's title bar had the same bug and was fixed the other
+  way.** `WorldOutline/TitleBar` reserved room for its tools with the title's
+  `right: 104px` and a comment reading "four 26px buttons wide", so adding the
+  objects button put a long storyworld name underneath the icons. Rather than
+  bumping the number again, the tools moved to **a row of their own beneath the
+  title**: the title now takes the width it has and the action row wraps if it
+  ever outgrows one line, so a sixth tool costs nothing and no arithmetic can
+  drift. `@outline-row-height` in the stylesheet is shared by both rows and by
+  `.tree`'s absolute `top`, which is the one number that still has to be derived
+  rather than laid out. Verified live rather than from the stylesheet: with the
+  imported world's 38-character name the title row measures 29–299px untruncated
+  and every button sits on the row below it.
 - **SceneMap's four 10px sizes were left alone**, along with the character mask
   caption, because those sit in fixed-width nodes and 76px tiles where larger
   type overflows rather than reflows. The zoom covers them.

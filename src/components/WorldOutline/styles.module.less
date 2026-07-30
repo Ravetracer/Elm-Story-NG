@@ -12,6 +12,18 @@
   }
 }
 
+/*
+ * One row height, used by both title bar rows and by the tree's top offset.
+ *
+ * The tree is absolutely positioned, so it needs a number rather than a layout
+ * relationship. Deriving that number from this variable is what keeps it in step
+ * with the header: the previous version hardcoded `top: 32px` against a one-row
+ * header, and separately hardcoded the title's `right: 104px` against "four 26px
+ * buttons" — which stopped being true the moment a fifth button was added, and the
+ * storyworld title began overlapping the icons.
+ */
+@outline-row-height: 32px;
+
 .WorldOutline {
   width: 100%;
   height: 100%;
@@ -20,28 +32,43 @@
     font-size: 12px !important;
   }
 
+  /*
+   * Two rows: the storyworld name, and the actions beneath it.
+   *
+   * The actions were absolutely positioned over the title row, so the title had to
+   * reserve space for them with a magic number counted in buttons. Every new tool
+   * silently ate into the title, and a long name ran underneath the icons rather
+   * than being truncated clear of them. A row of its own has no such arithmetic:
+   * the title takes the width it has, the actions wrap if they ever outgrow theirs,
+   * and adding a sixth tool costs nothing.
+   */
   .TitleBar {
     border-bottom: solid var(--primary-border-color) 1px;
     background: hsl(0, 0%, 0%);
-    height: 32px;
     position: relative;
+
+    .titleRow {
+      display: flex;
+      align-items: center;
+      height: @outline-row-height;
+    }
 
     .dashboardButton {
       padding: 4px 7px;
+      flex: 0 0 auto;
     }
 
     .worldTitle {
-      height: 30px;
+      // flex-basis 0 with min-width 0 is what lets the ellipsis engage; without
+      // min-width a flex item refuses to shrink below its content
+      flex: 1 1 0;
+      min-width: 0;
       text-overflow: ellipsis;
-      position: absolute;
-      top: 0px;
-      left: 28px;
-      // clears .worldButtons, which is four 26px buttons wide
-      right: 104px;
       overflow: hidden;
       white-space: nowrap;
-      line-height: 30px;
       word-break: keep-all;
+      line-height: @outline-row-height;
+      padding-right: 8px;
       color: hsl(0, 0%, 60%);
 
       &.selected {
@@ -55,9 +82,14 @@
     }
 
     .worldButtons {
-      display: inline-block;
-      position: absolute;
-      right: 0px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      height: @outline-row-height;
+      // aligned under the title rather than the back button, so the row reads as
+      // belonging to the storyworld named above it
+      padding-left: 24px;
+      border-top: solid var(--primary-border-color) 1px;
 
       button {
         padding: 4px 6px;
@@ -66,7 +98,8 @@
   }
 
   .tree {
-    top: 32px;
+    // two header rows, plus the 1px border between them
+    top: (@outline-row-height * 2 + 1px);
     left: 0px;
     right: 0px;
     bottom: 0px;

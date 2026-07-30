@@ -95,37 +95,44 @@ const TitleBar: React.FC<{
       />
 
       <div className={styles.TitleBar}>
-        <Tooltip
-          title="Back to Dashboard"
-          placement="right"
-          align={{ offset: [-10, 0] }}
-          mouseEnterDelay={1}
-        >
-          <Button
-            onClick={() => history.push(APP_LOCATION.DASHBOARD)}
-            type="link"
-            className={styles.dashboardButton}
+        <div className={styles.titleRow}>
+          <Tooltip
+            title="Back to Dashboard"
+            placement="right"
+            align={{ offset: [-10, 0] }}
+            mouseEnterDelay={1}
           >
-            <LeftOutlined />
-          </Button>
-        </Tooltip>
+            <Button
+              onClick={() => history.push(APP_LOCATION.DASHBOARD)}
+              type="link"
+              className={styles.dashboardButton}
+            >
+              <LeftOutlined />
+            </Button>
+          </Tooltip>
 
-        <span
-          className={`${styles.worldTitle} ${
-            composer.selectedWorldOutlineElement.id === world.id
-              ? styles.selected
-              : ''
-          }`}
-          onClick={onWorldSelect}
-        >
-          {world.title}
-        </span>
+          {/*
+            `title` rather than a Tooltip: the name is truncated with an ellipsis
+            when the panel is narrow, and the full text has to be recoverable
+            without adding a hover surface to something that is already clickable.
+          */}
+          <span
+            className={`${styles.worldTitle} ${
+              composer.selectedWorldOutlineElement.id === world.id
+                ? styles.selected
+                : ''
+            }`}
+            title={world.title}
+            onClick={onWorldSelect}
+          >
+            {world.title}
+          </span>
+        </div>
 
         <div className={styles.worldButtons}>
           <Tooltip
             title="Storyworld Map..."
-            placement="right"
-            align={{ offset: [-6, 0] }}
+            placement="bottom"
             mouseEnterDelay={1}
           >
             <Button type="link" onClick={() => setMapModalVisible(true)}>
@@ -135,8 +142,7 @@ const TitleBar: React.FC<{
 
           <Tooltip
             title="Manage Objects..."
-            placement="right"
-            align={{ offset: [-6, 0] }}
+            placement="bottom"
             mouseEnterDelay={1}
           >
             <Button type="link" onClick={() => setObjectsModalVisible(true)}>
@@ -146,8 +152,7 @@ const TitleBar: React.FC<{
 
           <Tooltip
             title="Manage Assets..."
-            placement="right"
-            align={{ offset: [-6, 0] }}
+            placement="bottom"
             mouseEnterDelay={1}
           >
             <Button type="link" onClick={() => setAssetsModalVisible(true)}>
@@ -158,8 +163,7 @@ const TitleBar: React.FC<{
           <ExportWorldMenu studioId={studioId} world={world}>
             <Tooltip
               title="Export World..."
-              placement="right"
-              align={{ offset: [-6, 0] }}
+              placement="bottom"
               mouseEnterDelay={1}
             >
               <Button type="link">
@@ -176,8 +180,7 @@ const TitleBar: React.FC<{
           >
             <Tooltip
               title="Add Element..."
-              placement="right"
-              align={{ offset: [-6, 0] }}
+              placement="bottom"
               mouseEnterDelay={1}
             >
               <Button type="link">
