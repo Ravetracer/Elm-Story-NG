@@ -102,28 +102,95 @@ the migrations below happen once. Then author three scenarios on paper before
 writing any of it: the flashlight, a pile of coins, and a key used repeatedly
 without being consumed.
 
-- [ ] Object definitions: name, description shown when inspected, optional image,
+**Done. `DESIGN.md` is the output** — every field below, the decision that was
+taken, the alternatives that were rejected and why, the three scenarios traced as
+stored deltas, and a per-file list of what section 3 has to do. Read it before
+writing any of section 3; the items below are checked off against it.
+
+- [x] Object definitions: name, description shown when inspected, optional image,
       takeable or static, combineable
-- [ ] Quantity model — see the note below; this is the one decision that most
+      *(`WorldObject`, a new `objects` table. Description is plain text rather
+      than a Slate document and still gets template expressions, because
+      `getProcessedTemplate` takes a string. `combineable` is deliberately not
+      derived from whether a recipe names the object — deriving it would make a
+      *failed* combination impossible to author, which is what the no-recipe
+      message exists for.)*
+- [x] Quantity model — see the note below; this is the one decision that most
       changes the amount of code
-- [ ] Scene placement: which scenes an object starts in, and an optional condition
+      *(Definition plus count per location, no instances, as the note settled. What
+      the note left open was how a count is stored: it is **derived on read** from
+      authored placement plus one sparse map of signed deltas. Materializing at
+      world start or on scene entry were both considered and both break the drawer,
+      where the gate turns true while the player is already standing in the scene.)*
+- [x] Scene placement: which scenes an object starts in, and an optional condition
       gating whether it is there at all — see the note on containers below
-- [ ] Recipes: inputs each flagged consumed or retained, outputs each destined for
+      *(Inline on the object, not a table — owned by one object, referenced by
+      nothing, the same reasoning that keeps `Event.images` an array. At most one
+      placement per location; gates read variables and objects and reuse the
+      existing tuple and `PATH_CONDITIONS_TYPE` rather than declaring parallel
+      ones. One location space, with `'___inventory___'` as a sentinel beside
+      scene ids, so a starting inventory is an ordinary placement.)*
+- [x] Recipes: inputs each flagged consumed or retained, outputs each destined for
       the inventory or the current scene
-- [ ] Whether a recipe can also set a variable. Not required if conditions can
+      *(A `recipes` table, because a recipe relates two or more objects and belongs
+      to none of them — which is also what the editor needs to show it from either
+      side. `inputs.length >= 1`, so decomposition is the same code path with a
+      different affordance: one input is "use", several is "combine". Matching is
+      on the exact input set, since subset matching would fire a one-input recipe
+      when two objects are combined.)*
+- [x] Whether a recipe can also set a variable. Not required if conditions can
       read object presence, but convenient.
-- [ ] What the storyteller says when two objects have no matching recipe. Silence
+      *(Yes — an optional `effects` array reusing `Effect.set`'s tuple inline. Free
+      on a table this migration already creates, a whole second migration later.
+      The engine consequence is the bigger half: applying a recipe writes a **new
+      live event** with the same destination, because rewind and save/load rest on
+      every state change being a live event carrying a full snapshot.)*
+- [x] What the storyteller says when two objects have no matching recipe. Silence
       reads as broken; a default message, overridable per object, reads as
       deliberate.
-- [ ] Inventory state on live events, so rewind, save and load stay correct
-- [ ] Conditions on inventory and scene contents: "player has X",
+      *(Three levels: the object's own `noRecipeMessage`, then a new world-level
+      default, then the engine's built-in "Nothing happens." The object that wins
+      is the first selected — "use the key on the drawer" applies the key.)*
+- [x] Inventory state on live events, so rewind, save and load stay correct
+      *(One optional `objects` field on `EngineLiveEventData`, which needs **no
+      engine migration** — see the correction in section 3. It does need an object
+      clause in `updateEngineDefaultWorldCollectionData`, the one place a save is
+      reconciled against a newer world, or a save keeps counts for deleted objects
+      and "player has X" answers about a ghost.)*
+- [x] Conditions on inventory and scene contents: "player has X",
       "scene contains X"
-- [ ] Storyworld cover image field
-- [ ] Character relationship data
-- [ ] Variable scope field
-- [ ] Check whether choice modals, storyworld notifications or inline choices need
+      *(A distinct `objectConditions` table rather than a variant of `Condition`.
+      `isPathOpen` drops a condition whose variable it cannot find, and
+      `[].every()` is `true`, so an unrecognised condition **opens** the path —
+      making object conditions a variant of the same row means every missed reader
+      fails open, in the direction that unlocks content. Count comparisons rather
+      than a boolean, which is what the coins need.)*
+- [x] Storyworld cover image field
+      *(`World.coverAssetId`, plus two asset kinds and two reference types — object
+      images are square at 400×400, the cover reuses the event image's pipeline
+      under its own kind so the import menu labels it correctly.)*
+- [x] Character relationship data
+      *(Its own table for the same reason recipes get one, and **editor-only** —
+      no engine table, no engine migration, no `format.ts` entry. Anything that
+      must be visible at runtime goes through an optional `variableId`: the
+      relationship is metadata, the number is a variable the engine already reads.)*
+- [x] Variable scope field
+      *(Optional `scope` and `scopeId`, defaulting to WORLD. `SCENE` is reserved
+      with exactly one meaning — reset to the initial value on entry. Scope changes
+      lifetime, **not** namespace: titles stay globally unique, because template
+      expressions resolve variables by title.)*
+- [x] Check whether choice modals, storyworld notifications or inline choices need
       a persisted field. If any do, fold them in here so they ride the same
       migration rather than earning their own.
+      *(Modals: an optional `choicePresentation` on the world and per event.
+      Notifications: `Path.notification`, a string. **Inline choices cost nothing
+      at all** — the open question from section 7 is decided: an inline choice is a
+      void Slate node carrying a `choice_id`, exactly as the image node carries an
+      `asset_id`, so `Event.content` stays an opaque string and there is no
+      transport change. The cost is bookkeeping — `lib/contentEditor` must diff
+      those nodes against `Event.choices` the way it diffs images against
+      `Event.images`, and an orphaned choice is worse than an orphaned asset
+      because a path still points at it.)*
 
 ## 3. The migrations — once per chain
 
@@ -131,14 +198,24 @@ Ship the fields before anything uses them. Adding them unused now is far cheaper
 than a second migration later; the cost is that the shape has to be right, which
 is what section 2 is for.
 
+**`DESIGN.md` ends with a per-file list of exactly this work.** Four new editor
+tables, three new engine tables — `characterRelationships` is editor-only.
+
 - [ ] Transport schema `0.8.0`, plus the `importWorldData` branch and the export
       path. Note the chain now ends at 0.7.1, so the new step upgrades from there;
       `types/0.7.1.ts` re-exports 0.7.0 rather than declaring a shape, so `0.8.0`
-      is the first file in a while that gets a real declaration of its own.
+      is the first file in a while that gets a real declaration of its own. The new
+      gate is **appended after** the existing chain, in the shape the 0.7.1 step
+      already uses, rather than widening the `< 0.7.0` gate.
 - [ ] Editor migration `src/db/v12.ts` — **v11 is taken**, by the 0.7.1 schema
       restamp adopted from the 0.7.1 archive
-- [ ] Engine migration `engine/src/lib/db/v12.ts` for inventory state, same
-      renumbering
+- [ ] Engine migration `engine/src/lib/db/v12.ts`, same renumbering. **Not for the
+      inventory state** — that was the assumption when this list was written and
+      the design pass disproved it. The state is an optional unindexed field on the
+      existing `live_events` table, and Dexie declares indexes rather than shapes,
+      so it needs no version at all; an old save that lacks it reads as a pristine
+      world. What forces the file is the new **definition** tables — `objects`,
+      `recipes` and `objectConditions` have to be declared in `.stores()`.
 
 ## 4. World objects and inventory
 
