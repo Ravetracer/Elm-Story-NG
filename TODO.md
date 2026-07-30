@@ -462,6 +462,92 @@ Cheap to resolve, and each one currently costs a reader time.
       `LiveEventStream.tsx:207` (`get specific jump based on type or title`) —
       three engine notes on the live event stream
 
+## 10. The editor in a browser
+
+Serve the whole editor from a URL, so an author can write without installing
+anything. Independent of everything above and of any schema change.
+
+This is also the answer to the platform gap rather than a nice-to-have. Windows
+builds cross-compile from Linux fine — verified, `npx electron-builder build --win`
+drives Wine and produces an NSIS installer, and the only thing that ever blocked it
+was `assets/icon.ico` having been regenerated at a single 16x16 (electron-builder
+requires 256 and fails *after* packaging succeeds, so it looks like a build bug and
+is an asset bug). **macOS is the one that cannot be done from here**: `dmg` needs
+macOS-only tooling and notarization needs a submission to Apple, and without
+notarization Gatekeeper refuses to open the app at all rather than warning. A
+browser build serves mac authors without owning a Mac.
+
+**Two thirds of the work is already done, in two different senses.** The
+Storyteller engine in `engine/` is *already* a browser PWA, so the runtime half is
+proven. And the library is already **IndexedDB via Dexie** — not files — so the data
+layer runs in a browser unchanged. `localStorage` is used for exactly one thing in
+this repo (`esg-ui-scale`) and is the wrong home for a storyworld: synchronous,
+strings only, ~5 MB.
+
+**There is one seam, and it already exists.** All 25 renderer modules do
+`import { ipcRenderer } from 'electron'`, and `electron.vite.config.ts` aliases
+`electron` to a single shim, `src/lib/electronRenderer.ts`. A web build swaps that
+alias for a browser adapter; the 25 call sites are untouched. The surface it has to
+implement is nine functions behind 13 IPC handlers:
+
+| module | what the renderer actually uses |
+| --- | --- |
+| `ipcRenderer` | `invoke` ×25, `send` ×9, `on` ×8, `removeAllListeners`, `removeListener` |
+| `shell` | `openExternal` ×8, `openPath` ×1 |
+| `webFrame` | `setZoomFactor` ×3 |
+| `clipboard` | `readText` ×1 |
+
+The renderer imports no `fs`, `path` or `os` anywhere — all of that is in
+`src/main.ts`. (Mind that most `clipboard.*` hits in a naive grep are the *scene
+map* clipboard on `ComposerContext`, not Electron's.)
+
+- [ ] **Browser adapter behind the `electron` alias.** Also has to answer
+      `PLATFORM`: `App` gates its entire tree on `app.platform` arriving over IPC,
+      so an adapter that does not send it renders a blank page.
+- [ ] **Assets as Blobs in IndexedDB**, handed out as `URL.createObjectURL` —
+      replacing `SAVE_ASSET`, `GET_ASSET`, `LIST_ASSETS`, `REMOVE_ASSET` and
+      `RESTORE_ASSET`. This *deletes* a documented problem: blob URLs are seekable
+      because the browser knows the length, so the `Accept-Ranges` / 206 /
+      unseekable-MP3 handling described in `CLAUDE.md` has nothing to do here.
+- [ ] **Decide the import interchange.** `IMPORT_WORLD_ASSETS` copies from an
+      `assets` directory *beside* the chosen JSON, and a browser file input gives
+      one file with no siblings. Either `showDirectoryPicker()` (Chromium and Edge
+      only — no Firefox, no Safari) or **change the interchange to a single ZIP**.
+      The ZIP is the better answer and is better for humans too, but it is a format
+      decision and belongs with section 2's thinking rather than being made in
+      passing.
+- [ ] **Export without a main process.** Both JSON and PWA export currently go
+      through `EXPORT_WORLD_START`. JSON becomes a `Blob` plus `<a download>`; PWA
+      becomes fetch `engine-dist` as static assets, run the same replacement, emit a
+      ZIP. The replacement logic is already near-pure and tested (`lib/precache.ts`,
+      `lib/compiler/format`), so this is plumbing rather than rewriting.
+- [ ] **Chrome that has no browser equivalent.** Drop the window controls and the
+      native menu. For UI scale, CSS `zoom` on `:root` does scale antd's compiled
+      pixels — which is precisely what `CLAUDE.md` records a `--ui-scale` custom
+      property could *not* do, so the browser gets the thing the desktop build
+      could not have.
+- [ ] **Storage durability, which is not optional.** Origin storage is *evicted*:
+      Safari clears it after roughly seven days without a visit, Chromium evicts
+      under pressure. Someone's half-written novel can vanish with no warning and no
+      recovery. `navigator.storage.persist()`, a visible "last exported" indicator
+      and nagging automatic export are load-bearing features of a browser build, not
+      extras. This is also the honest argument for keeping the desktop build the
+      recommended one and the browser build the try-it-now door.
+
+**Rejected: a PHP backend with logins.** Considered and dropped. Recorded because
+the reasoning outlives the idea: shared PHP hosting cannot hold a WebSocket
+(mod_php dies per request), so real-time collaboration was never on the table, and
+the useful version was a snapshot store with `If-Match`/409 optimistic
+concurrency — which is backup and single-author continuation, not teamwork. Two
+findings are worth keeping if it is ever revisited. Scene-level check-out is the
+natural lock because a `Path` never crosses a scene boundary and only a `Jump`
+does, so two authors in two scenes cannot collide on events, choices, inputs or
+paths. But characters, variables and assets are **world**-scoped, which scene locks
+would not protect — and a variable rename silently breaks every template
+expression written against the old title, because expressions resolve variables by
+title rather than by id. Nothing reports that; the prose just renders as an ERROR
+span.
+
 ---
 
 ## Note on quantity, and why instances may not be needed
