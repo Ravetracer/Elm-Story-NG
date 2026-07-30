@@ -37,7 +37,13 @@ const ESGModal: React.FC<{ visible: boolean; onCancel: () => void }> = ({
           <div className={styles.version}>
             <div>
               <span className={styles.versionHeader}>Elm Story Version</span>{' '}
-              {app.version} (Early Access)
+              {app.release} (Early Access)
+            </div>
+            <div>
+              {/* the version an exported storyworld is written as, which moves
+                  only when the transport schema does */}
+              <span className={styles.versionHeader}>Storyworld Schema</span>{' '}
+              {app.version}
             </div>
             <div>
               <span className={styles.versionHeader}>Elm Story Build</span>{' '}

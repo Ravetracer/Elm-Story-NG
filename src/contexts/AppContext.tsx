@@ -1,7 +1,18 @@
 import React, { useMemo, createContext, useReducer } from 'react'
+// the app's release version, which is not the storyworld schema version below
+import { version as release } from '../../package.json'
 import { StudioId, WorldId, PLATFORM_TYPE } from '../data/types'
 
 interface AppState {
+  /** The app's own release version, read from package.json. */
+  release: string
+  /**
+   * The storyworld schema version, not the app's release version: it is passed
+   * to getWorldDataJSON as `schemaVersion` and written into an exported world's
+   * `_.engine`, which lib/transport/validate looks up in a static schema map.
+   * Bumping it makes this app refuse to import its own exports. The release
+   * version lives in package.json.
+   */
   version: string
   build: string
   platform?: PLATFORM_TYPE
@@ -84,6 +95,7 @@ interface AppContextType {
 }
 
 const defaultAppState: AppState = {
+  release,
   version: '0.7.0',
   build: 'd6f6b568',
   platform: undefined,
