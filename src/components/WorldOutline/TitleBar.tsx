@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { useHistory } from 'react-router'
 
 import { ELEMENT_TYPE, World, WorldId, StudioId } from '../../data/types'
@@ -8,8 +8,14 @@ import { APP_LOCATION } from '../../contexts/AppContext'
 import { ComposerContext } from '../../contexts/ComposerContext'
 
 import { Button, Tooltip } from 'antd'
-import { ExportOutlined, LeftOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  ExportOutlined,
+  LeftOutlined,
+  PictureOutlined,
+  PlusOutlined
+} from '@ant-design/icons'
 
+import { AssetsModal } from '../Modal'
 import ExportWorldMenu from './ExportWorldMenu'
 import AddElementMenu from './AddElementMenu'
 
@@ -25,8 +31,17 @@ const TitleBar: React.FC<{
 
   const { composer } = useContext(ComposerContext)
 
+  const [assetsModalVisible, setAssetsModalVisible] = useState(false)
+
   return (
     <>
+      <AssetsModal
+        studioId={studioId}
+        world={world}
+        visible={assetsModalVisible}
+        onCancel={() => setAssetsModalVisible(false)}
+      />
+
       <div className={styles.TitleBar}>
         <Tooltip
           title="Back to Dashboard"
@@ -55,6 +70,17 @@ const TitleBar: React.FC<{
         </span>
 
         <div className={styles.worldButtons}>
+          <Tooltip
+            title="Manage Assets..."
+            placement="right"
+            align={{ offset: [-6, 0] }}
+            mouseEnterDelay={1}
+          >
+            <Button type="link" onClick={() => setAssetsModalVisible(true)}>
+              <PictureOutlined />
+            </Button>
+          </Tooltip>
+
           <ExportWorldMenu studioId={studioId} world={world}>
             <Tooltip
               title="Export World..."

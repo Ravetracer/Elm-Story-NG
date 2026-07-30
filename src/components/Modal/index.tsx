@@ -1,3 +1,4 @@
+import AssetsModal from './AssetsModal'
 import CharacterModal from './CharacterModal'
 import ESGModal from './ESGModal'
 import SaveStudioModal from './SaveStudioModal'
@@ -8,6 +9,7 @@ import ExportWorldModal from './ExportWorldModal'
 import ImportJSONModal from './ImportJSONModal'
 
 export {
+  AssetsModal,
   CharacterModal,
   ESGModal,
   SaveStudioModal,

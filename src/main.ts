@@ -34,6 +34,7 @@ import md5 from 'md5'
 import { addPrecacheEntries, setPrecacheRevision } from './lib/precache'
 
 import { WINDOW_EVENT_TYPE } from './lib/events'
+import { AssetFile } from './lib/assets'
 
 import {
   WorldId,
@@ -575,6 +576,54 @@ const createWindow = async () => {
             `"${assetUrl('asset', studioId, worldId, assetFile)}"`,
             exists
           ]
+        }
+      )
+
+      // Everything a storyworld has on disk, for the asset manager. The renderer
+      // cannot read the directory itself: assets live under userData, outside
+      // anything it can reach through the esg-asset:// scheme, which serves
+      // single files rather than listings.
+      ipcMain.handle(
+        WINDOW_EVENT_TYPE.LIST_ASSETS,
+        async (
+          _,
+          { studioId, worldId }: { studioId: StudioId; worldId: WorldId }
+        ): Promise<AssetFile[]> => {
+          const assetsPath = `${userDataPath}/assets/${studioId}/${worldId}`
+
+          // a storyworld with no assets has no directory
+          if (!(await fs.pathExists(assetsPath))) return []
+
+          const entries = await fs.readdir(assetsPath)
+
+          const assets = await Promise.all(
+            entries.map(
+              async (entry): Promise<AssetFile | null> => {
+                try {
+                  const stats = await fs.stat(`${assetsPath}/${entry}`)
+
+                  if (!stats.isFile()) return null
+
+                  const extension = path.extname(entry)
+
+                  return {
+                    id: path.basename(entry, extension),
+                    // every extension is listed, not just the three the app
+                    // writes: an imported world carries whatever sat beside its
+                    // JSON, and those files are the likeliest dead weight
+                    ext: extension.slice(1).toLowerCase(),
+                    bytes: stats.size,
+                    modified: stats.mtimeMs
+                  }
+                } catch (error) {
+                  // a file removed between readdir and stat is simply gone
+                  return null
+                }
+              }
+            )
+          )
+
+          return assets.filter((asset): asset is AssetFile => asset !== null)
         }
       )
 

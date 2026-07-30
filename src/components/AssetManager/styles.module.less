@@ -1,0 +1,157 @@
+.AssetManager {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 560px;
+  // rc-dock's .dock-panel sets a near-black colour that anything without its own
+  // inherits. This renders in a modal rather than a dock panel, but the colour is
+  // set explicitly for the same reason the other panels now do.
+  color: hsl(0, 0%, 85%);
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px;
+    border-bottom: 1px solid hsl(0, 0%, 12%);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    align-content: start;
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .empty {
+    grid-column: 1 / -1;
+    padding: 40px 20px;
+    text-align: center;
+    color: hsl(0, 0%, 50%);
+  }
+
+  .footer {
+    display: flex;
+    gap: 16px;
+    padding: 8px 12px;
+    border-top: 1px solid hsl(0, 0%, 12%);
+    font-size: 13px;
+    color: hsl(0, 0%, 55%);
+
+    .missing {
+      color: var(--warning-color);
+    }
+
+    .total {
+      margin-left: auto;
+    }
+  }
+}
+
+.AssetTile {
+  background: hsl(0, 0%, 9%);
+  border: 1px solid hsl(0, 0%, 14%);
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--highlight-color);
+  }
+
+  &.isMissing {
+    border-color: var(--warning-color);
+
+    .previewPlaceholder {
+      color: var(--warning-color);
+    }
+  }
+
+  .preview {
+    aspect-ratio: 16/9;
+    background: black;
+
+    .previewImage {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .previewPlaceholder,
+    .previewAudio {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: hsl(0, 0%, 40%);
+    }
+
+    .previewPlaceholder {
+      font-size: 20px;
+    }
+
+    .previewAudio {
+      audio {
+        width: 92%;
+        height: 24px;
+      }
+    }
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 2px 4px 6px;
+    font-size: 12px;
+
+    .id {
+      font-family: 'Fira Code', monospace;
+      color: var(--component-id);
+      user-select: all;
+      white-space: nowrap;
+    }
+
+    .size {
+      color: hsl(0, 0%, 50%);
+      // 'png · 236 KB' otherwise wraps mid-value and pushes the row to two lines
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .removeButton {
+      margin-left: auto;
+      padding: 0 6px;
+    }
+  }
+
+  .usage {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 6px 6px;
+    font-size: 12px;
+    color: hsl(0, 0%, 55%);
+
+    .unused {
+      color: var(--warning-color);
+    }
+
+    .reference,
+    .moreReferences {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .moreReferences {
+      color: hsl(0, 0%, 40%);
+      cursor: default;
+    }
+  }
+}
