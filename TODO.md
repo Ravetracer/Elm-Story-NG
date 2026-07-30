@@ -90,7 +90,8 @@ below. The asset manager comes first because objects will mint a lot of images.
       one it had pointed at a dead domain or at an account belonging to the original
       authors. Two things the rename could have broken quietly and did not: Electron
       derives `userData` from the product name, so the directory is pinned in `src/main.ts`
-      or 465 MB of storyworlds would have been stranded behind an empty dashboard; and
+      or every existing storyworld and asset would have been stranded behind an empty
+      dashboard, with no error to say so; and
       `engine/public/favicon.svg` shipped live `<text>` in a font that exists only on the
       author's machine, so the copy that goes into an exported PWA is now outlined.)*
 
