@@ -423,6 +423,7 @@
       "additionalProperties": {
         "type": "object",
         "properties": {
+          "description": { "type": "string" },
           "id": { "type": "string" },
           "initialValue": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } },

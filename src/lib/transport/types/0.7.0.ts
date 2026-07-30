@@ -320,6 +320,12 @@ export interface SceneCollection {
 }
 
 export interface VariableData {
+  // Optional, and deliberately so: files written by the original 0.7.0 have no
+  // variable description, and adding a required property would make every one of
+  // them fail validation. The matching schema keeps it out of `required` for the
+  // same reason. This is the one addition to a transport type that is safe
+  // without a version bump — see the note on frozen schemas in CLAUDE.md.
+  description?: string
   id: ElementId
   initialValue: string
   tags: string[]

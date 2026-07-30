@@ -258,8 +258,9 @@ export default async (
     )
 
     variables.map(
-      ({ id, initialValue, tags, title, type, updated }) =>
+      ({ description, id, initialValue, tags, title, type, updated }) =>
         (worldData.variables[id as string] = {
+          description,
           id: id as string,
           initialValue,
           tags,

@@ -83,6 +83,21 @@ export async function saveVariableType(
   }
 }
 
+export async function saveVariableDescription(
+  studioId: StudioId,
+  variableId: ElementId,
+  description: string | undefined
+) {
+  try {
+    return await new LibraryDatabase(studioId).saveVariableDescription(
+      variableId,
+      description
+    )
+  } catch (error) {
+    throw error
+  }
+}
+
 export async function saveVariableInitialValue(
   studioId: StudioId,
   variableId: ElementId,

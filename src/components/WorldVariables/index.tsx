@@ -523,42 +523,58 @@ export const VariableRow: React.FC<{
   )
 }
 
+const VARIABLE_TYPE_LABELS: { [type in VARIABLE_TYPE]: string } = {
+  [VARIABLE_TYPE.BOOLEAN]: 'Boolean',
+  [VARIABLE_TYPE.STRING]: 'String',
+  [VARIABLE_TYPE.NUMBER]: 'Number',
+  [VARIABLE_TYPE.IMAGE]: 'Image',
+  [VARIABLE_TYPE.URL]: 'URL'
+}
+
+/**
+ * An index of the storyworld's variables, mirroring how WorldCharacters lists
+ * characters: a row per variable that opens the manager rather than editing in
+ * place.
+ *
+ * This panel used to be a second editable table — the same title, type and
+ * initial-value fields the manager shows — with a delete that removed a variable
+ * and every condition and effect naming it on one unconfirmed click. Editing now
+ * happens in one place.
+ */
 const WorldVariables: React.FC<{
   studioId: StudioId
   worldId: WorldId
-}> = ({ studioId, worldId }) => {
+  onOpenManager: () => void
+}> = ({ studioId, worldId, onOpenManager }) => {
   const variables = useVariables(studioId, worldId, [studioId, worldId])
 
   return (
     <div className={styles.WorldVariables}>
-      <div className={styles.variableTable}>
-        <Row className={styles.headerRow}>
-          <Col className={`${styles.titleCol} ${styles.titleHeader}`}>
-            Title
-          </Col>
-          <Col className={`${styles.typeCol} ${styles.typeHeader}`}>Type</Col>
-          <Col
-            className={`${styles.initialValueCol} ${styles.initialValueHeader}`}
-          >
-            Initial
-          </Col>
-          <Col className={`${styles.deleteVariableCol}`} />
-        </Row>
-
-        <div className={styles.variableRows}>
-          {variables &&
-            variables.map(
-              (variable) =>
-                variable.id && (
-                  <VariableRow
-                    key={variable.id}
-                    studioId={studioId}
-                    variableId={variable.id}
-                  />
-                )
-            )}
+      {variables?.length === 0 && (
+        <div className={styles.empty}>
+          No variables yet. Use + above to add one.
         </div>
-      </div>
+      )}
+
+      {variables?.map((variable) => (
+        <div
+          className={styles.VariableIndexRow}
+          key={variable.id}
+          onClick={onOpenManager}
+          title={variable.description || undefined}
+        >
+          <div className={styles.heading}>
+            <span className={styles.title}>{variable.title}</span>
+            <span className={styles.type}>
+              {VARIABLE_TYPE_LABELS[variable.type]}
+            </span>
+          </div>
+
+          {variable.description && (
+            <div className={styles.description}>{variable.description}</div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

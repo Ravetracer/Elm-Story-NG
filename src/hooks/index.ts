@@ -32,6 +32,7 @@ import useEvents, { useEventsBySceneRef, useEvent } from './useEvents'
 import useChoices, { useChoice, useChoicesByEventRef } from './useChoices'
 import useInputs, { useInput } from './useInputs'
 import useVariables, { useVariable } from './useVariables'
+import useVariableUsage from './useVariableUsage'
 
 export {
   useDebouncedResizeObserver,
@@ -74,5 +75,6 @@ export {
   useInputs,
   useInput,
   useVariables,
-  useVariable
+  useVariable,
+  useVariableUsage
 }

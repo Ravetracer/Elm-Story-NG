@@ -7,10 +7,12 @@ import SaveWorldModal from './SaveWorldModal'
 import RemoveWorldModal from './RemoveWorldModal'
 import ExportWorldModal from './ExportWorldModal'
 import ImportJSONModal from './ImportJSONModal'
+import VariablesModal from './VariablesModal'
 
 export {
   AssetsModal,
   CharacterModal,
+  VariablesModal,
   ESGModal,
   SaveStudioModal,
   RemoveStudioModal,

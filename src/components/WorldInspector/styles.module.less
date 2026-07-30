@@ -9,6 +9,19 @@
     }
   }
 
+  // sits beside the tab's + button; an antd icon rather than an inline svg, so it
+  // takes a colour rather than a path fill
+  .tabManageButton {
+    margin-left: 6px;
+    font-size: 13px;
+    color: var(--highlight-color-dark);
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--highlight-color);
+    }
+  }
+
   .tabAddComponentButton {
     height: 14px;
     width: 14px;

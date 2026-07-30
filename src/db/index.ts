@@ -2218,6 +2218,36 @@ export class LibraryDatabase extends Dexie {
     })
   }
 
+  public async saveVariableDescription(
+    variableId: ElementId,
+    description: string | undefined
+  ) {
+    await this.transaction('rw', this.variables, async () => {
+      if (variableId) {
+        const component = await this.getElement(
+          LIBRARY_TABLE.VARIABLES,
+          variableId
+        )
+
+        if (component) {
+          await this.variables.update(variableId, {
+            ...component,
+            // an emptied field is dropped rather than stored as '', so a
+            // variable that never had one and one that was cleared look alike
+            description: description || undefined,
+            updated: Date.now()
+          })
+        } else {
+          throw new Error(
+            'Unable to save variable description. Variable missing.'
+          )
+        }
+      } else {
+        throw new Error('Unable to save variable description. Missing ID.')
+      }
+    })
+  }
+
   public async saveVariableInitialValue(
     variableId: ElementId,
     initialValue: string

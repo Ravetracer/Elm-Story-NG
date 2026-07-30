@@ -319,4 +319,8 @@ export interface Variable extends Element {
   worldId: WorldId
   type: VARIABLE_TYPE
   initialValue: string
+  // Author-facing note on what the variable is for. Not indexed, so it needs no
+  // Dexie migration; it is carried through the transport schema as an optional
+  // property, which leaves files written before it existed valid.
+  description?: string
 }

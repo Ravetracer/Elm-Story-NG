@@ -1,10 +1,4 @@
-import {
-  adjectives,
-  animals,
-  colors,
-  names,
-  uniqueNamesGenerator
-} from 'unique-names-generator'
+import { names, uniqueNamesGenerator } from 'unique-names-generator'
 
 import React, { useState, useContext } from 'react'
 
@@ -12,8 +6,7 @@ import {
   CHARACTER_MASK_TYPE,
   ELEMENT_TYPE,
   World,
-  StudioId,
-  VARIABLE_TYPE
+  StudioId
 } from '../../data/types'
 
 import {
@@ -22,7 +15,14 @@ import {
 } from '../../contexts/ComposerContext'
 
 import DockLayout, { DividerBox, LayoutData } from 'rc-dock'
+import { Tooltip } from 'antd'
+import {
+  QuestionCircleFilled,
+  UnorderedListOutlined
+} from '@ant-design/icons'
 
+import { VariablesModal } from '../Modal'
+import addVariable from '../VariableManager/addVariable'
 import WorldOutline from '../WorldOutline'
 import WorldCharacters from '../WorldCharacters'
 import WorldVariables from '../WorldVariables'
@@ -30,6 +30,7 @@ import ElementHelpButton from '../ElementHelpButton'
 
 import api from '../../api'
 
+import helpButtonStyles from '../ElementHelpButton/styles.module.less'
 import styles from './styles.module.less'
 
 const TAB_TYPE = {
@@ -42,6 +43,17 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
   world
 }) => {
   const { composerDispatch } = useContext(ComposerContext)
+
+  // Read by the Variables tab title below, which is captured in defaultLayout on
+  // the first render. A setter's identity is stable, so the closure stays valid.
+  // `help` opens the manager onto its reference rather than onto the list.
+  const [variablesModal, setVariablesModal] = useState({
+    visible: false,
+    help: false
+  })
+
+  const openVariablesModal = (help = false) =>
+    setVariablesModal({ visible: true, help })
 
   const [defaultLayout] = useState<LayoutData>({
     dockbox: {
@@ -128,35 +140,27 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
                     <div>
                       Variables
                       {world.id && (
+                        <Tooltip title="Manage Variables..." mouseEnterDelay={1}>
+                          <span
+                            className={styles.tabManageButton}
+                            onClick={() => openVariablesModal()}
+                          >
+                            <UnorderedListOutlined />
+                          </span>
+                        </Tooltip>
+                      )}
+                      {world.id && (
                         <span
                           className={styles.tabAddComponentButton}
                           onClick={async () => {
                             // TODO: Fire only when tab is active #92
-                            const uniqueNames = uniqueNamesGenerator({
-                              dictionaries: [adjectives, colors, animals],
-                              length: 3
-                            })
+                            if (!world.id) return
 
-                            world.id &&
-                              (await api().variables.saveVariable(studioId, {
-                                worldId: world.id,
-                                title: uniqueNames
-                                  .split('_')
-                                  .map((uniqueName, index) => {
-                                    return index === 0
-                                      ? uniqueName
-                                      : `${uniqueName
-                                          .charAt(0)
-                                          .toUpperCase()}${uniqueName.substr(
-                                          1,
-                                          uniqueName.length - 1
-                                        )}`
-                                  })
-                                  .join(''),
-                                type: VARIABLE_TYPE.BOOLEAN,
-                                initialValue: 'false',
-                                tags: []
-                              }))
+                            await addVariable(studioId, world.id)
+
+                            // the panel is an index now, so a new variable is
+                            // only nameable in the manager
+                            openVariablesModal()
                           }}
                         >
                           <svg
@@ -182,6 +186,7 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
                         <WorldVariables
                           studioId={studioId}
                           worldId={world.id}
+                          onOpenManager={() => openVariablesModal()}
                         />
                       )}
                     </>
@@ -192,14 +197,28 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
               panelLock: {
                 // @ts-ignore: poor ts defs
                 panelExtra: (panelData, context) => {
+                  // The variables help is in the app rather than behind a link:
+                  // ElementHelpButton opens docs.elmstory.com, which no longer
+                  // resolves. The remaining element types still point there.
+                  if (panelData.activeId === TAB_TYPE.VARIABLES)
+                    return (
+                      <div
+                        className={helpButtonStyles.ElementHelpButton}
+                        onClick={(event) => {
+                          event.stopPropagation()
+
+                          openVariablesModal(true)
+                        }}
+                      >
+                        <QuestionCircleFilled />
+                      </div>
+                    )
+
                   let componentType: ELEMENT_TYPE | undefined
 
                   switch (panelData.activeId) {
                     case TAB_TYPE.CHARACTERS:
                       componentType = ELEMENT_TYPE.CHARACTER
-                      break
-                    case TAB_TYPE.VARIABLES:
-                      componentType = ELEMENT_TYPE.VARIABLE
                       break
                     default:
                       break
@@ -218,24 +237,39 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
   })
 
   return (
-    <DividerBox className={styles.WorldInspector} mode="vertical">
-      <DividerBox className={styles.outline}>
-        <WorldOutline studioId={studioId} world={world} />
-      </DividerBox>
-
-      <DockLayout
-        defaultLayout={defaultLayout}
-        groups={{
-          bottom: {
-            floatable: false,
-            animated: false,
-            maximizable: false,
-            tabLocked: true
-          }
-        }}
-        dropMode="edge"
+    // The modal is a sibling of the DividerBox rather than a child of it.
+    // DividerBox divides its space between its React children, and an antd Modal
+    // is one of those even though it portals to document.body and renders nothing
+    // in place — as a child it took a share of the vertical space and collapsed
+    // the outline to nothing.
+    <>
+      <VariablesModal
+        studioId={studioId}
+        world={world}
+        visible={variablesModal.visible}
+        helpOpen={variablesModal.help}
+        onCancel={() => setVariablesModal({ visible: false, help: false })}
       />
-    </DividerBox>
+
+      <DividerBox className={styles.WorldInspector} mode="vertical">
+        <DividerBox className={styles.outline}>
+          <WorldOutline studioId={studioId} world={world} />
+        </DividerBox>
+
+        <DockLayout
+          defaultLayout={defaultLayout}
+          groups={{
+            bottom: {
+              floatable: false,
+              animated: false,
+              maximizable: false,
+              tabLocked: true
+            }
+          }}
+          dropMode="edge"
+        />
+      </DividerBox>
+    </>
   )
 }
 
