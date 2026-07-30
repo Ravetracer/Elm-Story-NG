@@ -198,6 +198,15 @@ usage counts, a description field, and a deletion that states its consequences.
   through the real pipeline, so the sheet cannot drift into claiming something the
   parser rejects. Keep the two in step. **The help buttons for every other element
   type still point at the dead domain.**
+- **`=/=` is deliberately not supported, and is not a missing feature.** `!=`
+  already means "not equal", is what the parser accepts and is what
+  `COMPARE_OPERATOR_TYPE.NE` uses for conditions, so adding `=/=` would give the
+  language two spellings of one operator — and it cannot be done in the parser
+  at all, since acorn reads `a =/= b` as an unterminated regular expression, so
+  it would mean pre-translating every expression before parsing. The only thing
+  that ever promised it was a docs site that no longer resolves.
+  `variableHelpExamples.test.ts` holds `{ health =/= 10 }` to rendering as an
+  error, which is the intended behaviour rather than a known gap.
 - **`Variable.description` needed no migration**, which is worth knowing before
   assuming the next field will. Dexie only declares indexes, so an unindexed
   property is stored without a version bump, and the engine has no use for it at

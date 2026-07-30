@@ -59,8 +59,16 @@ below. The asset manager comes first because objects will mint a lot of images.
       Import, the manager imports per kind through the same crop pipelines the slots use, and
       replacing an asset no longer deletes the old file — which it did, unconditionally, in
       three places where two elements may share one id.)*
-- [ ] Fix the `=/=` inequality operator the archived docs promise but which has
-      never parsed, and document the working `.upper()` / `.lower()` calls
+- [x] ~~Fix the `=/=` inequality operator the archived docs promise but which has
+      never parsed~~, and document the working `.upper()` / `.lower()` calls
+      *(`=/=` is **dropped, not built**: `!=` already means "not equal", is what the
+      parser accepts and is what `COMPARE_OPERATOR_TYPE.NE` uses for conditions, so
+      `=/=` would only have been a second spelling of an operator the language has —
+      bought by pre-translating expressions before parsing, to keep a promise made
+      by a docs site that no longer resolves. The method calls were already
+      documented in `VariableManager/VariableHelp.tsx`, which is the reference now
+      and says `=/=` is not an operator; `variableHelpExamples.test.ts` holds it to
+      that.)*
 
 ## 2. Design pass — no code
 
@@ -199,7 +207,8 @@ the expressions page below, so a site can lift it rather than start over.
       choice, condition, effect, event, folder, input, jump, path, scene and the
       world root, plus the JSON and PWA export entries in `ExportWorldMenu`.
 - [ ] Static documentation site
-- [ ] A proper expressions page, including arithmetic and the `=/=` correction
+- [ ] A proper expressions page, including arithmetic, the method calls, and a
+      correction that `!=` is the inequality operator and `=/=` never was one
 
 ## 9. Inherited code TODOs
 

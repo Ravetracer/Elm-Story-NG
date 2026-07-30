@@ -26,16 +26,21 @@ half of it does not need a server.
 
 These are wrong or stale relative to the code, and are cheap to settle.
 
-- [ ] **`Docs/expressions.html` documents `=/=` as the inequality operator.** It
-      has never worked: expressions are parsed with acorn, and `a =/= b` fails as
-      an unterminated regular expression. The code only accepts `!=`. Either
-      pre-translate `=/=` to `!=` before parsing, which is what the docs promise
-      authors, or accept that `!=` is the syntax. Roughly an hour either way.
-      Worth doing because a documented operator silently rendering as `ERROR` is
-      the least forgivable kind of bug.
-- [ ] **`Docs/expressions.html` omits method calls.** `{ name.upper() }` and
-      `.lower()` work today via `gameMethods` in `lib/templates.ts` but are
-      undocumented.
+- [x] **`Docs/expressions.html` documents `=/=` as the inequality operator.**
+      **Settled by dropping it.** `!=` already means exactly that, and it is the
+      operator the parser accepts and the one `COMPARE_OPERATOR_TYPE.NE` uses for
+      conditions, so `=/=` would have been a second spelling of something the
+      language already has. Supporting it meant pre-translating before parsing —
+      acorn reads `a =/= b` as an unterminated regular expression — to honour a
+      promise made only by a docs site that no longer resolves.
+      `VariableManager/VariableHelp.tsx` is the reference now and states plainly
+      that `!=` is the operator and `=/=` is not one;
+      `src/__tests__/variableHelpExamples.test.ts` holds `{ health =/= 10 }` to
+      rendering as an error so the sheet cannot quietly start claiming otherwise.
+- [x] **`Docs/expressions.html` omits method calls.** `{ name.upper() }` and
+      `.lower()` work today via `gameMethods` in `lib/templates.ts`. Documented
+      in `VariableHelp.tsx` under "A method call", including that those two are
+      the only ones and any other name is an error.
 - [x] **Arithmetic in expressions.** `{ health + bonus * 2 }` with `+ - * / %`,
       nesting and parentheses. Was the `BinaryExpression` branch reporting
       "planned for a future release". Done; see `src/__tests__/templates.test.ts`.
