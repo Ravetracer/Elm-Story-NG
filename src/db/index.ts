@@ -330,6 +330,15 @@ export class LibraryDatabase extends Dexie {
     // TODO: consider dependencies e.g. passages
 
     try {
+      /*
+       * Collected inside the transaction and trashed after it. Two things were
+       * wrong with doing it inline: `Promise.all` was given an array *of arrays*
+       * and so resolved without awaiting anything inside them, making the
+       * removals fire-and-forget; and the mask images were removed outright,
+       * without counting, when two masks are allowed to name one image.
+       */
+      let deadMaskAssets: { assetId: string; worldId: WorldId }[] = []
+
       await this.transaction('rw', this.characters, async () => {
         const character = await this.characters.get(characterId)
 
@@ -338,17 +347,12 @@ export class LibraryDatabase extends Dexie {
             `LibraryDatabase->removeCharacter->Removing character with ID: ${characterId}`
           )
 
-          await Promise.all([
-            character.masks.map(async (mask) => {
-              mask.assetId &&
-                (await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-                  studioId,
-                  worldId: character.worldId,
-                  id: mask.assetId,
-                  ext: 'jpeg'
-                }))
-            })
-          ])
+          deadMaskAssets = character.masks
+            .filter((mask) => mask.assetId)
+            .map((mask) => ({
+              assetId: mask.assetId as string,
+              worldId: character.worldId
+            }))
 
           await this.characters.delete(characterId)
         } else {
@@ -357,6 +361,16 @@ export class LibraryDatabase extends Dexie {
           )
         }
       })
+
+      // sequentially, so each count sees what the one before it trashed
+      for (const { assetId, worldId } of deadMaskAssets) {
+        await api().assets.removeAssetIfUnreferenced(
+          studioId,
+          worldId,
+          assetId,
+          'jpeg'
+        )
+      }
     } catch (error) {
       throw error
     }

@@ -43,32 +43,23 @@ const ElementAudio: React.FC<{
           profile={element.audio}
           info
           onImport={async (audioData) => {
-            const assetId = uuid(),
-              promises: Promise<any>[] = []
+            const assetId = uuid()
 
             try {
-              if (element.audio?.[0]) {
-                promises.push(
-                  ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-                    studioId,
-                    worldId: element.worldId,
-                    id: element.audio[0],
-                    ext: 'mp3'
-                  })
-                )
-              }
-
-              promises.push(
-                ipcRenderer.invoke(WINDOW_EVENT_TYPE.SAVE_ASSET, {
-                  studioId,
-                  worldId: element.worldId,
-                  id: assetId,
-                  data: audioData,
-                  ext: 'mp3'
-                })
-              )
-
-              await Promise.all([...promises])
+              /*
+               * The track being replaced is left on disk. It used to be removed
+               * here, outright and without counting: two events may share one
+               * mp3, so that took the file out from under the other. Whether the
+               * old track is now dead is a question about the whole storyworld,
+               * and the asset manager is what answers it.
+               */
+              await ipcRenderer.invoke(WINDOW_EVENT_TYPE.SAVE_ASSET, {
+                studioId,
+                worldId: element.worldId,
+                id: assetId,
+                data: audioData,
+                ext: 'mp3'
+              })
 
               await elementSaveEndpoint(studioId, {
                 ...element,
@@ -99,20 +90,22 @@ const ElementAudio: React.FC<{
           onRemove={async () => {
             if (!element.audio?.[0]) return
 
+            const assetId = element.audio[0]
+
             try {
-              await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-                studioId,
-                worldId: element.worldId,
-                id: element.audio[0],
-                ext: 'mp3'
+              // the reference is cleared first, because the count that decides
+              // whether the file is dead is read back out of the database
+              await elementSaveEndpoint(studioId, {
+                ...element,
+                audio: undefined
               })
 
-              await Promise.all([
-                elementSaveEndpoint(studioId, {
-                  ...element,
-                  audio: undefined
-                })
-              ])
+              await api().assets.removeAssetIfUnreferenced(
+                studioId,
+                element.worldId,
+                assetId,
+                'mp3'
+              )
             } catch (error) {
               throw error
             }

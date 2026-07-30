@@ -85,13 +85,10 @@ const MaskWrapper: React.FC<{
                 }
 
                 if (character.id) {
+                  // the reference is cleared first, because the count that
+                  // decides whether the image is dead is read back out of the
+                  // database — another mask may carry the same id
                   await Promise.all([
-                    ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-                      studioId,
-                      worldId: character.worldId,
-                      id: assetId,
-                      ext: 'jpeg'
-                    }),
                     api().events.resetPersonaMaskFromEvent(
                       studioId,
                       character.id,
@@ -102,6 +99,14 @@ const MaskWrapper: React.FC<{
                       masks: newMasks
                     })
                   ])
+
+                  assetId &&
+                    (await api().assets.removeAssetIfUnreferenced(
+                      studioId,
+                      character.worldId,
+                      assetId,
+                      'jpeg'
+                    ))
                 }
               } catch (error) {
                 throw error
@@ -378,19 +383,13 @@ const CharacterPersonality: React.FC<{
             }
 
             if (foundMaskIndex !== -1) {
-              if (newMasks[foundMaskIndex].assetId) {
-                try {
-                  await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-                    studioId,
-                    worldId: character.worldId,
-                    id: newMasks[foundMaskIndex].assetId,
-                    ext: 'jpeg'
-                  })
-                } catch (error) {
-                  throw error
-                }
-              }
-
+              /*
+               * The image being replaced is left on disk. It used to be removed
+               * here, outright and without counting, which took the file out
+               * from under any other mask carrying the same id — masks are
+               * allowed to share one. The asset manager is what decides whether
+               * the old image is now dead.
+               */
               newMasks[foundMaskIndex].active = true
               newMasks[foundMaskIndex].assetId = assetId
             }

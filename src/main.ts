@@ -413,7 +413,9 @@ const createWindow = async () => {
             worldId: WorldId
             id: string
             data: ArrayBuffer
-            ext: 'jpeg' | 'webp'
+            // mp3 belongs here: audio is trashed rather than deleted, so it can
+            // be restored like any other asset
+            ext: 'jpeg' | 'webp' | 'mp3'
           }
         ) => {
           const assetsPath = `${userDataPath}/assets/${studioId}/${worldId}`,
@@ -445,7 +447,8 @@ const createWindow = async () => {
             worldId: WorldId
             id: string
             data: ArrayBuffer
-            ext: 'jpeg' | 'webp'
+            // every audio caller already passes mp3; the union simply omitted it
+            ext: 'jpeg' | 'webp' | 'mp3'
             trash?: boolean
           }
         ) => {

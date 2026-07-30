@@ -2,6 +2,7 @@
 import * as studios from './studios'
 
 // LIBRARY
+import * as assets from './assets'
 import * as characters from './characters'
 import * as choices from './choices'
 import * as clipboard from './clipboard'
@@ -17,6 +18,7 @@ import * as scenes from './scenes'
 import * as worlds from './worlds'
 
 export default () => ({
+  assets,
   characters,
   choices,
   clipboard,
