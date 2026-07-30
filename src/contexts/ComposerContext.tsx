@@ -3,6 +3,10 @@ import React, { createContext, useMemo, useReducer } from 'react'
 import { HandleType } from 'react-flow-renderer'
 
 import { ElementId, ELEMENT_TYPE } from '../data/types'
+import {
+  SceneMapClipboard,
+  SCENE_MAP_CLIPBOARD_COMMAND
+} from '../lib/sceneMapClipboard'
 
 interface ComposerState {
   savedElement: {
@@ -60,6 +64,31 @@ interface ComposerState {
     id: ElementId | undefined
   }
   draggableEventContentElement: string | null
+  /**
+   * What the scene map last cut or copied, held in memory rather than on the
+   * system clipboard: the payload names variables, characters and assets by
+   * world-scoped id, so it only means anything inside the storyworld it came
+   * from — which it records, so a paste can check. Not persisted, so it does not
+   * survive a restart.
+   */
+  sceneMapClipboard: SceneMapClipboard | null
+  /**
+   * A cut, copy, paste or duplicate asked for from outside the scene map, which
+   * clears it once done.
+   */
+  sceneMapClipboardCommand: SCENE_MAP_CLIPBOARD_COMMAND | null
+  /**
+   * Elements added to a scene together, which a scene map paste is the only
+   * producer of.
+   *
+   * `savedElement` above cannot carry them: the world outline syncs a scene's
+   * children from the database when it hears about one, so announcing a paste of
+   * five events as a single save leaves the outline's tree holding four child ids
+   * with no item behind them, and @atlaskit/tree throws while flattening. React
+   * also batches, so dispatching the single-element action once per element would
+   * coalesce into one and lose the rest.
+   */
+  savedElements: { id: ElementId; type: ELEMENT_TYPE }[]
 }
 
 export enum COMPOSER_ACTION_TYPE {
@@ -83,7 +112,10 @@ export enum COMPOSER_ACTION_TYPE {
   ELEMENT_EDITOR_CLOSE_TAB = 'ELEMENT_EDITOR_CLOSE_TAB',
   OPEN_CHARACTER_MODAL = 'OPEN_CHARACTER_MODAL',
   CLOSE_CHARACTER_MODAL = 'CLOSE_CHARACTER_MODAL',
-  SET_DRAGGABLE_EVENT_CONTENT_ELEMENT = 'SET_DRAGGABLE_EVENT_CONTENT_ELEMENT'
+  SET_DRAGGABLE_EVENT_CONTENT_ELEMENT = 'SET_DRAGGABLE_EVENT_CONTENT_ELEMENT',
+  SET_SCENE_MAP_CLIPBOARD = 'SET_SCENE_MAP_CLIPBOARD',
+  SCENE_MAP_CLIPBOARD_COMMAND = 'SCENE_MAP_CLIPBOARD_COMMAND',
+  ELEMENTS_SAVE = 'ELEMENTS_SAVE'
 }
 
 type ComposerActionType =
@@ -206,6 +238,18 @@ type ComposerActionType =
       type: COMPOSER_ACTION_TYPE.SET_DRAGGABLE_EVENT_CONTENT_ELEMENT
       id: string | null
     }
+  | {
+      type: COMPOSER_ACTION_TYPE.SET_SCENE_MAP_CLIPBOARD
+      sceneMapClipboard: SceneMapClipboard | null
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.SCENE_MAP_CLIPBOARD_COMMAND
+      sceneMapClipboardCommand: SCENE_MAP_CLIPBOARD_COMMAND | null
+    }
+  | {
+      type: COMPOSER_ACTION_TYPE.ELEMENTS_SAVE
+      savedElements: { id: ElementId; type: ELEMENT_TYPE }[]
+    }
 
 const composerReducer = (
   state: ComposerState,
@@ -324,6 +368,21 @@ const composerReducer = (
         ...state,
         draggableEventContentElement: action.id
       }
+    case COMPOSER_ACTION_TYPE.SET_SCENE_MAP_CLIPBOARD:
+      return {
+        ...state,
+        sceneMapClipboard: action.sceneMapClipboard
+      }
+    case COMPOSER_ACTION_TYPE.SCENE_MAP_CLIPBOARD_COMMAND:
+      return {
+        ...state,
+        sceneMapClipboardCommand: action.sceneMapClipboardCommand
+      }
+    case COMPOSER_ACTION_TYPE.ELEMENTS_SAVE:
+      return {
+        ...state,
+        savedElements: action.savedElements
+      }
     default:
       return state
   }
@@ -375,7 +434,10 @@ const defaultComposerState: ComposerState = {
     visible: false,
     id: undefined
   },
-  draggableEventContentElement: null
+  draggableEventContentElement: null,
+  sceneMapClipboard: null,
+  sceneMapClipboardCommand: null,
+  savedElements: []
 }
 
 export const ComposerContext = createContext<ComposerContextType>({
