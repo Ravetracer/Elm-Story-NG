@@ -179,11 +179,8 @@ const CommandMenu: React.FC<{
 
     if (commandMenuRef.current) {
       if (rect) {
-        commandMenuRef.current.style.top = `${Math.round(
-          // TODO: lazy
-          // @ts-ignore
-          rect.bottom + 6
-        )}px`
+        // `rect` is narrowed by the guard above, so this needs no suppression
+        commandMenuRef.current.style.top = `${Math.round(rect.bottom + 6)}px`
         commandMenuRef.current.style.left = `${Math.round(rect.x)}px`
         commandMenuRef.current.style.opacity = '1'
 

@@ -32,7 +32,12 @@ export default tseslint.config(
       'src/components/Storyteller/embedded/**',
       // Copied from engine/assets by `npm run engine:styles`.
       'src/styles/engine.less',
-      'src/styles/engine-editor.less'
+      'src/styles/engine-editor.less',
+      // The original docs.elmstory.com recovered from archive.org: third-party
+      // scripts saved alongside the pages, reference material rather than source.
+      // Git-ignored, but eslint walks the working tree, and it reported 14352
+      // errors from them.
+      'Docs/**'
     ]
   },
 
