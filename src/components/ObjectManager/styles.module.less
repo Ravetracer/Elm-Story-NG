@@ -1,0 +1,100 @@
+.ObjectManager {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  height: 520px;
+}
+
+.list {
+  overflow-y: auto;
+  border-right: 1px solid hsla(0, 0%, 100%, 0.1);
+  padding-right: 8px;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.listRow {
+  padding: 6px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:hover {
+    background: hsla(0, 0%, 100%, 0.06);
+  }
+
+  &.selected {
+    background: hsla(0, 0%, 100%, 0.1);
+  }
+}
+
+.listRowTitle {
+  display: block;
+  font-size: 13px;
+}
+
+.listRowMeta {
+  display: block;
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.detail {
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.fieldHint {
+  display: block;
+  font-size: 11px;
+  opacity: 0.55;
+  margin: 4px 0 12px 0;
+  line-height: 1.5;
+}
+
+.fieldRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid hsla(0, 0%, 100%, 0.1);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.placement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.placementLocation {
+  flex: 1;
+}

@@ -12,6 +12,7 @@ import {
 
 import { Button, Tooltip } from 'antd'
 import {
+  AppstoreOutlined,
   ExportOutlined,
   LeftOutlined,
   NodeIndexOutlined,
@@ -19,7 +20,7 @@ import {
   PlusOutlined
 } from '@ant-design/icons'
 
-import { AssetsModal, StoryworldMapModal } from '../Modal'
+import { AssetsModal, ObjectsModal, StoryworldMapModal } from '../Modal'
 
 import api from '../../api'
 import ExportWorldMenu from './ExportWorldMenu'
@@ -38,7 +39,8 @@ const TitleBar: React.FC<{
   const { composer, composerDispatch } = useContext(ComposerContext)
 
   const [assetsModalVisible, setAssetsModalVisible] = useState(false),
-    [mapModalVisible, setMapModalVisible] = useState(false)
+    [mapModalVisible, setMapModalVisible] = useState(false),
+    [objectsModalVisible, setObjectsModalVisible] = useState(false)
 
   /**
    * Opening a scene from the map is the same selection the outline makes when a
@@ -84,6 +86,14 @@ const TitleBar: React.FC<{
         onCancel={() => setMapModalVisible(false)}
       />
 
+      <ObjectsModal
+        studioId={studioId}
+        worldId={world.id as WorldId}
+        subject={world.title}
+        visible={objectsModalVisible}
+        onCancel={() => setObjectsModalVisible(false)}
+      />
+
       <div className={styles.TitleBar}>
         <Tooltip
           title="Back to Dashboard"
@@ -120,6 +130,17 @@ const TitleBar: React.FC<{
           >
             <Button type="link" onClick={() => setMapModalVisible(true)}>
               <NodeIndexOutlined />
+            </Button>
+          </Tooltip>
+
+          <Tooltip
+            title="Manage Objects..."
+            placement="right"
+            align={{ offset: [-6, 0] }}
+            mouseEnterDelay={1}
+          >
+            <Button type="link" onClick={() => setObjectsModalVisible(true)}>
+              <AppstoreOutlined />
             </Button>
           </Tooltip>
 
