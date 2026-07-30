@@ -14,7 +14,7 @@ import {
   WorldObject
 } from '../../data/types'
 
-import { Alert, Button, InputNumber, Input, Select } from 'antd'
+import { Alert, Button, InputNumber, Input, Select, Switch } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 
 import styles from './styles.module.less'
@@ -274,7 +274,17 @@ const PlacementConditions: React.FC<{
                   ? condition[1]
                   : COMPARE_OPERATOR_TYPE.EQ
 
-                update([variableId, operator, condition[2], nextType])
+                // a value carried over from a differently-typed variable would
+                // not be 'true'/'false', so the switch below defaults to
+                // unchecked instead of showing garbage
+                const value =
+                  nextType === VARIABLE_TYPE.BOOLEAN &&
+                  condition[2] !== 'true' &&
+                  condition[2] !== 'false'
+                    ? 'true'
+                    : condition[2]
+
+                update([variableId, operator, value, nextType])
               }}
             />
 
@@ -287,19 +297,54 @@ const PlacementConditions: React.FC<{
               }
             />
 
-            <Input
-              size="small"
-              value={condition[2]}
-              className={styles.conditionWide}
-              onChange={(event) =>
-                update([
-                  condition[0],
-                  condition[1],
-                  event.target.value,
-                  condition[3]
-                ])
-              }
-            />
+            {type === VARIABLE_TYPE.BOOLEAN ? (
+              <>
+                <Switch
+                  size="small"
+                  checked={condition[2] === 'true'}
+                  onChange={(checked) =>
+                    update([
+                      condition[0],
+                      condition[1],
+                      checked ? 'true' : 'false',
+                      condition[3]
+                    ])
+                  }
+                />
+
+                <span className={styles.conditionLabel}>{condition[2]}</span>
+              </>
+            ) : type === VARIABLE_TYPE.NUMBER ? (
+              <InputNumber
+                size="small"
+                value={condition[2] === '' ? undefined : Number(condition[2])}
+                className={styles.conditionWide}
+                placeholder="0"
+                onChange={(value) =>
+                  update([
+                    condition[0],
+                    condition[1],
+                    `${value ?? 0}`,
+                    condition[3]
+                  ])
+                }
+              />
+            ) : (
+              <Input
+                size="small"
+                value={condition[2]}
+                className={styles.conditionWide}
+                placeholder="a value"
+                onChange={(event) =>
+                  update([
+                    condition[0],
+                    condition[1],
+                    event.target.value,
+                    condition[3]
+                  ])
+                }
+              />
+            )}
 
             <Button
               type="link"
@@ -350,7 +395,11 @@ const PlacementConditions: React.FC<{
               [
                 variable.id,
                 COMPARE_OPERATOR_TYPE.EQ,
-                '',
+                variable.type === VARIABLE_TYPE.BOOLEAN
+                  ? 'true'
+                  : variable.type === VARIABLE_TYPE.NUMBER
+                  ? '0'
+                  : '',
                 variable.type
               ] as VariableCompare
             ])
