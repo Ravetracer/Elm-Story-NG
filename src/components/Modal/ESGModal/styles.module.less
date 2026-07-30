@@ -12,6 +12,13 @@
     place-content: center;
     background: black;
     border-bottom: 1px solid var(--primary-border-color);
+
+    // banner.svg carries its own 520x150, which is this modal's width. Bounded
+    // anyway so a redraw at another size cannot widen the modal.
+    img {
+      display: block;
+      max-width: 100%;
+    }
   }
 
   .content {
@@ -30,25 +37,17 @@
       }
     }
 
-    .socialLinks {
+    .continuation {
       margin: 0px;
-      padding: 0px;
-      width: 320px;
-      height: 24px;
-      display: flex;
-      justify-content: space-between;
+      max-width: 360px;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+      color: hsl(0, 0%, 65%);
 
-      li {
-        cursor: pointer;
-        width: 24px;
-
-        svg path {
-          transition: fill 0.2s;
-        }
-
-        &:hover svg path {
-          fill: var(--highlight-color);
-        }
+      strong {
+        color: hsl(0, 0%, 85%);
+        font-weight: 600;
       }
     }
   }
@@ -60,14 +59,9 @@
     padding-top: 10px;
     margin-bottom: 10px;
 
-    .siteLink {
-      color: var(--highlight-color);
-      text-decoration: underline;
-      cursor: pointer;
-
-      &:hover {
-        color: var(--highlight-color-bright);
-      }
+    code {
+      font-size: 10px;
+      color: hsl(0, 0%, 65%);
     }
   }
 }

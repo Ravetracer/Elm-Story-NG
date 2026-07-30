@@ -1,4 +1,4 @@
-# Working on Elm Story
+# Working on Elm Story - NG
 
 A visual editor for branching narrative storyworlds. Abandoned by its authors at
 0.7.0 (April 2022); the build toolchain has been modernized, the application
@@ -37,6 +37,87 @@ works and is silently overwritten on the next build.
 Two editor modules also import from `engine/src` directly
 (`ElementEditor/SceneMap/EventSnippet.tsx`, `lib/serialization.ts`), which is
 inconsistent with the embedded copy but works.
+
+## The rename to Elm Story - NG
+
+The product is **Elm Story - NG**. The rename exists so nobody mistakes this for
+work by the original authors, which means the distinction it draws is the whole
+point of it:
+
+- **The product name changed; the authors' name did not.** "Elm Story - NG"
+  replaces "Elm Story" wherever it names the application. "Elm Story Games" and
+  "Elm Story Games LLC" stay exactly as they are in the copyright line,
+  `CREDITS`, `README.md` and both `package.json` `author` fields, because there
+  they are attribution rather than branding. Renaming attribution would
+  misattribute it.
+- **On-disk identifiers keep their `esg-` prefix.** `esg-asset://`, the
+  `esg-library-<studioId>` databases, the `esg-ui-scale` preference key and
+  `package.json`'s `"name": "esg-app"` are all storage keys. Renaming one does not
+  clarify anything and silently orphans whatever it named.
+- **`app.setPath('userData', ...)` at the top of `src/main.ts` is load-bearing.**
+  Electron derives `userData` from the product name, so the rename moved it from
+  `Elm Story` to `Elm Story - NG` — and the failure mode is not an error, it is an
+  app that opens on an empty dashboard with every storyworld, asset, cache and
+  trash entry still sitting in the old directory. The name is pinned to `Elm
+  Story` and has to run before the constants below it read the path. Moving it
+  later is a migration, not an edit.
+- **`engine/data/0-7-test/0-7-test.json` still says "Elm Story"** and must keep
+  saying it. It is a frozen export written by the original authors, in the same
+  category as `lib/transport/types/*` — a description of JSON already on disk,
+  which is the one place a rename must not be applied.
+
+### The two marks are files now, not components
+
+`TitleBar/ESGIcon` and `ESGModal/ESGBanner` were inline React SVG components,
+which made a design change a code change. Both are `.svg` files imported as URLs
+and drawn by an `<img>`: `src/components/TitleBar/mark.svg` and
+`src/components/Modal/ESGModal/banner.svg`. Each carries its own notes.
+
+- **A font on this machine is not a font in the repository.** `assets/es_logo_NG.svg`
+  and `assets/es_logo_NG_favicon.svg` set "NG" as live `<text>` in **Pengenalan**,
+  which is installed locally and is not committed. Anything *shipped* has to be
+  outlined or it renders in a fallback face for everyone else — which is why
+  `engine/public/favicon.svg` is generated from the source rather than copied from
+  it, with the command recorded in its own header. The editable sources under
+  `assets/` keep live text on purpose; they are Inkscape documents.
+- **The "Elm Story" wordmark has no font anywhere.** `banner.svg`'s serif glyphs
+  are outlines carried over from the 0.7.0 banner, which was itself outlines.
+  There is no way to re-set that text, so the hyphen is a drawn `<rect>` and the
+  glyphs must not be retyped. The banner is the original wordmark minus "Games",
+  plus "NG" scaled to a 36px cap height against the wordmark's 42px.
+- **`<img>` means CSS cannot reach the paths.** The title bar mark's hover used to
+  repaint the white fill to `--highlight-color`; it is an opacity transition now.
+  A blanket fill would also have flattened the purple "NG" into one colour.
+- **`TITLE_BAR_ICON_WIDTH` has to match the mark's real width.** It is derived
+  from `TITLE_BAR_MARK_WIDTH` rather than hardcoded, because the drag region is
+  absolutely positioned and starts where the mark ends — the old `34` was
+  `19 + 15` for the old mark. Get it wrong and the drag region covers the mark, so
+  the info box stops opening. Measured live: the region starts at x=37 for a 22px
+  mark at a 15px offset.
+- **"NG" is illegible below about 18px** and is a purple accent at title bar size,
+  not a readable suffix. That is why the title bar spells the name out beside it.
+
+### The info box has no links, deliberately
+
+`ESGModal` used to carry six social icons, the site and the licence. Every one
+pointed at the original authors: `elmstory.com` and `docs.elmstory.com` no longer
+resolve, the Patreon redirects to Patreon's own front page and the Twitter account
+is gone, while the itch.io, Reddit, Twitch and YouTube pages that *do* still answer
+are the original project's. A link that sends someone asking for help with this app
+to a page the people behind it do not run is worse than no link, so the box states
+what it is and stops there. `LICENSE` and `CREDITS` are named as files rather than
+linked.
+
+The same reasoning applies to `lib/saveStarterContent.ts`, whose generated
+storyworld shipped six dead `elmstory.com` links to every new author, and to the
+engine's `TitleCard` footer and console banner, which go out inside exported PWAs.
+
+**The dead links elsewhere are known and still there**: `ElementHelpButton`,
+`TitleBar`'s own Help button, `ExportWorldMenu`, `ImportJSONModal` and `menu.ts`'s
+Help submenu all still point at `docs.elmstory.com`. `VariableManager/VariableHelp.tsx`
+is the pattern for replacing one — an in-app sheet held to the real parser by
+`src/__tests__/variableHelpExamples.test.ts` — and it is the only accurate
+documentation in the product.
 
 ## Authoring affordances that are easy to miss
 

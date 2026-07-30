@@ -63,7 +63,7 @@ export default async ({
       },
       parent: [ELEMENT_TYPE.WORLD, null],
       tags: [],
-      title: 'Getting Started with Elm Story',
+      title: 'Getting Started with Elm Story - NG',
       worldId
     }),
     api().events.saveEvent(studioId, {
@@ -71,7 +71,7 @@ export default async ({
       characters: [],
       choices: [],
       content:
-        '[{"type":"h1","children":[{"text":"Welcome to Elm Story"}]},{"type":"p","children":[{"text":"...and your new storyworld!"}]},{"type":"p","children":[{"text":"We\'ve generated this sample content to help you get started."}]},{"type":"p","children":[{"text":"Click the arrow below to view available resources."}]}]',
+        '[{"type":"h1","children":[{"text":"Welcome to Elm Story - NG"}]},{"type":"p","children":[{"text":"...and your new storyworld!"}]},{"type":"p","children":[{"text":"We\'ve generated this sample content to help you get started."}]},{"type":"p","children":[{"text":"Click the arrow below to view available resources."}]}]',
       composer: {
         sceneMapPosX: 132,
         sceneMapPosY: 192
@@ -88,8 +88,18 @@ export default async ({
       id: resourcesEventId,
       characters: [],
       choices: [],
+      /**
+       * Every external link this used to carry pointed at elmstory.com — its
+       * tutorials, Discord, Twitter, community, donation and Patreon pages. That
+       * domain no longer resolves, so a new author's very first storyworld
+       * shipped six dead links, and the two accounts that do still answer belong
+       * to the original authors rather than to this project. Replaced with the
+       * two authoring affordances that have no visible affordance of their own
+       * (the `/` and `{` triggers) and a pointer at the in-app expression help,
+       * which is where the accurate documentation actually lives.
+       */
       content:
-        '[{"type":"h2","children":[{"text":"Helpful Resources"}]},{"type":"p","children":[{"text":"Throughout the interface are help (❔) buttons that will lead you to specific information within Elm Story\'s online documentation."}]},{"type":"p","children":[{"text":"We also post tutorial videos to our "},{"type":"link","url":"https://elmstory.com/tutorials/","children":[{"text":"YouTube channel"}]},{"text":"."}]},{"type":"blockquote","children":[{"text":"Elm Story is currently in early access. Major features, enhancements and fixes are under active development. If you need additional help, "},{"type":"link","url":"https://elmstory.com/help/","children":[{"text":"join"}]},{"text":" our Discord server."}]},{"type":"p","children":[{"text":"For updates, follow "},{"type":"link","url":"https://elmstory.com/twitter/","children":[{"text":"@elmstorygames"}]},{"text":" on Twitter."}]},{"type":"p","children":[{"text":""},{"type":"link","url":"https://elmstory.com/community/","children":[{"text":"Join our community"}]},{"text":" to submit feedback, get help and share your work!"}]},{"type":"h2","children":[{"text":"Support Elm Story"}]},{"type":"p","children":[{"text":"If you find Elm Story useful, consider supporting development by donating via "},{"type":"link","url":"https://elmstory.com/donate/","children":[{"text":"Itch"}]},{"text":" and becoming a "},{"type":"link","url":"https://elmstory.com/subscribe/","children":[{"text":"monthly patron"}]},{"text":". 🙌"}]}]',
+        '[{"type":"h2","children":[{"text":"Helpful Resources"}]},{"type":"p","children":[{"text":"Type / in an event\'s content to open the command menu: headings, quotes, lists, character references and images."}]},{"type":"p","children":[{"text":"Type { to start a template expression, which reads a variable by its title. The ❔ beside the Variables tab explains the whole expression language."}]},{"type":"blockquote","children":[{"text":"Elm Story - NG is a continuation of Elm Story, which its original authors stopped developing at 0.7.0 in April 2022. The help buttons and documentation links they left behind point at a site that no longer exists."}]},{"type":"p","children":[{"text":"Ctrl/Cmd+Shift+F hides everything but the writing column. Ctrl/Cmd+X, C, V and D cut, copy, paste and duplicate scene map selections."}]}]',
       composer: {
         sceneMapPosX: 400,
         sceneMapPosY: 192

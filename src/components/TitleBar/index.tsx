@@ -25,7 +25,10 @@ import {
 } from '@ant-design/icons'
 
 import { ESGModal } from '../Modal'
-import ESGIcon from './ESGIcon'
+
+// An editable file rather than the inline component this replaced, so the mark
+// can be redrawn without touching code. See the notes inside it.
+import markUrl from './mark.svg'
 
 import styles from './styles.module.less'
 
@@ -47,8 +50,11 @@ enum TITLE_BAR_BUTTON_TYPE {
  */
 const TITLE_BAR_BUTTON_WIDTH = 23,
   TITLE_BAR_BUTTONS_OFFSET = 10,
-  // the ESG icon on the opposite corner, at its own 15px offset
-  TITLE_BAR_ICON_WIDTH = 34
+  // the mark on the opposite corner, at its own 15px offset. It has to clear
+  // mark.svg's own width or the drag region covers it and the info box stops
+  // opening.
+  TITLE_BAR_MARK_WIDTH = 22,
+  TITLE_BAR_ICON_WIDTH = TITLE_BAR_MARK_WIDTH + 15
 
 interface TitleBarButtonProps extends React.HTMLAttributes<HTMLDivElement> {
   type: TITLE_BAR_BUTTON_TYPE
@@ -330,7 +336,7 @@ const TitleBar: React.FC = () => {
         /> */}
         </div>
 
-        <header>ELM STORY : {appLocationTitle}</header>
+        <header>ELM STORY - NG : {appLocationTitle}</header>
 
         <div
           className={styles.titleBarIcon}
@@ -339,8 +345,9 @@ const TitleBar: React.FC = () => {
             left: app.platform !== PLATFORM_TYPE.MACOS ? '15px' : 'initial'
           }}
           onClick={() => setESGModalVisible(true)}
+          title="About Elm Story - NG"
         >
-          <ESGIcon />
+          <img src={markUrl} width={TITLE_BAR_MARK_WIDTH} alt="" />
         </div>
       </div>
     </>

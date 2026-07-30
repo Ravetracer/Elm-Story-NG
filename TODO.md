@@ -77,6 +77,23 @@ below. The asset manager comes first because objects will mint a lot of images.
       and says `=/=` is not an operator; `variableHelpExamples.test.ts` holds it to
       that.)*
 
+- [x] Rename the project so there's no confusion. It can happen that users will be confused if the original
+      authors are continuing development on this. So the project name/trademark has to be altered a bit to make it
+      clear, that this is a continuation of the canceled project.
+      All occurrences of "Elm Story" has to be replaced by "Elm Story - NG" (for Next Generation).
+      Assets like images and icons are already altered to reflect the new name.
+      The title bar icon has to be replaced as well. A new SVG icon is provided in './assets/es_logo_NG_favicon.svg'.
+      Extract the info box SVG image so it can be altered by the current dev.
+      *(See `CLAUDE.md`, "The rename to Elm Story - NG". Both marks are now editable `.svg`
+      files rather than inline React components — `TitleBar/mark.svg` and
+      `Modal/ESGModal/banner.svg` — and the info box carries no links at all, since every
+      one it had pointed at a dead domain or at an account belonging to the original
+      authors. Two things the rename could have broken quietly and did not: Electron
+      derives `userData` from the product name, so the directory is pinned in `src/main.ts`
+      or 465 MB of storyworlds would have been stranded behind an empty dashboard; and
+      `engine/public/favicon.svg` shipped live `<text>` in a font that exists only on the
+      author's machine, so the copy that goes into an exported PWA is now outlined.)*
+
 ## 2. Design pass — no code
 
 Settle the shape of **everything** that will ever need a new persisted field, so

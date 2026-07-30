@@ -1,4 +1,4 @@
-// Attaches to the Elm Story renderer, records console output and uncaught
+// Attaches to the Elm Story - NG renderer, records console output and uncaught
 // exceptions, optionally evaluates an expression, then prints what arrived.
 //   node watch.mjs '<expression>' [waitMs]
 const expr = process.argv[2] || 'null'

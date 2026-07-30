@@ -19,6 +19,8 @@
 *.bmp   binary
 *.ico   binary
 *.icns  binary
+# JPEG 2000 turns up as an intermediate of the macOS .icns export
+*.jp2   binary
 
 # Fonts
 *.ttf   binary

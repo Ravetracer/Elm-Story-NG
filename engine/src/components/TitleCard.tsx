@@ -66,12 +66,11 @@ const TitleCard: React.FC<{
             </button>
           </div>
 
-          <div id="title-card-footer">
-            made with{' '}
-            <a href="http://elmstory.com" target="_blank" rel="noreferrer">
-              Elm Story
-            </a>
-          </div>
+          {/* Plain text rather than the link this was: it pointed at
+              elmstory.com, which no longer resolves, and this footer ships inside
+              every exported storyworld — where a broken link is the first thing a
+              player sees. */}
+          <div id="title-card-footer">made with Elm Story - NG</div>
         </div>
       )}
     </>

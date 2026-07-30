@@ -7,10 +7,13 @@ function main() {
   const ___worldId: string = '___worldId___',
     ___packedStoryworldData: string = '___storytellerData___'
 
+  // No URL: the elmstory.com this used to print no longer resolves, and an
+  // exported storyworld is the one place this string is read by someone who is
+  // not the author.
   console.info(
-    `[STORYTELLER] made with Elm Story ${String.fromCodePoint(
+    `[STORYTELLER] made with Elm Story - NG ${String.fromCodePoint(
       0x1f4da
-    )} 0.7.1 | https://elmstory.com`
+    )} 0.7.1`
   )
 
   const rendererContainer = document.getElementById('runtime') || document.body

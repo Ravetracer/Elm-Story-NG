@@ -1,18 +1,31 @@
-import { ipcRenderer } from 'electron'
-
 import React, { useContext } from 'react'
-
-import { WINDOW_EVENT_TYPE } from '../../../lib/events'
 
 import { AppContext } from '../../../contexts/AppContext'
 
-import { Modal, Tooltip } from 'antd'
+import { Modal } from 'antd'
 
-import ESGBanner from './ESGBanner'
-import SocialIcon from './SocialIcon'
+// An editable file rather than the inline component this replaced, so the
+// wordmark can be redrawn without touching code. See the notes inside it.
+import bannerUrl from './banner.svg'
 
 import styles from './styles.module.less'
 
+/**
+ * The info box behind the title bar mark.
+ *
+ * It carries no links at all, which is deliberate rather than an oversight. It
+ * used to hold six social icons, the site and the licence, every one of them
+ * pointing at an account or a domain belonging to the original authors:
+ * elmstory.com and docs.elmstory.com no longer resolve, the Patreon redirects to
+ * Patreon's own front page, the Twitter account is gone, and the itch.io, Reddit
+ * and Twitch pages that do still answer are the *original project's* — which is
+ * exactly the confusion the rename exists to prevent. A link that sends someone
+ * asking for help with this app to a page the people behind it do not run is
+ * worse than no link, so the box states what it is and stops there.
+ *
+ * `LICENSE` and `CREDITS` in the repository are where the licence text and the
+ * original authors are recorded.
+ */
 const ESGModal: React.FC<{ visible: boolean; onCancel: () => void }> = ({
   visible = false,
   onCancel
@@ -30,14 +43,16 @@ const ESGModal: React.FC<{ visible: boolean; onCancel: () => void }> = ({
     >
       <div>
         <div className={styles.ESGBanner}>
-          <ESGBanner />
+          <img src={bannerUrl} alt="Elm Story - NG" />
         </div>
 
         <div className={styles.content}>
           <div className={styles.version}>
             <div>
-              <span className={styles.versionHeader}>Elm Story Version</span>{' '}
-              {app.release} (Early Access)
+              <span className={styles.versionHeader}>
+                Elm Story - NG Version
+              </span>{' '}
+              {app.release}
             </div>
             <div>
               {/* the version an exported storyworld is written as, which moves
@@ -46,108 +61,21 @@ const ESGModal: React.FC<{ visible: boolean; onCancel: () => void }> = ({
               {app.version}
             </div>
             <div>
-              <span className={styles.versionHeader}>Elm Story Build</span>{' '}
+              <span className={styles.versionHeader}>Elm Story - NG Build</span>{' '}
               {app.build}
             </div>
           </div>
 
-          <ul className={styles.socialLinks}>
-            <Tooltip title="Patreon &mdash; join to support the future of Elm Story and access dev chat">
-              <li
-                onClick={() =>
-                  ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                    'https://patreon.com/ElmStoryGames'
-                  ])
-                }
-              >
-                <SocialIcon type="patreon" />
-              </li>
-            </Tooltip>
-
-            <Tooltip title="Twitter &mdash; follow the latest updates on Elm Story development">
-              <li
-                onClick={() =>
-                  ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                    'https://twitter.com/ElmStoryGames'
-                  ])
-                }
-              >
-                <SocialIcon type="twitter" />
-              </li>
-            </Tooltip>
-
-            <Tooltip title="Itch.io &mdash; read the devlog and add Elm Story to your collection for app updates">
-              <li
-                onClick={() =>
-                  ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                    'https://elmstorygames.itch.io'
-                  ])
-                }
-              >
-                <SocialIcon type="itch" />
-              </li>
-            </Tooltip>
-
-            <Tooltip title="Reddit &mdash; get Elm Story app support and contribute feedback and ideas">
-              <li
-                onClick={() =>
-                  ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                    'https://reddit.com/r/ElmStoryGames'
-                  ])
-                }
-              >
-                <SocialIcon type="reddit" />
-              </li>
-            </Tooltip>
-
-            <Tooltip title="Twitch &mdash; watch development livestreams">
-              <li
-                onClick={() =>
-                  ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                    'https://twitch.tv/ElmStoryGames'
-                  ])
-                }
-              >
-                <SocialIcon type="twitch" />
-              </li>
-            </Tooltip>
-
-            <Tooltip title="YouTube &mdash; watch Elm Story tutorials">
-              <li
-                onClick={() =>
-                  ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                    'https://youtube.com/channel/UCkc_XSTzMxOAb-hMCeWoUyQ'
-                  ])
-                }
-              >
-                <SocialIcon type="youtube" />
-              </li>
-            </Tooltip>
-          </ul>
+          <p className={styles.continuation}>
+            A continuation of <strong>Elm Story</strong>, which its original
+            authors stopped developing at 0.7.0 in April 2022. This is not their
+            work and they do not support it.
+          </p>
         </div>
 
         <div className={styles.copyright}>
-          <span
-            className={styles.siteLink}
-            onClick={() =>
-              ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                'https://elmstory.com'
-              ])
-            }
-          >
-            elmstory.com
-          </span>{' '}
-          | &copy; 2022 Elm Story Games LLC |{' '}
-          <span
-            className={styles.siteLink}
-            onClick={() =>
-              ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                'https://elmstory.com/license'
-              ])
-            }
-          >
-            License
-          </span>
+          &copy; 2022 Elm Story Games LLC | GPL-3.0-or-later | see{' '}
+          <code>LICENSE</code> and <code>CREDITS</code>
         </div>
       </div>
     </Modal>

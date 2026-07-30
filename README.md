@@ -1,7 +1,9 @@
-# Elm Story
+# Elm Story - NG
 
-Front-end application for the Elm Story platform: a visual editor for branching
-narrative storyworlds.
+A visual editor for branching narrative storyworlds. **NG** is for Next
+Generation: this is a continuation of **Elm Story**, which its original authors
+stopped developing at 0.7.0 in April 2022. It is not their work, they do not
+support it, and the rename exists so nobody mistakes one for the other.
 
 Copyright (c) 2022 Elm Story Games
 
@@ -11,10 +13,17 @@ Storyworld content data remains the copyright and property of its own authors:
 exported data may be used for non-commercial and commercial purposes, but
 embedded and distributed license and copyright data must not be modified.
 
-This is a revival of the abandoned 0.7.0 release. The build toolchain has been
-modernized so the project runs on current Node and Electron; the application
-code and its UI dependencies are deliberately unchanged. See
+The build toolchain has been modernized so the project runs on current Node and
+Electron; the UI dependencies are deliberately unchanged. See
 [Dependency policy](#dependency-policy) for why.
+
+The original authors' name is kept wherever it is attribution — the copyright
+line above, `CREDITS`, the `author` field in `package.json` — and replaced
+wherever it names the product. On-disk identifiers keep their `esg-` prefix
+(`esg-asset://`, the `esg-library-*` databases, the `esg-ui-scale` preference),
+and Electron's `userData` directory is still `Elm Story`, because renaming any
+of those would strand existing data rather than clarify anything. See the note
+at the top of `src/main.ts`.
 
 ## Requirements
 

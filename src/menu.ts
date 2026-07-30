@@ -47,10 +47,10 @@ export default class MenuBuilder {
 
   buildDarwinTemplate(): MenuItemConstructorOptions[] {
     const subMenuAbout: DarwinMenuItemConstructorOptions = {
-      label: 'Elm Story',
+      label: 'Elm Story - NG',
       submenu: [
         {
-          label: 'Hide Elm Story',
+          label: 'Hide Elm Story - NG',
           accelerator: 'CmdOrCtrl+H',
           selector: 'hide:'
         },

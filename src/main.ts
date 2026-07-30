@@ -72,6 +72,23 @@ contextMenu({
 
 let mainWindow: BrowserWindow | null = null
 
+/**
+ * The product was renamed from "Elm Story" to "Elm Story - NG", and Electron
+ * derives userData from the product name — so the default path would have moved
+ * to "Elm Story - NG" and left every existing storyworld, asset and preference
+ * behind in the old directory. Nothing would have looked broken: the app would
+ * have opened on an empty dashboard.
+ *
+ * The directory name is therefore pinned to what it has always been. It is the
+ * on-disk location of user data, not a label, and nothing renders it. Changing it
+ * later needs a migration, not an edit here: IndexedDB, the asset directory, the
+ * cache and the trash all live under it.
+ *
+ * Must run before anything reads the path, which the constants below do at module
+ * load.
+ */
+app.setPath('userData', path.join(app.getPath('appData'), 'Elm Story'))
+
 const userDataPath = app.getPath('userData'),
   userCachePath = `${userDataPath}/.cache`,
   userTrashPath = `${userDataPath}/.trash`
@@ -780,7 +797,7 @@ const createWindow = async () => {
 
                   const worldDescription =
                     parsedWorldData._.description ||
-                    `${parsedWorldData._.title} is a storyworld made with Elm Story.`
+                    `${parsedWorldData._.title} is a storyworld made with Elm Story - NG.`
 
                   html = html
                     .replace(/___worldTitle___/g, parsedWorldData._.title)

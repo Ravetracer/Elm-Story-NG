@@ -60,12 +60,21 @@
     display: grid;
     place-content: center;
 
-    svg path {
-      transition: fill 0.2s;
+    /*
+     * The mark is an <img>, so its shapes are out of reach: CSS cannot repaint
+     * the white "ES" to the highlight colour the way it did while this was an
+     * inline SVG. It is also two-tone now, and a blanket fill would have flatted
+     * the purple "NG" into the same colour as the rest. Opacity is the hover
+     * state instead.
+     */
+    img {
+      display: block;
+      opacity: 0.85;
+      transition: opacity 0.2s;
     }
 
-    &:hover svg path {
-      fill: var(--highlight-color);
+    &:hover img {
+      opacity: 1;
     }
   }
 }

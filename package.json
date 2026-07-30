@@ -1,8 +1,8 @@
 {
   "name": "esg-app",
-  "productName": "Elm Story",
-  "description": "The Elm Story Platform app.",
-  "version": "0.15.1",
+  "productName": "Elm Story - NG",
+  "description": "Elm Story - NG: a continuation of the Elm Story storyworld editor.",
+  "version": "0.16.0",
   "author": {
     "name": "Elm Story Games",
     "email": "elmstorygames@gmail.com"
@@ -36,8 +36,8 @@
     "postinstall": "npm run engine:install && npm run electron:install"
   },
   "build": {
-    "productName": "Elm Story",
-    "appId": "com.esg.elmstory",
+    "productName": "Elm Story - NG",
+    "appId": "com.esg.elmstory.ng",
     "files": [
       "out/**/*",
       "package.json"

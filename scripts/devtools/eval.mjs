@@ -1,5 +1,5 @@
 // Minimal Chrome DevTools Protocol client: evaluates an expression in the
-// Elm Story renderer and prints the result. Node 22+ has a global WebSocket.
+// Elm Story - NG renderer and prints the result. Node 22+ has a global WebSocket.
 const expr = process.argv[2]
 
 const targets = await (await fetch('http://localhost:9222/json')).json()

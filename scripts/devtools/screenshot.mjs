@@ -1,4 +1,4 @@
-// Captures the Elm Story renderer via CDP Page.captureScreenshot, so the result
+// Captures the Elm Story - NG renderer via CDP Page.captureScreenshot, so the result
 // is independent of which desktop window happens to be in front.
 import { writeFileSync } from 'node:fs'
 
