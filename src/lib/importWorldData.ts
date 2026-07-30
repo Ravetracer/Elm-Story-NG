@@ -139,6 +139,10 @@ export default (
          * the scene's jump child refs in again. The duplicated refs alone are
          * fatal on next open, since @atlaskit/tree dereferences every child while
          * flattening the outline.
+         *
+         * `src/__tests__/importUpgradeChain.test.ts` measures that damage on the
+         * authors' own export, so widening this gate means deleting a test that
+         * says why not.
          */
         if (semver.lt(engineVersion, '0.7.1')) {
           // 0.7.0-shaped by now whichever branch ran, so this casts to the era
