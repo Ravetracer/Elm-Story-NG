@@ -2,7 +2,7 @@
   "name": "esg-app",
   "productName": "Elm Story",
   "description": "The Elm Story Platform app.",
-  "version": "0.12.4",
+  "version": "0.13.0",
   "author": {
     "name": "Elm Story Games",
     "email": "elmstorygames@gmail.com"
@@ -126,6 +126,7 @@
   "dependencies": {
     "@ant-design/icons": "^4.8.3",
     "@atlaskit/tree": "^8.12.0",
+    "@dagrejs/dagre": "^3.0.0",
     "@fontsource/fira-mono": "^4.5.10",
     "@fontsource/inter": "^4.5.15",
     "@fontsource/roboto-serif": "^4.5.9",
