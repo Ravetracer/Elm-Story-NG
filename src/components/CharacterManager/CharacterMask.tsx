@@ -60,6 +60,23 @@ const CharacterMask: React.FC<{
       undefined
     )
 
+    /*
+     * The details menu is controlled so that picking an entry dismisses it,
+     * which an antd Dropdown does for a Menu but not for a custom overlay like
+     * this one. It matters beyond tidiness: a dropdown sits at z-index 1050 and
+     * a modal at 1000, so a menu left open covers the asset picker that Choose
+     * just opened, and the mask preview inside it is large enough to hide most
+     * of it.
+     */
+    const [detailsVisible, setDetailsVisible] = useState(false)
+
+    // every entry acts and then dismisses
+    const runFromMenu = (action?: (type: CHARACTER_MASK_TYPE) => void) => () => {
+      setDetailsVisible(false)
+
+      action?.(type)
+    }
+
     const mask = (
       <div
         className={`${styles.CharacterMask} ${
@@ -205,30 +222,24 @@ const CharacterMask: React.FC<{
                   <div className={styles.buttons}>
                     <div>
                       {type !== CHARACTER_MASK_TYPE.NEUTRAL && (
-                        <Button onClick={() => onToggle && onToggle(type)}>
+                        <Button onClick={runFromMenu(onToggle)}>
                           {active ? 'Disable' : 'Enable'}
                         </Button>
                       )}
 
-                      <Button
-                        onClick={() =>
-                          onChangeMaskImage && onChangeMaskImage(type)
-                        }
-                      >
+                      <Button onClick={runFromMenu(onChangeMaskImage)}>
                         Import
                       </Button>
 
                       {onChooseMaskImage && (
-                        <Button onClick={() => onChooseMaskImage(type)}>
+                        <Button onClick={runFromMenu(onChooseMaskImage)}>
                           Choose
                         </Button>
                       )}
 
                       {((active && type !== CHARACTER_MASK_TYPE.NEUTRAL) ||
                         assetId) && (
-                        <Button onClick={() => onReset && onReset(type)}>
-                          Reset
-                        </Button>
+                        <Button onClick={runFromMenu(onReset)}>Reset</Button>
                       )}
                     </div>
                   </div>
@@ -236,6 +247,8 @@ const CharacterMask: React.FC<{
               </div>
             }
             trigger={['contextMenu']}
+            visible={detailsVisible}
+            onVisibleChange={setDetailsVisible}
           >
             {mask}
           </Dropdown>

@@ -556,6 +556,14 @@ appear everywhere and swallow those right-click menus. That is why
 `showSelectAll: false` is set in `src/main.ts`; without it, adding a character
 image silently does nothing.
 
+**A `Dropdown` whose overlay is not a `Menu` does not close when an entry is
+clicked**, and antd puts a dropdown at z-index 1050 against a modal's 1000 — so
+a lingering menu covers anything the entry opened. Three of those four surfaces
+pass a `Menu`, which antd dismisses for them. `CharacterMask` passes a custom
+`div` (the mask preview and its buttons), so it is controlled through
+`detailsVisible` and every entry dismisses it before acting. Anything else that
+opens a modal from a non-`Menu` overlay needs the same.
+
 **4. Asset URLs.** User assets live under `userData`, outside the bundle. The
 renderer is served over **http** in development and loaded from **file://** when
 packaged, so a filesystem path cannot be used as a URL. `GET_ASSET` returns an
