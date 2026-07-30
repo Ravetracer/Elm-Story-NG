@@ -176,6 +176,8 @@ export interface ObjectData {
   stackedTitle?: string
   tags: string[]
   takeable: boolean
+  takeEffects?: VariableSet[]
+  takeMessage?: string
   title: string
   updated: number
 }
@@ -775,6 +777,8 @@ export interface EngineObjectData {
   stackedAssetId?: string
   stackedTitle?: string
   takeable: boolean
+  takeEffects?: VariableSet[]
+  takeMessage?: string
   title: string
   worldId: WorldId
 }

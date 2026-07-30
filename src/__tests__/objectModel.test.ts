@@ -773,11 +773,11 @@ describe('taking', () => {
     const coin = object('coin', { placements: [placement(KITCHEN, 5)] }),
       world = snapshot({ objects: [coin] })
 
-    const deltas = take(world, 'coin')
+    const result = take(world, 'coin')
 
-    expect(deltas).toBeDefined()
+    expect(result).toBeDefined()
 
-    const after = snapshot({ objects: [coin], deltas })
+    const after = snapshot({ objects: [coin], deltas: result?.deltas })
 
     expect(objectCountAt(after, 'coin', KITCHEN)).toBe(0)
     expect(inventoryCount(after, 'coin')).toBe(5)
@@ -798,6 +798,50 @@ describe('taking', () => {
     expect(take(snapshot({ objects: [coin] }), 'coin')).toBeUndefined()
   })
 
+  it('applies the take effects, which is the only way a take sets a variable', () => {
+    /*
+     * A recipe's effects fire on Use or Combine, and a take is neither — so before
+     * takeEffects existed there was no way to make `{ bookTaken ? ... }` true.
+     * A path condition can ask about the inventory directly, but a template
+     * expression can only read variables.
+     */
+    const book = object('book', { placements: [placement(KITCHEN, 1)] })
+
+    const world = snapshot({
+      objects: [
+        {
+          ...book,
+          takeEffects: [
+            ['bookTaken', SET_OPERATOR_TYPE.ASSIGN, 'true', VARIABLE_TYPE.BOOLEAN]
+          ],
+          takeMessage: 'You slip the book into your bag.'
+        }
+      ],
+      state: {
+        bookTaken: {
+          title: 'bookTaken',
+          type: VARIABLE_TYPE.BOOLEAN,
+          value: 'false',
+          worldId: 'world-1'
+        }
+      }
+    })
+
+    const result = take(world, 'book')
+
+    expect(result?.state.bookTaken.value).toBe('true')
+    expect(result?.message).toBe('You slip the book into your bag.')
+    // the snapshot it was given is untouched
+    expect(world.state.bookTaken.value).toBe('false')
+  })
+
+  it('leaves the state alone when there are no take effects', () => {
+    const coin = object('coin', { placements: [placement(KITCHEN, 1)] }),
+      world = snapshot({ objects: [coin], state: numberState('n', '1') })
+
+    expect(take(world, 'coin')?.state).toBe(world.state)
+  })
+
   it('accumulates across two scenes into one inventory stack', () => {
     const coin = object('coin', {
       placements: [placement(KITCHEN, 1), placement(STUDY, 3)]
@@ -806,11 +850,15 @@ describe('taking', () => {
     const first = take(snapshot({ objects: [coin] }), 'coin')
 
     const second = take(
-      snapshot({ objects: [coin], deltas: first, currentSceneId: STUDY }),
+      snapshot({
+        objects: [coin],
+        deltas: first?.deltas,
+        currentSceneId: STUDY
+      }),
       'coin'
     )
 
-    const after = snapshot({ objects: [coin], deltas: second })
+    const after = snapshot({ objects: [coin], deltas: second?.deltas })
 
     expect(inventoryCount(after, 'coin')).toBe(4)
   })

@@ -471,6 +471,22 @@ export interface WorldObject extends Element {
   stackedAssetId?: string
   /** Overrides `World.objectNoRecipeMessage` when this object is combined from. */
   noRecipeMessage?: string
+  /**
+   * Variable assignments applied when the player picks this up.
+   *
+   * A recipe's `effects` fire when a recipe fires — that is, on Use or Combine —
+   * and taking an object is neither, so without these there was no way to record
+   * "the player has the book" as a variable. It matters because a template
+   * expression in prose can only read variables: `{ bookTaken ? ... }` has no way
+   * to ask about the inventory, even though a path condition does.
+   *
+   * Applied once, on the take that moves the object. Taking a second stack of the
+   * same object applies them again, which is why an assignment is usually the
+   * right operator rather than an increment.
+   */
+  takeEffects?: VariableSet[]
+  /** What the storyteller says when the player picks this up. */
+  takeMessage?: string
   placements: ObjectPlacement[]
 }
 

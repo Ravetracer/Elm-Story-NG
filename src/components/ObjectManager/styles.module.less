@@ -41,6 +41,9 @@
 }
 
 .listRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 8px;
   border-radius: 3px;
   cursor: pointer;
@@ -54,9 +57,38 @@
   }
 }
 
+// min-width 0 is what lets the title's ellipsis engage: a flex item will not
+// shrink below its content without it, so a long object name would push the row
+// wider than the panel instead of truncating.
+.listRowText {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .listRowTitle {
   display: block;
   font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thumbnail {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  background-color: hsla(0, 0%, 100%, 0.05);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnailEmpty {
+  font-size: 14px !important;
+  opacity: 0.3;
 }
 
 .listRowMeta {

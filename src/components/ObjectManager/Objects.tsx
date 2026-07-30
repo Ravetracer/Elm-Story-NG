@@ -28,7 +28,9 @@ import {
 
 import { AssetsModal } from '../Modal'
 import confirmRemoveObject from './confirmRemoveObject'
+import ObjectThumbnail from './ObjectThumbnail'
 import PlacementConditions from './PlacementConditions'
+import VariableEffectRows from './VariableEffectRows'
 import { describeRecipe } from './Recipes'
 
 import api from '../../api'
@@ -203,15 +205,23 @@ const Objects: React.FC<{
               }`}
               onClick={() => onSelectObject(object.id)}
             >
-              <span className={styles.listRowTitle}>{object.title}</span>
+              <ObjectThumbnail
+                studioId={studioId}
+                worldId={worldId}
+                assetId={object.assetId}
+              />
 
-              <span className={styles.listRowMeta}>
-                {object.takeable ? 'takeable' : 'static'}
-                {object.placements.length > 0 &&
-                  ` · ${object.placements.length} placement${
-                    object.placements.length === 1 ? '' : 's'
-                  }`}
-              </span>
+              <div className={styles.listRowText}>
+                <span className={styles.listRowTitle}>{object.title}</span>
+
+                <span className={styles.listRowMeta}>
+                  {object.takeable ? 'takeable' : 'static'}
+                  {object.placements.length > 0 &&
+                    ` · ${object.placements.length} placement${
+                      object.placements.length === 1 ? '' : 's'
+                    }`}
+                </span>
+              </div>
             </div>
           ))}
         </div>
@@ -438,6 +448,51 @@ const Objects: React.FC<{
                   )
                 })}
               </div>
+
+              {/*
+                Taking an object runs nothing else — a recipe's effects fire on Use
+                or Combine, which a take is not — so this is the only way "the
+                player has the book" becomes a variable. It has to be a variable
+                whenever prose needs it: a template expression can read variables
+                and nothing else, while a *path* condition can ask about the
+                inventory directly and needs no variable at all.
+              */}
+              {selected.takeable && (
+                <div className={styles.section}>
+                  <span className={styles.fieldLabel}>
+                    When the player takes this
+                  </span>
+
+                  <Input
+                    value={selected.takeMessage ?? ''}
+                    placeholder="You slip the book into your bag."
+                    onChange={(event) =>
+                      patch({ takeMessage: event.target.value || undefined })
+                    }
+                  />
+
+                  <span className={styles.fieldHint}>
+                    Optional. The object visibly moves to Carrying either way.
+                  </span>
+
+                  <VariableEffectRows
+                    effects={selected.takeEffects ?? []}
+                    variables={variables ?? []}
+                    addLabel="Set a variable on take"
+                    onChange={(takeEffects) =>
+                      patch({
+                        takeEffects:
+                          takeEffects.length > 0 ? takeEffects : undefined
+                      })
+                    }
+                  />
+
+                  <span className={styles.fieldHint}>
+                    Applied every time a stack of this is picked up, so “set to” is
+                    usually the right operator rather than an increment.
+                  </span>
+                </div>
+              )}
 
               {/*
                 The read side of the recipe relationship. A recipe belongs to no

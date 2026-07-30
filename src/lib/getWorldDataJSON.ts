@@ -317,6 +317,8 @@ export default async (
         stackedTitle,
         tags,
         takeable,
+        takeEffects,
+        takeMessage,
         title,
         updated
       }) =>
@@ -331,6 +333,8 @@ export default async (
           stackedTitle,
           tags,
           takeable,
+          takeEffects,
+          takeMessage,
           title,
           updated: updated as number
         })

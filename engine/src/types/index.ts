@@ -570,6 +570,9 @@ export interface EngineObjectData {
   stackedAssetId?: string
   stackedTitle?: string
   takeable: boolean
+  /** applied when the player picks this up; see WorldObject.takeEffects */
+  takeEffects?: VariableSet[]
+  takeMessage?: string
   title: string
   worldId: WorldId
 }

@@ -467,6 +467,12 @@ export const combine = (
   }
 }
 
+export type TakeResult = {
+  deltas: EngineObjectDeltaCollection
+  state: EngineLiveEventStateCollection
+  message?: string
+}
+
 /**
  * Moves one of an object from the current scene into the inventory.
  *
@@ -474,13 +480,19 @@ export const combine = (
  * rather than emergent, so "some of a pile" is not state the model carries, and a
  * per-take quantity control would be inventing a decision the author already made.
  *
+ * Applies the object's `takeEffects`, which is what lets "the player has the book"
+ * become a variable. Nothing else did: a recipe's effects fire when a recipe fires,
+ * on Use or Combine, and a take is neither — so a prose template like
+ * `{ bookTaken ? ... }` had no way to become true, even though a path condition
+ * could already ask about the inventory directly.
+ *
  * Returns undefined when there is nothing to take or the object is static, so the
  * caller writes no live event at all rather than one that changes nothing.
  */
 export const take = (
   snapshot: ObjectWorldSnapshot,
   objectId: ElementId
-): EngineObjectDeltaCollection | undefined => {
+): TakeResult | undefined => {
   const object = snapshot.objects.find(
     (candidate) => candidate.id === objectId
   )
@@ -496,7 +508,11 @@ export const take = (
   addDelta(deltas, snapshot.currentSceneId, objectId, -available)
   addDelta(deltas, INVENTORY_LOCATION_KEY, objectId, available)
 
-  return deltas
+  return {
+    deltas,
+    state: applyVariableSets(snapshot.state, object.takeEffects ?? []),
+    message: object.takeMessage
+  }
 }
 
 /**

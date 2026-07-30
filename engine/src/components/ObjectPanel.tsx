@@ -195,11 +195,14 @@ const ObjectPanel: React.FC = () => {
     async (objectId: ElementId) => {
       setNotice(undefined)
 
-      const took = await takeObject(objectId)
+      const result = await takeObject(objectId)
 
       // the selection refers to counts that just changed, so it is dropped rather
       // than left pointing at a stale stack
-      if (took) setSelection([])
+      if (result) {
+        setSelection([])
+        setNotice(result.message)
+      }
     },
     [takeObject]
   )

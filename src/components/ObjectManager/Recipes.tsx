@@ -6,9 +6,7 @@ import {
   Recipe,
   RecipeInput,
   RECIPE_OUTPUT_DESTINATION,
-  SET_OPERATOR_TYPE,
   StudioId,
-  VariableSet,
   WorldId,
   WorldObject
 } from '../../data/types'
@@ -26,6 +24,8 @@ import {
   Select
 } from 'antd'
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
+
+import VariableEffectRows from './VariableEffectRows'
 
 import api from '../../api'
 
@@ -55,13 +55,6 @@ const DESTINATIONS = [
   }
 ]
 
-const SET_OPERATORS = [
-  { value: SET_OPERATOR_TYPE.ASSIGN, label: '=' },
-  { value: SET_OPERATOR_TYPE.ADD, label: '+' },
-  { value: SET_OPERATOR_TYPE.SUBTRACT, label: '−' },
-  { value: SET_OPERATOR_TYPE.MULTIPLY, label: '×' },
-  { value: SET_OPERATOR_TYPE.DIVIDE, label: '÷' }
-]
 
 /** The key the engine matches on: the input object ids, order-independent. */
 export const inputSetKey = (inputs: RecipeInput[]): string =>
@@ -121,15 +114,6 @@ const Recipes: React.FC<{
         label: object.title
       })),
     [objectList]
-  )
-
-  const variableOptions = useMemo(
-    () =>
-      (variables ?? []).map((variable) => ({
-        value: variable.id as ElementId,
-        label: variable.title
-      })),
-    [variables]
   )
 
   /**
@@ -511,105 +495,20 @@ const Recipes: React.FC<{
             </label>
 
             <div className={styles.section}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.fieldLabel}>
-                  Variables set when this fires
-                </span>
+              <span className={styles.fieldLabel}>
+                Variables set when this fires
+              </span>
 
-                <Button
-                  type="link"
-                  icon={<PlusOutlined />}
-                  disabled={variableOptions.length === 0}
-                  onClick={() => {
-                    const variable = variables?.[0]
-
-                    if (!variable?.id) return
-
-                    const effect: VariableSet = [
-                      variable.id,
-                      SET_OPERATOR_TYPE.ASSIGN,
-                      '',
-                      variable.type
-                    ]
-
-                    patch({ effects: [...(selected.effects ?? []), effect] })
-                  }}
-                />
-              </div>
-
-              {(selected.effects ?? []).map((effect, index) => (
-                <div key={index} className={styles.placement}>
-                  <Select
-                    value={effect[0]}
-                    className={styles.placementLocation}
-                    options={variableOptions}
-                    onChange={(variableId) => {
-                      const effects = [...(selected.effects ?? [])]
-
-                      const type =
-                        variables?.find(({ id }) => id === variableId)?.type ??
-                        effect[3]
-
-                      effects[index] = [variableId, effect[1], effect[2], type]
-
-                      patch({ effects })
-                    }}
-                  />
-
-                  <Select
-                    value={effect[1]}
-                    options={SET_OPERATORS}
-                    onChange={(operator) => {
-                      const effects = [...(selected.effects ?? [])]
-
-                      effects[index] = [
-                        effect[0],
-                        operator,
-                        effect[2],
-                        effect[3]
-                      ]
-
-                      patch({ effects })
-                    }}
-                  />
-
-                  <Input
-                    value={effect[2]}
-                    className={styles.placementLocation}
-                    onChange={(event) => {
-                      const effects = [...(selected.effects ?? [])]
-
-                      effects[index] = [
-                        effect[0],
-                        effect[1],
-                        event.target.value,
-                        effect[3]
-                      ]
-
-                      patch({ effects })
-                    }}
-                  />
-
-                  <Button
-                    type="link"
-                    icon={<DeleteOutlined />}
-                    onClick={() =>
-                      patch({
-                        effects: (selected.effects ?? []).filter(
-                          (_, other) => other !== index
-                        )
-                      })
-                    }
-                  />
-                </div>
-              ))}
-
-              {variableOptions.length === 0 && (
-                <span className={styles.fieldHint}>
-                  No variables in this storyworld yet.
-                </span>
-              )}
+              <VariableEffectRows
+                effects={selected.effects ?? []}
+                variables={variables ?? []}
+                addLabel="Set a variable"
+                onChange={(effects) =>
+                  patch({ effects: effects.length > 0 ? effects : undefined })
+                }
+              />
             </div>
+
 
             <div className={styles.section}>
               <Button danger icon={<DeleteOutlined />} onClick={removeRecipe}>

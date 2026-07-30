@@ -27,7 +27,8 @@ import {
   COMBINE_OUTCOME,
   take,
   type CombineResult,
-  type ObjectWorldSnapshot
+  type ObjectWorldSnapshot,
+  type TakeResult
 } from '../objects'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../../contexts/EngineContext'
@@ -134,24 +135,33 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
   )
 
   /**
-   * Picks an object up. Resolves to false when there was nothing to take or the
-   * object is static, in which case **no live event is written at all** — an event
-   * that changes nothing is noise in the stream and a bookmark pointing at it says
-   * the player did something they did not.
+   * Picks an object up, applying the object's take effects and returning its take
+   * message for the caller to show.
+   *
+   * Resolves to undefined when there was nothing to take or the object is static,
+   * in which case **no live event is written at all** — an event that changes
+   * nothing is noise in the stream, and a bookmark pointing at it says the player
+   * did something they did not.
    */
   const takeObject = useCallback(
-    async (objectId: ElementId): Promise<boolean> => {
+    async (objectId: ElementId): Promise<TakeResult | undefined> => {
       const world = await snapshot()
 
-      if (!world) return false
+      if (!world) return undefined
 
-      const deltas = take(world, objectId)
+      const result = take(world, objectId)
 
-      if (!deltas) return false
+      if (!result) return undefined
 
-      await append(ENGINE_LIVE_EVENT_TYPE.OBJECT_TAKE, deltas)
+      // the state is passed through even when there are no effects, in which case
+      // applyVariableSets returned the same object it was given
+      await append(
+        ENGINE_LIVE_EVENT_TYPE.OBJECT_TAKE,
+        result.deltas,
+        result.state
+      )
 
-      return true
+      return result
     },
     [snapshot, append]
   )

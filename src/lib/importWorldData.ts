@@ -452,6 +452,8 @@ export default (
               stackedTitle,
               tags,
               takeable,
+              takeEffects,
+              takeMessage,
               title,
               updated
             }
@@ -467,6 +469,8 @@ export default (
               stackedTitle,
               tags,
               takeable,
+              takeEffects,
+              takeMessage,
               title,
               updated,
               worldId: _.id

@@ -131,6 +131,8 @@ function format(worldData: WorldDataJSON): string {
       'stackedAssetId',
       'stackedTitle',
       'takeable',
+      'takeEffects',
+      'takeMessage',
       'title'
     ]),
     paths: filterCollectionChildProps(paths, [
