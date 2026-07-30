@@ -52,9 +52,13 @@ below. The asset manager comes first because objects will mint a lot of images.
       *(Done for the scene map: the per-gesture stall is gone — zoom p95 60–65ms → 10ms and no
       long tasks, measured. See "Why the scene map stalled while you moved it" at the end of this
       file for the cause, the numbers, two candidates that were ruled out, and what is still open.)*
-- [ ] Assets: enable asset selection when changing images instead of open the file dialogue.
+- [x] Assets: enable asset selection when changing images instead of open the file dialogue.
       Same applies to music. Let manage all assets via the asset manager. It has to be possible
       to upload assets in the asset manager which can be assigned later in all possible locations.
+      *(See `CLAUDE.md`, "The asset manager". All four assignment sites offer Choose beside
+      Import, the manager imports per kind through the same crop pipelines the slots use, and
+      replacing an asset no longer deletes the old file — which it did, unconditionally, in
+      three places where two elements may share one id.)*
 - [ ] Fix the `=/=` inequality operator the archived docs promise but which has
       never parsed, and document the working `.upper()` / `.lower()` calls
 
@@ -244,6 +248,10 @@ Ranked. These are the reason this section is worth having.
       event content — so a deletion can leave content pointing at a character
       that no longer exists. This is the same shape as the dangling-child-ref
       class documented in `CLAUDE.md` and the highest-value item in this section.
+      **Partly addressed**: the mask *assets* are now trashed only when nothing
+      else names them, and outside the Dexie transaction rather than inside it
+      with a `Promise.all` that awaited nothing. The reference cascade — content
+      nodes and `CharacterRefs` — is still open.
 - [ ] **`db/index.ts:464`, `removeWorld`: `// TODO: replace 'delete' method with
       methods that handle children`.** Drops the whole Dexie database, so it
       happens to be safe today; it stops being safe the moment anything outside
@@ -342,7 +350,10 @@ The rest, in rough order of what it would buy:
       (`this should return true with / is types`, `reuse match code for other
       symbols like @ and #` — the trigger-character machinery is hardcoded to
       `/`)
-- [ ] `lib/characters.ts:79`, `:90`: `abstract and move to index`
+- [x] `lib/characters.ts:79`, `:90`: `abstract and move to index` — done. The
+      duplicate `createImage`/`getCroppedImageData` are gone; the character mask
+      path calls the parameterised pair in `lib/index.ts`, and each slot's
+      dimensions and format now live in `ASSET_KINDS` in `lib/assets.ts`.
 - [ ] `engine/src/components/LiveEventStream.tsx:110`: `duplicate from API`
 - [ ] `WorldLibrary/index.tsx:48`: `dupe from dashboard`
 - [ ] `JumpTo/index.tsx:75` (`abstract`), `CharacterInfo.tsx:125` (`breakout`),

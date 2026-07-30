@@ -84,6 +84,53 @@ Three things carry more meaning than they look like they do:
 Deletion goes through `REMOVE_ASSET` with `trash: true`, so `RESTORE_ASSET` still
 applies and files land in `userData/.trash`.
 
+### Importing and assigning
+
+The manager also imports, and doubles as the picker behind every "Choose" in the
+composer — the character mask context menu, the event content image slot, and the
+audio profile on scenes and events. `AssetManager` takes `selectKind`, `onSelect`
+and `selectedAssetId`; `AssetsModal` passes them through and takes a `worldId`
+rather than a `World`, because a picker is opened from an element rather than
+from the storyworld.
+
+- **An asset's *kind* is not its reference type.** `ASSET_REFERENCE_TYPE` answers
+  "who points at this file", which an unassigned asset has no answer to.
+  `ASSET_KIND` answers "what was this processed as", which is fixed when the file
+  is written. Event audio and scene audio are two reference types and one kind.
+- **`ASSET_KINDS` in `lib/assets.ts` is the one description of each kind** — its
+  label, its extension, its accept filter and, for images, the crop pipeline. The
+  in-place importers read the same table, which is what makes an asset imported
+  from the manager interchangeable with one imported from the slot: a character
+  mask is 4:5 at 200×250 JPEG, an event image 16:9 at 1310×736 WebP quality 0.7.
+  An asset that is *nearly* right is worse than none, because nothing downstream
+  can tell.
+- **The picker filters on the kind's extension, not on media type.** Every read
+  site asks for the extension it expects rather than reading disk, so a `.png`
+  assigned to a mask is fetched as `.jpeg`, comes back missing, and
+  `CharacterMask`'s self-healing effect then silently clears the assignment. The
+  extension filter is what keeps every offered asset assignable.
+- **The import menu asks which kind rather than inferring one.** Nothing on disk
+  distinguishes a JPEG meant as a mask from one meant as an event image.
+- **Choosing writes only the reference.** The asset previously in the slot stays
+  on disk — see below — and event images need both writes, the `Event.images`
+  entry and the IMG node's `asset_id`, which is why that picker lives inside the
+  Slate editor rather than being opened from anywhere else.
+
+### Replacing an asset never deletes the old one
+
+Three paths used to remove the previous file outright — no reference count, no
+trash — on the assumption that the element holding the id was its only owner.
+Two masks may share an id, two events may share an mp3, and the picker makes
+sharing ordinary rather than accidental, so replacing now leaves the file alone
+and lets the manager decide whether it has died.
+
+Removing *deliberately* — clearing a mask, removing an audio profile, deleting a
+character — still removes the file, through
+`api().assets.removeAssetIfUnreferenced`. **Clear the reference before calling
+it**: the count is read back out of the database, so an element still holding the
+id counts as a reference. `removeEvent` is the exception and passes
+`filterOutEventIds`, because it cannot save an event it is deleting.
+
 ## Template expressions
 
 `{ ... }` inside event content is parsed with acorn and evaluated by
