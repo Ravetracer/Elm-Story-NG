@@ -1761,7 +1761,15 @@ export class LibraryDatabase extends Dexie {
   public async removeEvent(
     eventId: ElementId,
     skipOriginPaths: boolean = false,
-    skipDestinationPaths: boolean = false
+    skipDestinationPaths: boolean = false,
+    /*
+     * Set when something outside the database still references the event's
+     * assets — a scene map cut, whose clipboard holds the event until it is
+     * pasted. Trashing them here would hand back an event whose image and audio
+     * files are in userData/.trash. An unpasted cut therefore leaves the assets
+     * behind, which the asset manager is there to find.
+     */
+    keepAssets: boolean = false
   ) {
     try {
       logger.info('LibraryDatabase->removeEvent')
@@ -1782,15 +1790,21 @@ export class LibraryDatabase extends Dexie {
         }
       }
 
-      event?.audio?.[0] &&
-        (await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-          studioId: this.studioId,
-          worldId: event.worldId,
-          id: event.audio[0],
-          ext: 'mp3'
-        }))
+      // scene map copy and paste lets two events name one mp3, so the file is
+      // only trashed once nothing else in the storyworld references it. This used
+      // to remove the asset unconditionally, which took the track from under the
+      // other event.
+      !keepAssets &&
+        event?.audio?.[0] &&
+        event.id &&
+        (await api().events.removeDeadAudioAsset(
+          this.studioId,
+          event.worldId,
+          event.audio[0],
+          [event.id]
+        ))
 
-      if (event?.id && event.images.length > 0) {
+      if (!keepAssets && event?.id && event.images.length > 0) {
         await api().events.removeDeadImageAssets(
           this.studioId,
           event.worldId,

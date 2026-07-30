@@ -4,6 +4,7 @@ import * as studios from './studios'
 // LIBRARY
 import * as characters from './characters'
 import * as choices from './choices'
+import * as clipboard from './clipboard'
 import * as conditions from './conditions'
 import * as effects from './effects'
 import * as events from './events'
@@ -18,6 +19,7 @@ import * as worlds from './worlds'
 export default () => ({
   characters,
   choices,
+  clipboard,
   conditions,
   effects,
   events,

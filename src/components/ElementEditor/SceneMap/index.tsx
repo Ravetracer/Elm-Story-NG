@@ -1,19 +1,31 @@
 import logger from '../../../lib/logger'
 import { getRandomElementName } from '../../../lib'
 
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { cloneDeep } from 'lodash-es'
+import useEventListener from '@use-it/event-listener'
+import isHotkey from 'is-hotkey'
 
 import {
   ElementId,
   ELEMENT_TYPE,
   EVENT_TYPE,
+  PLATFORM_TYPE,
   Scene,
   StudioId,
   PATH_CONDITIONS_TYPE
 } from '../../../data/types'
 import { DEFAULT_EVENT_CONTENT } from '../../../data/eventContentTypes'
+import {
+  describeSceneMapClipboard,
+  isSceneMapClipboardEmpty,
+  remapSceneMapClipboard,
+  sceneMapSelectionOrigin,
+  SceneMapClipboard,
+  SCENE_MAP_CLIPBOARD_COMMAND
+} from '../../../lib/sceneMapClipboard'
 
+import { AppContext } from '../../../contexts/AppContext'
 import {
   ComposerContext,
   COMPOSER_ACTION_TYPE
@@ -45,11 +57,19 @@ import ReactFlow, {
   useStoreActions,
   FlowTransform,
   useZoomPanHelper,
-  useStoreState
+  useStoreState,
+  XYPosition
 } from 'react-flow-renderer'
 
 import { Menu } from 'antd'
-import { CloseOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  BlockOutlined,
+  CloseOutlined,
+  CopyOutlined,
+  PlusOutlined,
+  ScissorOutlined,
+  SnippetsOutlined
+} from '@ant-design/icons'
 
 import ContextMenu from './ContextMenu'
 import PathEdge, { PathEdgeData } from './PathEdge'
@@ -73,6 +93,54 @@ export enum DEFAULT_NODE_SIZE {
   JUMP_HEIGHT_EXTENDED = 171
 }
 
+/** Where a duplicate lands relative to what it was duplicated from. */
+const DUPLICATE_OFFSET = 40
+
+/**
+ * How long the viewport transform waits before it is persisted.
+ *
+ * The transform is saved so a scene reopens where the author left it, but the
+ * write invalidates the `scenes` live query, which hands `useScene` a new object
+ * and rebuilds the whole graph. Writing on every gesture therefore cost a ~60ms
+ * stall per zoom tick. A pending write is flushed when the scene changes or the
+ * map unmounts, so nothing is lost by waiting.
+ */
+const VIEW_TRANSFORM_SAVE_DELAY = 500
+
+/**
+ * How long the viewport centre waits before it is published to
+ * `ComposerContext`. Shorter than the write above because a reader is a click
+ * rather than a background save, and no author clicks "add event" within a
+ * quarter second of releasing a zoom.
+ */
+const CENTER_DISPATCH_DELAY = 250
+
+/**
+ * Bindings for the scene map's clipboard. Kept beside the menu labels that
+ * advertise them, and clear of the content editor's own hotkeys — that editor is
+ * an overlay with its own keydown listener, and the guard below stands down while
+ * it is open.
+ */
+const CLIPBOARD_HOTKEYS: [string, SCENE_MAP_CLIPBOARD_COMMAND][] = [
+  ['mod+x', SCENE_MAP_CLIPBOARD_COMMAND.CUT],
+  ['mod+c', SCENE_MAP_CLIPBOARD_COMMAND.COPY],
+  ['mod+v', SCENE_MAP_CLIPBOARD_COMMAND.PASTE],
+  ['mod+d', SCENE_MAP_CLIPBOARD_COMMAND.DUPLICATE]
+]
+
+export const clipboardHotkeyLabel = (
+  command: SCENE_MAP_CLIPBOARD_COMMAND,
+  macOS: boolean
+): string => {
+  const [hotkey] = CLIPBOARD_HOTKEYS.find(
+    ([, candidate]) => candidate === command
+  ) ?? ['']
+
+  return hotkey
+    .replace('mod', macOS ? 'Cmd' : 'Ctrl')
+    .replace(/\+(\w)$/, (_, key) => `+${key.toUpperCase()}`)
+}
+
 export interface NodeData {
   studioId: StudioId
   sceneId?: ElementId
@@ -94,11 +162,41 @@ export const SceneMapTools: React.FC<{
 }> = ({ studioId, sceneId }) => {
   const scene = useScene(studioId, sceneId, [sceneId])
 
-  const { composer, composerDispatch } = useContext(ComposerContext),
+  const { app } = useContext(AppContext),
+    { composer, composerDispatch } = useContext(ComposerContext),
     {
       elementEditorTab: editorTab,
       elementEditorTabDispatch: editorTabDispatch
     } = useContext(ElementEditorTabContext)
+
+  // the scene map owns the selection; these totals are what reaches this far
+  const hasSelectedNodes =
+    composer.totalSceneMapSelectedEvents + composer.totalSceneMapSelectedJumps >
+    0
+
+  const macOS = app.platform === PLATFORM_TYPE.MACOS,
+    cutHotkey = clipboardHotkeyLabel(SCENE_MAP_CLIPBOARD_COMMAND.CUT, macOS),
+    copyHotkey = clipboardHotkeyLabel(SCENE_MAP_CLIPBOARD_COMMAND.COPY, macOS),
+    pasteHotkey = clipboardHotkeyLabel(
+      SCENE_MAP_CLIPBOARD_COMMAND.PASTE,
+      macOS
+    ),
+    duplicateHotkey = clipboardHotkeyLabel(
+      SCENE_MAP_CLIPBOARD_COMMAND.DUPLICATE,
+      macOS
+    )
+
+  // says what is on the clipboard rather than just "Paste", which is the only
+  // clue an in-memory clipboard can give
+  const pasteDescription = composer.sceneMapClipboard
+    ? describeSceneMapClipboard(composer.sceneMapClipboard)
+    : ''
+
+  const requestClipboardCommand = (command: SCENE_MAP_CLIPBOARD_COMMAND) =>
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SCENE_MAP_CLIPBOARD_COMMAND,
+      sceneMapClipboardCommand: command
+    })
 
   return (
     <>
@@ -197,6 +295,65 @@ export const SceneMapTools: React.FC<{
               </Menu.Item>
             )}
 
+          {/*
+           * Cut, copy, paste and duplicate. The scene map performs them; these
+           * only ask, because cutting needs its element-removal path and
+           * pasting its viewport centre. The labels carry the shortcuts, since
+           * the View menu that would list them is never rendered on a frameless
+           * window.
+           */}
+          {!editorTab.eventForEditing.visible && (
+            <>
+              {hasSelectedNodes && (
+                <>
+                  <Menu.Item
+                    onClick={() =>
+                      requestClipboardCommand(SCENE_MAP_CLIPBOARD_COMMAND.CUT)
+                    }
+                  >
+                    <ScissorOutlined />
+                    Cut
+                    <span className={styles.toolHotkey}>{cutHotkey}</span>
+                  </Menu.Item>
+
+                  <Menu.Item
+                    onClick={() =>
+                      requestClipboardCommand(SCENE_MAP_CLIPBOARD_COMMAND.COPY)
+                    }
+                  >
+                    <CopyOutlined />
+                    Copy
+                    <span className={styles.toolHotkey}>{copyHotkey}</span>
+                  </Menu.Item>
+
+                  <Menu.Item
+                    onClick={() =>
+                      requestClipboardCommand(
+                        SCENE_MAP_CLIPBOARD_COMMAND.DUPLICATE
+                      )
+                    }
+                  >
+                    <BlockOutlined />
+                    Duplicate
+                    <span className={styles.toolHotkey}>{duplicateHotkey}</span>
+                  </Menu.Item>
+                </>
+              )}
+
+              {!isSceneMapClipboardEmpty(composer.sceneMapClipboard) && (
+                <Menu.Item
+                  onClick={() =>
+                    requestClipboardCommand(SCENE_MAP_CLIPBOARD_COMMAND.PASTE)
+                  }
+                >
+                  <SnippetsOutlined />
+                  Paste {pasteDescription}
+                  <span className={styles.toolHotkey}>{pasteHotkey}</span>
+                </Menu.Item>
+              )}
+            </>
+          )}
+
           {editorTab.eventForEditing.visible && (
             <Menu.Item
               onClick={() =>
@@ -283,12 +440,14 @@ async function removeElementFromScene(
   studioId: StudioId,
   scene: Scene,
   type: ELEMENT_TYPE,
-  id: ElementId
+  id: ElementId,
+  // a cut keeps the event's assets, because its clipboard still names them
+  keepAssets: boolean = false
 ): Promise<void> {
   if (scene.id) {
     switch (type) {
       case ELEMENT_TYPE.EVENT:
-        await api().events.removeEvent(studioId, id)
+        await api().events.removeEvent(studioId, id, false, false, keepAssets)
 
         break
       case ELEMENT_TYPE.JUMP:
@@ -350,6 +509,13 @@ const SceneMap: React.FC<{
     [selectedChoice, setSelectedChoice] = useState<ElementId | null>(null),
     [elements, setElements] = useState<FlowElement[]>([]),
     [paneMoving, setPaneMoving] = useState(false)
+
+  const pendingViewTransform = useRef<FlowTransform | null>(null),
+    viewTransformSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    centerDispatchTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    // read at fire time so a deferred dispatch reports where the viewport
+    // actually came to rest, not where it was when the gesture started
+    latestSceneViewCenter = useRef<() => void>(() => undefined)
   // elmstorygames/feedback#109
   // elmstorygames/feedback#171
   // [connectStartData, setConnectStartData] = useState<{
@@ -371,108 +537,139 @@ const SceneMap: React.FC<{
     })
   }
 
+  /**
+   * The debounced form, for gestures.
+   *
+   * Nothing renders from `selectedSceneMapCenter` — all four readers take it
+   * inside an event handler, to place a new element at the middle of the view —
+   * but it lives in `ComposerContext`, which 29 components consume, so
+   * dispatching it per wheel tick re-rendered the storyworld outline and the
+   * element inspector 20 times during a stepped zoom. The cost is proportional to
+   * how much of the outline is expanded: measured at ~300ms of long tasks with
+   * five rows open and ~2600ms with seventy.
+   *
+   * A reader is always a deliberate click, which lands long after the gesture
+   * that preceded it, so coalescing the dispatch to one per gesture is
+   * indistinguishable from the author's point of view. The value is computed when
+   * the timer fires rather than when it is scheduled, so it reflects where the
+   * viewport actually came to rest.
+   */
+  function scheduleSelectedSceneViewCenter() {
+    if (centerDispatchTimer.current !== null)
+      clearTimeout(centerDispatchTimer.current)
+
+    centerDispatchTimer.current = setTimeout(() => {
+      centerDispatchTimer.current = null
+
+      latestSceneViewCenter.current()
+    }, CENTER_DISPATCH_DELAY)
+  }
+
   // This is not selection.
+  //
+  // A highlight only ever changes an edge's `className` and, when a choice is
+  // selected, an event node's `data.selectedChoice`. This used to `cloneDeep`
+  // the entire element array to do that, which gave every node and edge a new
+  // identity on every selection and every zoom, so `memo()` on EventNode could
+  // never hold and all of them re-rendered. Each element is now copied only when
+  // its own value actually changes; everything else is passed through by
+  // reference.
   function highlightElements(elementsToHighlight: Elements<any> | null) {
     logger.info(`SceneMap->highlightElements`)
 
-    if (composer.selectedWorldOutlineElement.id === sceneId) {
-      const clonedElements = cloneDeep(elements),
-        clonedJumps = clonedElements.filter(
-          (clonedElement): clonedElement is Node =>
-            clonedElement.data.type === ELEMENT_TYPE.JUMP
-        ),
-        clonedPassages = clonedElements.filter(
-          (clonedElement): clonedElement is Node =>
-            clonedElement.data.type === ELEMENT_TYPE.EVENT
-        ),
-        clonedRoutes = clonedElements.filter(
-          (clonedElement): clonedElement is Edge =>
-            clonedElement.data.type === ELEMENT_TYPE.PATH
+    if (composer.selectedWorldOutlineElement.id !== sceneId) return
+
+    const jumpNodes = elements.filter(
+        (element): element is Node => element.data.type === ELEMENT_TYPE.JUMP
+      ),
+      eventNodes = elements.filter(
+        (element): element is Node => element.data.type === ELEMENT_TYPE.EVENT
+      ),
+      pathEdges = elements.filter(
+        (element): element is Edge => element.data.type === ELEMENT_TYPE.PATH
+      )
+
+    const withClassName = (edge: Edge, className: string) =>
+      edge.className === className ? edge : { ...edge, className }
+
+    const withSelectedChoice = (node: Node, choiceId: ElementId | null) =>
+      node.data.selectedChoice === choiceId
+        ? node
+        : { ...node, data: { ...node.data, selectedChoice: choiceId } }
+
+    if (elementsToHighlight) {
+      const isHighlighted = (id: ElementId) =>
+        elementsToHighlight.some(
+          (selectedElement) => selectedElement.id === id
         )
 
-      if (elementsToHighlight) {
-        const selectedJumps = clonedJumps.filter((clonedJump) =>
-            elementsToHighlight.find(
-              (selectedElement) => selectedElement.id === clonedJump.id
-            )
-          ),
-          selectedPassages = clonedPassages.filter((clonedPassage) =>
-            elementsToHighlight.find(
-              (selectedElement) => selectedElement.id === clonedPassage.id
-            )
-          ),
-          selectedEdges = selectedChoice
-            ? clonedRoutes.filter(
-                (clonedEdge) => clonedEdge.sourceHandle === selectedChoice
+      const selectedJumps = jumpNodes.filter((node) => isHighlighted(node.id)),
+        selectedPassages = eventNodes.filter((node) => isHighlighted(node.id)),
+        selectedEdgeIds = new Set(
+          (selectedChoice
+            ? pathEdges.filter((edge) => edge.sourceHandle === selectedChoice)
+            : pathEdges.filter((edge) => isHighlighted(edge.id))
+          ).map((edge) => edge.id)
+        )
+
+      setInternalElements([
+        ...jumpNodes,
+        ...eventNodes.map((node) =>
+          selectedChoice
+            ? withSelectedChoice(
+                node,
+                node.id === selectedEvent ? selectedChoice : null
               )
-            : clonedRoutes.filter((clonedEdge) =>
-                elementsToHighlight.find(
-                  (selectedElement) => selectedElement.id === clonedEdge.id
-                )
-              )
+            : node
+        ),
+        ...pathEdges.map((edge) => {
+          let className = styles.routeNotConnected
 
-        if (selectedChoice) {
-          clonedPassages.map((clonedPassage) => {
-            clonedPassage.data.selectedChoice =
-              clonedPassage.id === selectedEvent ? selectedChoice : null
-          })
-        }
-
-        setInternalElements([
-          ...clonedJumps,
-          ...clonedPassages,
-          ...clonedRoutes.map((edge) => {
-            edge.className = styles.routeNotConnected
-
-            !selectedChoice &&
-              selectedJumps.map((selectedJump) => {
-                if (
-                  edge.source === selectedJump.id ||
-                  edge.target === selectedJump.id
-                ) {
-                  edge.className = 'selected jump'
-                }
-              }) &&
-              selectedPassages.map((selectedPassage) => {
-                if (
-                  edge.source === selectedPassage.id ||
-                  edge.target === selectedPassage.id
-                ) {
-                  if (events) {
-                    const foundEvent = events.find(
-                      (event) => selectedPassage.id === event.id
-                    )
-
-                    edge.className =
-                      foundEvent && foundEvent.ending
-                        ? 'selected ending'
-                        : 'selected event'
-                  }
-                }
-              })
-
-            selectedEdges.map((selectedEdge) => {
-              if (edge.id === selectedEdge.id) {
-                edge.className = 'selected'
+          if (!selectedChoice) {
+            // both loops run over every selected element, and the last match
+            // wins, which is the behaviour an edge between two selected nodes
+            // already relied on
+            selectedJumps.map((selectedJump) => {
+              if (
+                edge.source === selectedJump.id ||
+                edge.target === selectedJump.id
+              ) {
+                className = 'selected jump'
               }
             })
 
-            return edge
-          })
-        ])
-      }
+            selectedPassages.map((selectedPassage) => {
+              if (
+                edge.source === selectedPassage.id ||
+                edge.target === selectedPassage.id
+              ) {
+                if (events) {
+                  const foundEvent = events.find(
+                    (event) => selectedPassage.id === event.id
+                  )
 
-      if (!elementsToHighlight) {
-        setInternalElements([
-          ...clonedJumps,
-          ...clonedPassages,
-          ...clonedRoutes.map((edge) => {
-            edge.className = ''
+                  className =
+                    foundEvent && foundEvent.ending
+                      ? 'selected ending'
+                      : 'selected event'
+                }
+              }
+            })
+          }
 
-            return edge
-          })
-        ])
-      }
+          if (selectedEdgeIds.has(edge.id)) className = 'selected'
+
+          return withClassName(edge, className)
+        })
+      ])
+    }
+
+    if (!elementsToHighlight) {
+      setInternalElements([
+        ...jumpNodes,
+        ...eventNodes,
+        ...pathEdges.map((edge) => withClassName(edge, ''))
+      ])
     }
   }
 
@@ -640,6 +837,241 @@ const SceneMap: React.FC<{
     // }
   }
 
+  /*
+   * Cut, copy, paste and duplicate.
+   *
+   * Performed here rather than where they are asked for: cutting needs the
+   * element-removal path, and pasting needs the map's viewport centre. The tools
+   * menu asks by setting composer.sceneMapClipboardCommand, which the effect
+   * below runs and clears — the same shape as centeredSceneMapSelection.
+   *
+   * Only the scene the outline has selected acts on a command. Several scene maps
+   * are mounted at once behind rc-dock's tab cache, so an unguarded listener
+   * would have every one of them paste.
+   */
+  const selectedNodes = (): { id: ElementId; type: ELEMENT_TYPE }[] =>
+    (selectedElements ?? [])
+      .filter(
+        (element) =>
+          element.data?.type === ELEMENT_TYPE.EVENT ||
+          element.data?.type === ELEMENT_TYPE.JUMP
+      )
+      .map((element) => ({ id: element.id, type: element.data.type }))
+
+  const copySelection = async (): Promise<SceneMapClipboard | null> => {
+    const nodes = selectedNodes()
+
+    if (!scene?.worldId || nodes.length === 0) return null
+
+    const clipboard = await api().clipboard.copySceneMapSelection(
+      studioId,
+      scene.worldId,
+      nodes.map(({ id }) => id)
+    )
+
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SET_SCENE_MAP_CLIPBOARD,
+      sceneMapClipboard: clipboard
+    })
+
+    logger.info(
+      `SceneMap->copySelection: ${describeSceneMapClipboard(clipboard)}${
+        clipboard.droppedPaths > 0
+          ? `, leaving ${clipboard.droppedPaths} path(s) that end outside the selection`
+          : ''
+      }`
+    )
+
+    return clipboard
+  }
+
+  const writeClipboardToScene = async (
+    clipboard: SceneMapClipboard,
+    offset: { x: number; y: number }
+  ) => {
+    if (!scene?.id) return
+
+    // the payload names variables, characters and assets by world-scoped id, so
+    // it only resolves in the storyworld it was copied from
+    if (clipboard.worldId !== scene.worldId) {
+      logger.error(
+        'SceneMap->writeClipboardToScene: clipboard belongs to another storyworld'
+      )
+
+      return
+    }
+
+    const elements = remapSceneMapClipboard(clipboard, {
+      sceneId: scene.id,
+      offset
+    })
+
+    const { eventIds, jumpIds } = await api().clipboard.pasteSceneMapElements(
+      studioId,
+      scene,
+      elements
+    )
+
+    logger.info(
+      `SceneMap->writeClipboardToScene: ${describeSceneMapClipboard(elements)}`
+    )
+
+    /*
+     * Every pasted element is announced, not just the first. The world outline
+     * resets a scene item's children from the database when it hears about a save
+     * (#414), so announcing one of five leaves it holding four child ids with no
+     * item behind them — which takes @atlaskit/tree, and with it the whole
+     * renderer, down while flattening. Hence the bulk action: React would batch
+     * repeated single-element dispatches into one.
+     */
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.ELEMENTS_SAVE,
+      savedElements: [
+        ...eventIds.map((id) => ({ id, type: ELEMENT_TYPE.EVENT })),
+        ...jumpIds.map((id) => ({ id, type: ELEMENT_TYPE.JUMP }))
+      ]
+    })
+  }
+
+  const pasteClipboard = async () => {
+    const clipboard = composer.sceneMapClipboard
+
+    if (isSceneMapClipboardEmpty(clipboard) || !clipboard) return
+
+    const origin = sceneMapSelectionOrigin(clipboard)
+
+    // lands under the viewport centre, as an added event does, so a paste is
+    // visible wherever the map happens to be looking
+    await writeClipboardToScene(clipboard, {
+      x:
+        composer.selectedSceneMapCenter.x -
+        DEFAULT_NODE_SIZE.EVENT_WIDTH / 2 -
+        origin.x,
+      y:
+        composer.selectedSceneMapCenter.y -
+        DEFAULT_NODE_SIZE.EVENT_HEIGHT / 2 -
+        origin.y
+    })
+  }
+
+  const cutSelection = async () => {
+    const nodes = selectedNodes(),
+      clipboard = await copySelection()
+
+    if (!clipboard || !scene) return
+
+    /*
+     * One at a time, not Promise.all. Removing an element rewrites the whole of
+     * Scene.children — read, splice, save — so parallel removals each splice
+     * their own copy and the last write wins, leaving the others' ids behind as
+     * child refs pointing at elements that no longer exist. The world outline
+     * builds a tree item per child ref and @atlaskit/tree dereferences every one
+     * of them, so the next time that storyworld is opened it takes the renderer
+     * down.
+     *
+     * keepAssets: the clipboard still names the images and audio, and trashing
+     * them here would paste an event whose files are in .trash.
+     */
+    for (const { id, type } of nodes) {
+      await removeElementFromScene(studioId, scene, type, id, true)
+    }
+  }
+
+  const duplicateSelection = async () => {
+    const clipboard = await api().clipboard.copySceneMapSelection(
+      studioId,
+      scene?.worldId ?? '',
+      selectedNodes().map(({ id }) => id)
+    )
+
+    if (isSceneMapClipboardEmpty(clipboard)) return
+
+    // beside the original rather than at the viewport centre, and without
+    // disturbing what is on the clipboard
+    await writeClipboardToScene(clipboard, {
+      x: DUPLICATE_OFFSET,
+      y: DUPLICATE_OFFSET
+    })
+  }
+
+  /**
+   * Whether this scene map should act on a clipboard command or a keypress. The
+   * outline's selection decides, because rc-dock keeps every open scene tab
+   * mounted in its pane cache — without this, one paste would land in every scene
+   * that has ever been opened.
+   */
+  const ownsClipboardCommands = (): boolean =>
+    composer.selectedWorldOutlineElement.id === sceneId &&
+    !editorTab.eventForEditing.visible
+
+  useEffect(() => {
+    const command = composer.sceneMapClipboardCommand
+
+    if (!command || !ownsClipboardCommands()) return
+
+    // cleared before running, so a command cannot be left set by a failure and
+    // block the next one
+    composerDispatch({
+      type: COMPOSER_ACTION_TYPE.SCENE_MAP_CLIPBOARD_COMMAND,
+      sceneMapClipboardCommand: null
+    })
+
+    const run = async () => {
+      switch (command) {
+        case SCENE_MAP_CLIPBOARD_COMMAND.CUT:
+          await cutSelection()
+          break
+        case SCENE_MAP_CLIPBOARD_COMMAND.COPY:
+          await copySelection()
+          break
+        case SCENE_MAP_CLIPBOARD_COMMAND.PASTE:
+          await pasteClipboard()
+          break
+        case SCENE_MAP_CLIPBOARD_COMMAND.DUPLICATE:
+          await duplicateSelection()
+          break
+        default:
+          break
+      }
+    }
+
+    run()
+  }, [composer.sceneMapClipboardCommand])
+
+  useEventListener(
+    'keydown',
+    (event: KeyboardEvent) => {
+      if (!ownsClipboardCommands()) return
+
+      const target = event.target as HTMLElement | null
+
+      // a node being renamed, or any other field, owns these keys while focused
+      if (
+        target?.isContentEditable ||
+        ['INPUT', 'TEXTAREA'].includes(target?.tagName ?? '')
+      )
+        return
+
+      // and so does a text selection: copying the words out of an event preview
+      // is a reasonable thing to want, and it would otherwise copy the node
+      if (!window.getSelection()?.isCollapsed) return
+
+      const found = CLIPBOARD_HOTKEYS.find(([hotkey]) =>
+        isHotkey(hotkey, event)
+      )
+
+      if (!found) return
+
+      event.preventDefault()
+
+      composerDispatch({
+        type: COMPOSER_ACTION_TYPE.SCENE_MAP_CLIPBOARD_COMMAND,
+        sceneMapClipboardCommand: found[1]
+      })
+    },
+    document
+  )
+
   function onChoiceSelect(eventId: ElementId, choiceId: ElementId | null) {
     logger.info(
       `Sceneview->onChoiceSelect->
@@ -654,44 +1086,45 @@ const SceneMap: React.FC<{
     nodes: Node<{ type: ELEMENT_TYPE }>[]
   ) {
     if (jumps && events) {
+      // one pass over the dragged nodes rather than an Array.find per element,
+      // twice — the `cache this` the authors asked for
+      const draggedPositions = new Map(
+        nodes.map((node): [ElementId, XYPosition] => [node.id, node.position])
+      )
+
+      const movedTo = (id?: ElementId) =>
+        id ? draggedPositions.get(id) : undefined
+
       const clonedJumps =
-          cloneDeep(
-            jumps.filter(
-              (jump) => nodes.find((node) => node.id == jump.id) !== undefined
-            )
-          ) || [],
+          cloneDeep(jumps.filter((jump) => movedTo(jump.id))) || [],
         clonedPassages =
-          cloneDeep(
-            events.filter(
-              (event) =>
-                nodes.find((node) => node.id === event.id) !== undefined
-            )
-          ) || []
+          cloneDeep(events.filter((event) => movedTo(event.id))) || []
 
+      // Spread, not nested: `Promise.all` over an array of arrays resolves
+      // without awaiting the promises inside them, so these writes used to be
+      // fire-and-forget and the function resolved before any of them landed.
       await Promise.all([
-        clonedJumps.map(async (clonedJump) => {
-          // TODO: cache this
-          const foundNode = nodes.find((node) => node.id === clonedJump.id)
+        ...clonedJumps.map(async (clonedJump) => {
+          const position = movedTo(clonedJump.id)
 
-          foundNode &&
+          position &&
             (await api().jumps.saveJump(studioId, {
               ...clonedJump,
               composer: {
-                sceneMapPosX: foundNode.position.x,
-                sceneMapPosY: foundNode.position.y
+                sceneMapPosX: position.x,
+                sceneMapPosY: position.y
               }
             }))
         }),
-        clonedPassages.map(async (clonedPassage) => {
-          // TODO: cache this
-          const foundNode = nodes.find((node) => node.id === clonedPassage.id)
+        ...clonedPassages.map(async (clonedPassage) => {
+          const position = movedTo(clonedPassage.id)
 
-          foundNode &&
+          position &&
             (await api().events.saveEvent(studioId, {
               ...clonedPassage,
               composer: {
-                sceneMapPosX: foundNode.position.x,
-                sceneMapPosY: foundNode.position.y
+                sceneMapPosX: position.x,
+                sceneMapPosY: position.y
               }
             }))
         })
@@ -752,18 +1185,49 @@ const SceneMap: React.FC<{
     highlightElements(selectedElements)
   }
 
-  async function onMoveEnd(flowTransform?: FlowTransform | undefined) {
-    setPaneMoving(false)
+  /**
+   * Writes whatever viewport transform is still pending, if any. Safe to call
+   * with nothing pending, and it reads only refs and props so it stays correct
+   * when called from an effect cleanup.
+   */
+  async function flushViewTransform() {
+    const flowTransform = pendingViewTransform.current
 
-    if (scene?.id && flowTransform) {
-      setSelectedSceneViewCenter()
+    if (!flowTransform) return
 
+    pendingViewTransform.current = null
+
+    try {
       await api().scenes.saveSceneViewTransform(
         studioId,
-        scene.id,
+        sceneId,
         flowTransform
       )
+    } catch (error) {
+      // a scene removed while its transform was pending is the expected case
+      logger.error(
+        `SceneMap->flushViewTransform->unable to save transform for scene ${sceneId}: ${error}`
+      )
     }
+  }
+
+  function onMoveEnd(flowTransform?: FlowTransform | undefined) {
+    setPaneMoving(false)
+
+    if (!scene?.id || !flowTransform) return
+
+    scheduleSelectedSceneViewCenter()
+
+    pendingViewTransform.current = flowTransform
+
+    if (viewTransformSaveTimer.current !== null)
+      clearTimeout(viewTransformSaveTimer.current)
+
+    viewTransformSaveTimer.current = setTimeout(() => {
+      viewTransformSaveTimer.current = null
+
+      flushViewTransform()
+    }, VIEW_TRANSFORM_SAVE_DELAY)
   }
 
   // When selecting a nested component e.g. event from the WorldOutline
@@ -878,7 +1342,6 @@ const SceneMap: React.FC<{
 
       !ready && setReady(true)
 
-      // TODO: optimize; this is re-rendering too much
       const nodes: Node<NodeData>[] = []
 
       jumps.map((jump) => {
@@ -975,7 +1438,19 @@ const SceneMap: React.FC<{
       // BUG: Unable to create edges on initial node render because choices aren't ready
       setElements([...nodes, ...edges])
     }
-  }, [jumps, scene, events, paths, ready])
+  }, [
+    jumps,
+    // `scene.id` rather than `scene`, which is the fix for the TODO this effect
+    // used to carry ("optimize; this is re-rendering too much"). The only field
+    // read below is the id, but every write to the scene — including the
+    // viewport transform saved on each pan and zoom — replaced the whole object
+    // and rebuilt all nodes and edges from it. Jumps, events and paths are their
+    // own live queries, so nothing here needs to watch the scene's other fields.
+    scene?.id,
+    events,
+    paths,
+    ready
+  ])
 
   useEffect(() => {
     logger.info(`SceneMap->sceneReady->useEffect`)
@@ -987,6 +1462,28 @@ const SceneMap: React.FC<{
         zoom: scene?.composer?.sceneMapTransformZoom || 1
       })
   }, [ready])
+
+  // A debounced viewport write must not be lost when the author closes the
+  // scene or the window: rc-dock keeps opened tabs mounted, so this fires on a
+  // real close rather than on every tab switch.
+  useEffect(
+    () => () => {
+      if (viewTransformSaveTimer.current !== null) {
+        clearTimeout(viewTransformSaveTimer.current)
+        viewTransformSaveTimer.current = null
+      }
+
+      // dropped rather than flushed: dispatching into a context from an
+      // unmounting component would land on a scene that is no longer open
+      if (centerDispatchTimer.current !== null) {
+        clearTimeout(centerDispatchTimer.current)
+        centerDispatchTimer.current = null
+      }
+
+      flushViewTransform()
+    },
+    [sceneId]
+  )
 
   useEffect(() => {
     logger.info(
@@ -1055,15 +1552,23 @@ const SceneMap: React.FC<{
     selectedChoice
   ])
 
+  // `currentZoom` is in here, so this fires on every wheel tick as well as on a
+  // resize — hence the debounced dispatch rather than the direct one.
   useEffect(() => {
     composer.selectedWorldOutlineElement.id === sceneId &&
-      setSelectedSceneViewCenter()
+      scheduleSelectedSceneViewCenter()
   }, [
     composer.selectedWorldOutlineElement,
     flowWrapperRefWidth,
     flowWrapperRefHeight,
     currentZoom
   ])
+
+  // No dependency array: the deferred dispatch above must compute the centre
+  // from the current render's `project`, zoom and wrapper size.
+  useEffect(() => {
+    latestSceneViewCenter.current = setSelectedSceneViewCenter
+  })
 
   useEffect(() => {
     logger.info(

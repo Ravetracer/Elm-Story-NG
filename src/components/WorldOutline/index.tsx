@@ -1355,6 +1355,111 @@ const WorldOutline: React.FC<{ studioId: StudioId; world: World }> = ({
     updateTree()
   }, [composer.savedElement])
 
+  /**
+   * The bulk sibling of the effect above, for elements added to a scene together
+   * — which is what a scene map paste does.
+   *
+   * It cannot be done by dispatching the single-element save repeatedly: React
+   * batches, so only the last would be seen. And it must be done at all, because
+   * the effect above resets a scene item's children from the database (#414). One
+   * announcement for five pasted events would leave four child ids with no item
+   * behind them, and @atlaskit/tree dereferences every child while flattening.
+   *
+   * The tree is patched rather than rebuilt from the database, which would be
+   * simpler but would collapse every folder and scene the author had open.
+   */
+  useEffect(() => {
+    async function addSavedElements() {
+      if (!treeData || composer.savedElements.length === 0) return
+
+      logger.info(
+        `WorldOutline->composer.savedElements effect: ${composer.savedElements.length} element(s)`
+      )
+
+      const elements = await Promise.all(
+        composer.savedElements.map(async ({ id, type }) => {
+          const element =
+            type === ELEMENT_TYPE.EVENT
+              ? await api().events.getEvent(studioId, id)
+              : await api().jumps.getJump(studioId, id)
+
+          return element?.id && element.sceneId
+            ? { id: element.id, sceneId: element.sceneId, title: element.title, type }
+            : undefined
+        })
+      )
+
+      const found = elements.filter(
+        (
+          element
+        ): element is {
+          id: ElementId
+          sceneId: ElementId
+          title: string
+          type: ELEMENT_TYPE
+        } => element !== undefined
+      )
+
+      if (found.length === 0) return
+
+      let newTreeData = cloneDeep(treeData)
+
+      found.forEach(({ id, sceneId, title, type }) => {
+        if (newTreeData.items[id]) return
+
+        newTreeData.items[id] = {
+          id,
+          children: [],
+          isExpanded: false,
+          hasChildren: false,
+          isChildrenLoading: false,
+          data: {
+            title,
+            type,
+            selected: false,
+            parentId: sceneId,
+            // unlike a single add, a paste is not waiting to be named
+            renaming: false
+          }
+        }
+      })
+
+      // one sync per affected scene, after every item exists
+      const sceneIds = [...new Set(found.map(({ sceneId }) => sceneId))]
+
+      await Promise.all(
+        sceneIds.map(async (sceneId) => {
+          const sceneChildRefs = await api().scenes.getChildRefsBySceneRef(
+            studioId,
+            sceneId
+          )
+
+          const sceneItem = newTreeData.items[sceneId]
+
+          if (!sceneItem) return
+
+          sceneItem.children = sceneChildRefs
+            .map((child) => child[1])
+            // a child the tree has no item for would throw while flattening;
+            // this cannot happen for the paste itself, but it keeps a scene that
+            // is somehow out of step from taking the outline down with it
+            .filter((childId) => newTreeData.items[childId] !== undefined)
+          sceneItem.hasChildren = sceneItem.children.length > 0
+          sceneItem.isExpanded = true
+        })
+      )
+
+      setTreeData(newTreeData)
+
+      composerDispatch({
+        type: COMPOSER_ACTION_TYPE.ELEMENTS_SAVE,
+        savedElements: []
+      })
+    }
+
+    addSavedElements()
+  }, [composer.savedElements])
+
   useEffect(() => {
     logger.info(
       `WorldOutline->composer.renamedElement->useEffect->

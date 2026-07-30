@@ -21,6 +21,7 @@ Node's global `WebSocket`, so there is nothing to install.
 | `watch.mjs '<expr>' [ms]` | As above, then report console output and uncaught exceptions for `ms` |
 | `click.mjs '<expr>' [ms]` | Click the element the expression returns, using real mouse events |
 | `screenshot.mjs <out.png>` | Capture the window, independent of desktop stacking |
+| `scenemap-perf.mjs [--pan N] [--zoom N]` | Measure a pan and a stepped zoom on the open scene map |
 
 ```bash
 # what colour is this actually rendering, and where does it come from?
@@ -34,7 +35,17 @@ node scripts/devtools/eval.mjs 'JSON.stringify((()=>{
 
 # catch the exception behind a blank panel
 node scripts/devtools/watch.mjs 'document.querySelector(".dock-tab-btn").click()' 4000
+
+# did that change actually make the scene map faster? (open a scene first)
+node scripts/devtools/scenemap-perf.mjs
 ```
+
+`scenemap-perf.mjs` reports frame quality **and** counts the editor's own graph
+rebuilds out of its log output, which is what a frame counter cannot see. Its
+numbers depend on how much of the storyworld outline is expanded, because the
+viewport-centre dispatch re-renders every `ComposerContext` consumer — collapse or
+expand the tree the same way on both sides of a comparison. See `TODO.md`, "Why the
+scene map stalled while you moved it".
 
 Two things worth remembering:
 
