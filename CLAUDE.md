@@ -882,6 +882,16 @@ builds against them.
   for the inventory state, which is an optional unindexed property on the existing
   `live_events` table — an old save simply lacks it, and absent means "no deltas",
   so it reads as a pristine world.
+- **`useImageLoader` listens on `window`, so every image hears every other image's
+  reply.** "Not addressed to me" and "there is no asset" are different answers, and
+  the upstream hook conflated them: a reply that failed the id check fell through to
+  `setImageData(null)`, so each image that finished loading blanked every image
+  already on screen and only the last to answer kept its picture. `isAssetReplyFor`
+  is the guard, and it checks **both** ids — `eventId` says which hook asked,
+  `assetId` says what it asked for, and the second changes under a hook when a stack
+  grows past one and switches to its stacked image. The hook had no consumers at all
+  in 0.7.0, so the object rail is the first thing to exercise it; anything else that
+  renders two images at once needs the same guard.
 - **Objects are acted on from a verb menu on the tile, not from a button row.**
   Clicking a tile in the rail opens `ObjectMenu` — the object's name, a divider,
   then only the verbs that apply, so `Take` is absent rather than greyed out beside

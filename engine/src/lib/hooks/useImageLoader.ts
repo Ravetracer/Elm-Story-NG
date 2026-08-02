@@ -26,6 +26,29 @@ const getRemoteImageAsDataURL = async (
   })
 }
 
+/**
+ * Whether a `RETURN_ASSET_URL` reply belongs to this hook.
+ *
+ * Every mounted image listens on the **same window event**, so each one hears every
+ * other one's reply. Answering "not mine" is therefore not the same as answering
+ * "there is no asset", and conflating the two is what made an object rail showing
+ * two images end up showing one: each reply that arrived wiped every image already
+ * loaded, so only the last one to answer kept its picture.
+ *
+ * Both halves matter. `eventId` says which *hook* asked — one per tile. `assetId`
+ * says which *asset* it asked for, which changes under a hook when a stack grows
+ * past one and switches to its stacked image, so a reply for the previous asset is
+ * stale and must be dropped rather than rendered.
+ */
+export const isAssetReplyFor = (
+  detail: EngineDevToolsLiveEvent,
+  eventId: string,
+  assetId?: string
+): boolean =>
+  detail.eventType === ENGINE_DEVTOOLS_LIVE_EVENT_TYPE.RETURN_ASSET_URL &&
+  detail.eventId === eventId &&
+  detail.asset?.id === assetId
+
 const useImageLoader = ({
   eventId,
   assetId,
@@ -47,31 +70,22 @@ const useImageLoader = ({
     async (event: Event) => {
       const { detail } = event as CustomEvent<EngineDevToolsLiveEvent>
 
-      if (
-        detail.eventType === ENGINE_DEVTOOLS_LIVE_EVENT_TYPE.RETURN_ASSET_URL
-      ) {
-        if (
-          detail?.asset?.url &&
-          detail.asset.id === assetId &&
-          eventId === detail.eventId
-        ) {
-          setImageData(
-            (await getRemoteImageAsDataURL(
-              detail.asset.url.replaceAll('"', '')
-            )) as string | null
-          )
+      // Somebody else's reply, or one for an asset this hook has moved on from.
+      // Ignored rather than treated as an absent asset; see isAssetReplyFor.
+      if (!isAssetReplyFor(detail, eventId, assetId)) return
 
-          return
-        }
+      if (detail.asset?.url) {
+        setImageData(
+          (await getRemoteImageAsDataURL(
+            detail.asset.url.replaceAll('"', '')
+          )) as string | null
+        )
 
-        if (!assetId) {
-          setImageData(placeholder)
-
-          return
-        }
-
-        setImageData(null)
+        return
       }
+
+      // this hook's asset, and the composer had no url for it
+      setImageData(assetId ? null : placeholder)
     },
     [eventId, assetId, placeholder, ext]
   )
