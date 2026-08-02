@@ -29,13 +29,16 @@
  * silently discards whatever an author had translated.
  */
 export enum INTERFACE_TEXT_KEY {
-  // the object rail
+  // the object rail, and the verb menu on a tile
   OBJECT_HERE = 'OBJECT_HERE',
   OBJECT_INVENTORY = 'OBJECT_INVENTORY',
   OBJECT_EMPTY = 'OBJECT_EMPTY',
+  OBJECT_LOOK_AT = 'OBJECT_LOOK_AT',
   OBJECT_TAKE = 'OBJECT_TAKE',
   OBJECT_USE = 'OBJECT_USE',
-  OBJECT_COMBINE = 'OBJECT_COMBINE',
+  OBJECT_COMBINE_START = 'OBJECT_COMBINE_START',
+  OBJECT_COMBINE_WITH = 'OBJECT_COMBINE_WITH',
+  OBJECT_COMBINING = 'OBJECT_COMBINING',
   OBJECT_CLEAR = 'OBJECT_CLEAR',
 
   // the event stream
@@ -98,10 +101,13 @@ export const INTERFACE_TEXT_DEFAULTS: Record<INTERFACE_TEXT_KEY, string> = {
   [INTERFACE_TEXT_KEY.OBJECT_HERE]: 'Here',
   [INTERFACE_TEXT_KEY.OBJECT_INVENTORY]: 'Inventory',
   [INTERFACE_TEXT_KEY.OBJECT_EMPTY]: 'Nothing yet.',
+  [INTERFACE_TEXT_KEY.OBJECT_LOOK_AT]: 'Look at',
   [INTERFACE_TEXT_KEY.OBJECT_TAKE]: 'Take',
   [INTERFACE_TEXT_KEY.OBJECT_USE]: 'Use',
-  [INTERFACE_TEXT_KEY.OBJECT_COMBINE]: 'Combine',
-  [INTERFACE_TEXT_KEY.OBJECT_CLEAR]: 'Clear',
+  [INTERFACE_TEXT_KEY.OBJECT_COMBINE_START]: 'Combine\u2026',
+  [INTERFACE_TEXT_KEY.OBJECT_COMBINE_WITH]: 'Combine with',
+  [INTERFACE_TEXT_KEY.OBJECT_COMBINING]: 'Combining',
+  [INTERFACE_TEXT_KEY.OBJECT_CLEAR]: 'Cancel',
 
   [INTERFACE_TEXT_KEY.STREAM_RESTART]: 'Restart',
   [INTERFACE_TEXT_KEY.STREAM_TITLE_SCREEN]: 'Title Screen',
@@ -159,14 +165,20 @@ export const INTERFACE_TEXT_GROUPS: {
 }[] = [
   {
     title: 'Objects',
-    note: 'The rail beside the story, and its buttons.',
+    note:
+      'The rail beside the story, and the verb menu that opens when a tile is ' +
+      'clicked. "Combine with" and "Combining" are each followed by an object\'s ' +
+      'name, as in "Combine with Antenna".',
     keys: [
       INTERFACE_TEXT_KEY.OBJECT_HERE,
       INTERFACE_TEXT_KEY.OBJECT_INVENTORY,
       INTERFACE_TEXT_KEY.OBJECT_EMPTY,
+      INTERFACE_TEXT_KEY.OBJECT_LOOK_AT,
       INTERFACE_TEXT_KEY.OBJECT_TAKE,
       INTERFACE_TEXT_KEY.OBJECT_USE,
-      INTERFACE_TEXT_KEY.OBJECT_COMBINE,
+      INTERFACE_TEXT_KEY.OBJECT_COMBINE_START,
+      INTERFACE_TEXT_KEY.OBJECT_COMBINE_WITH,
+      INTERFACE_TEXT_KEY.OBJECT_COMBINING,
       INTERFACE_TEXT_KEY.OBJECT_CLEAR
     ]
   },

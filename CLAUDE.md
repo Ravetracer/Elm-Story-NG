@@ -882,6 +882,19 @@ builds against them.
   for the inventory state, which is an optional unindexed property on the existing
   `live_events` table — an old save simply lacks it, and absent means "no deltas",
   so it reads as a pristine world.
+- **Objects are acted on from a verb menu on the tile, not from a button row.**
+  Clicking a tile in the rail opens `ObjectMenu` — the object's name, a divider,
+  then only the verbs that apply, so `Take` is absent rather than greyed out beside
+  something already carried. `Look at` prints the description into the stream, which
+  is the one thing inspecting writes. The menu is positioned from JavaScript for the
+  same reason the tooltip is, and clamped after layout because its height varies
+  with how many verbs apply.
+- **A combination is a pair — `MAX_RECIPE_INPUTS`, declared in the model.** The
+  rail can only ever offer two, so the recipe editor must not let an author write a
+  third input; both read the same constant. A chain of three is two recipes through
+  an intermediate object. An older world holding a longer recipe is not migrated: it
+  simply never matches, which `objectModel.test.ts` holds in place so capping the UI
+  cannot quietly change what an existing world does.
 - **Taking and combining update the live event the player is on; they do not
   append one.** `ENGINE_LIVE_EVENT_TYPE.OBJECT_TAKE` and `OBJECT_COMBINE` are
   declared and never written, and `DESIGN.md` §5 still describes the appending

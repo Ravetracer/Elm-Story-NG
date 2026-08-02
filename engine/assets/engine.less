@@ -369,9 +369,16 @@
       border-color: var(--link-color);
     }
 
+    // the combine selection
     &.object-tile-selected {
       border-color: var(--link-color);
       color: var(--link-color);
+    }
+
+    // the tile whose menu is open. A background rather than a border, so it does
+    // not read as being in the combine selection when it is not.
+    &.object-tile-open {
+      background: var(--renderer-border-color);
     }
   }
 
@@ -420,35 +427,84 @@
     z-index: 1;
   }
 
-  // Stacked rather than wrapped: three buttons side by side do not fit 12rem, and
-  // wrapping them gives a ragged block that moves as the selection changes.
-  .object-panel-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    margin-top: auto;
+  // What the rings on the tiles mean. Passive — every action including clearing is
+  // in the verb menu, so there is nothing here to travel to.
+  .object-panel-selection {
+    // pushed to the foot of the rail, which is what the action row it replaces used
+    // to do; without it the line sits directly under the tiles and moves as they do
+    margin: auto 0 0 0;
+    padding-top: 0.4rem;
+    border-top: 0.1rem solid var(--renderer-border-color);
+    font-size: 1.1rem;
+    letter-spacing: 0.05rem;
+    text-transform: uppercase;
+    opacity: 0.6;
   }
 
-  .object-panel-btn {
-    padding: 0.4rem 0.6rem;
+  // The label is a small-caps status word; the object's name is a proper noun and
+  // has to opt out of that, or a title reads as shouting.
+  .object-panel-selection-name {
+    text-transform: none;
+  }
+
+  // The verbs for one object, drawn beside its tile and overhanging the rail into
+  // the stream. Positioned from JavaScript for the same reason the tooltip is: the
+  // groups scroll, so a CSS-only flyout would be clipped the moment it mattered.
+  // Its `top` is set by the component after layout, which is also what keeps it
+  // from hanging off the bottom of the rail.
+  .object-tile-menu {
+    position: absolute;
+    right: calc(100% + 0.6rem);
+    min-width: 16rem;
+    max-width: 26rem;
+    padding: 0.4rem 0;
+    background: var(--background-color);
+    // `--link-color` rather than `--renderer-border-color`, which the tooltip uses.
+    // The tooltip sits in the empty margin; this floats over prose, and at 8%
+    // against a 3% background that border is ~1.1:1 — so the panel read as a hole
+    // punched in the text rather than as an edge. The accent also matches the
+    // border a tile takes on hover, which is where this opens from.
+    border: 0.1rem solid var(--link-color);
+    border-radius: 0.3rem;
+    font-size: 1.3rem;
+    // above the tooltip, which is 1; both are inside the rail
+    z-index: 2;
+  }
+
+  // The object's name, and the spacer under it. This is the tooltip's job absorbed
+  // into the menu: hovering still names a tile, and clicking names it again at the
+  // head of the verbs, so the menu never appears without saying what it acts on.
+  .object-tile-menu-title {
+    padding: 0.3rem 1rem 0.5rem 1rem;
+    margin-bottom: 0.4rem;
+    // the spacer between the name and the verbs; subtle on purpose, since this one
+    // divides inside a panel whose outer edge is already stated
+    border-bottom: 0.1rem solid var(--renderer-border-color);
+    font-weight: bold;
+  }
+
+  .object-tile-menu-verbs {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .object-tile-menu-item {
+    padding: 0.5rem 1rem;
     min-height: 3.2rem;
     background: transparent;
     color: var(--link-color);
-    border: 0.1rem solid var(--link-color);
-    border-radius: 0.3rem;
+    border: none;
     cursor: pointer;
     font-size: inherit;
     font-family: inherit;
+    text-align: left;
 
-    &:disabled {
-      opacity: 0.35;
-      cursor: default;
-      border-color: var(--renderer-border-color);
-      color: inherit;
+    &:hover,
+    &:focus-visible {
+      background: var(--renderer-border-color);
     }
 
-    &.object-panel-btn-quiet {
-      border-color: var(--renderer-border-color);
+    &.object-tile-menu-item-quiet {
       color: inherit;
       opacity: 0.7;
     }

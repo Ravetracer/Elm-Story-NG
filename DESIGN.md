@@ -185,7 +185,7 @@ export interface RecipeOutput {
 
 export interface Recipe extends Element {
   worldId: WorldId
-  inputs: RecipeInput[]     // >= 1
+  inputs: RecipeInput[]     // 1 or 2; see MAX_RECIPE_INPUTS
   outputs: RecipeOutput[]
   effects?: VariableSet[]   // the existing Effect.set tuple; see 5
   message?: string          // what the storyteller says on success
@@ -206,6 +206,16 @@ export interface Recipe extends Element {
   consistency trap. Query by `worldId` and filter in memory. If a world ever
   carries thousands of recipes, add the index then — it is an index, not a shape,
   so it costs one Dexie version and nothing else.
+- **One or two inputs, and never more.** `MAX_RECIPE_INPUTS` in
+  `engine/src/lib/objects.ts` is the declaration, and both the rail's verb menu and
+  the recipe editor read it — a recipe an author can write but no player can
+  trigger is the silently-unreachable class this design keeps trying to avoid. A
+  chain of three is authored as two recipes through an intermediate object: a
+  broken radio and an antenna give a repaired radio, which then combines with a
+  battery. That is the adventure-game idiom, and it is also what keeps the
+  storyteller from having to explain a heap of selected objects. An older world
+  holding a longer recipe is not migrated; it simply never matches, because no
+  selection that size can be built.
 - **`inputs.length >= 1`, which gives decomposition for free.** A single-input
   recipe is the "use" affordance and a multi-input recipe is "combine" — one code
   path, two affordances. `TODO.md`'s own worked example needs this: opening the

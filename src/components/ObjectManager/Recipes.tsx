@@ -11,6 +11,8 @@ import {
   WorldObject
 } from '../../data/types'
 
+import { MAX_RECIPE_INPUTS } from '../../../engine/src/lib/objects'
+
 import { useObjects, useRecipes, useVariables } from '../../hooks'
 
 import {
@@ -268,6 +270,16 @@ const Recipes: React.FC<{
               />
             )}
 
+            {selected.inputs.length >= MAX_RECIPE_INPUTS && (
+              <Alert
+                type="info"
+                showIcon
+                className={styles.alert}
+                message="A recipe takes at most two objects."
+                description="One input is Use; two is Combine. For a chain of three, make the first pair produce an intermediate object and combine that with the third — a broken radio and an antenna give a repaired radio, which then combines with a battery."
+              />
+            )}
+
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.fieldLabel}>Inputs</span>
@@ -275,7 +287,10 @@ const Recipes: React.FC<{
                 <Button
                   type="link"
                   icon={<PlusOutlined />}
-                  disabled={selected.inputs.length >= objectOptions.length}
+                  disabled={
+                    selected.inputs.length >= objectOptions.length ||
+                    selected.inputs.length >= MAX_RECIPE_INPUTS
+                  }
                   onClick={() => {
                     const objectId = firstUnusedObject(
                       selected.inputs.map((input) => input.objectId)

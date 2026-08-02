@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState
@@ -80,9 +81,10 @@ const ObjectTile: React.FC<{
   object: EngineObjectData
   count: number
   selected: boolean
-  onSelect: () => void
+  open: boolean
+  onOpen: (element: HTMLElement) => void
   onHover: (title: string | undefined, element: HTMLElement | null) => void
-}> = ({ object, count, selected, onSelect, onHover }) => {
+}> = ({ object, count, selected, open, onOpen, onHover }) => {
   const assetId = displayAssetId(object, count),
     title = displayTitle(object, count)
 
@@ -104,15 +106,19 @@ const ObjectTile: React.FC<{
 
   return (
     <button
-      className={`object-tile${selected ? ' object-tile-selected' : ''}`}
+      className={`object-tile${selected ? ' object-tile-selected' : ''}${
+        open ? ' object-tile-open' : ''
+      }`}
       onBlur={() => onHover(undefined, null)}
-      onClick={onSelect}
+      onClick={(event) => onOpen(event.currentTarget)}
       onFocus={(event) => onHover(title, event.currentTarget)}
       onMouseEnter={(event) => onHover(title, event.currentTarget)}
       onMouseLeave={() => onHover(undefined, null)}
       // the accessible name, and the fallback for anyone the hover tooltip does
       // not reach — a touch screen, or a reader
       aria-label={title}
+      aria-haspopup="menu"
+      aria-expanded={open}
       type="button"
     >
       {imageData ? (
@@ -139,6 +145,9 @@ const ObjectTile: React.FC<{
  */
 const OBJECT_RAIL_WIDTH = '12rem'
 
+/** How close the verb menu may come to the rail's top and bottom edges, in px. */
+const MENU_MARGIN = 4
+
 /** Up to two initials from an object's title, for a tile with no image. */
 const initialsOf = (title: string): string =>
   title
@@ -155,7 +164,17 @@ const ObjectPanel: React.FC = () => {
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
-  const [selection, setSelection] = useState<ElementId[]>([])
+  /*
+   * The object the player has picked up *for combining*, if any. One, not a list:
+   * `MAX_RECIPE_INPUTS` is two, so a combination is always this object and the one
+   * whose menu is used next. It is not "the highlighted tile" — a tile's own verbs
+   * come from the menu that opens on it, and this exists only because the second
+   * half of a pair has to be chosen somewhere.
+   */
+  const [combining, setCombining] = useState<ElementId | undefined>(undefined),
+    [menu, setMenu] = useState<{ objectId: ElementId; top: number } | undefined>(
+      undefined
+    )
 
   const liveEvent = useLiveQuery(async () => {
     if (!studioId || !engine.currentLiveEvent) return undefined
@@ -230,78 +249,109 @@ const ObjectPanel: React.FC = () => {
     [snapshot]
   )
 
-  /*
-   * Selecting a tile also prints what the object is into the stream; deselecting
-   * prints nothing, or a player picking two things apart to combine them would
-   * read each description twice. `inspectObject` collapses a repeat against the
-   * line directly above it, which covers selecting the same tile twice in a row.
+  const railRef = useRef<HTMLDivElement>(null)
+
+  const closeMenu = useCallback(() => setMenu(undefined), [])
+
+  /**
+   * Opens the verb menu on a tile, or closes it if it was already open.
+   *
+   * The offset is measured against the rail so the menu travels with its tile when
+   * the groups scroll, the same reason the tooltip is positioned this way.
    */
-  const toggle = useCallback(
-    (objectId: ElementId) => {
-      /*
-       * Read off `selection` rather than out of a `setSelection` updater. An
-       * updater does not run when it is called — React defers it to render — so a
-       * flag assigned inside one is still false on the next line, and the
-       * inspection never printed. A tile click is a discrete user event, so the
-       * captured `selection` is current.
-       */
-      const selecting = !selection.includes(objectId)
+  const openMenu = useCallback(
+    (objectId: ElementId, element: HTMLElement) => {
+      if (!railRef.current) return
 
-      setSelection(
-        selecting
-          ? [...selection, objectId]
-          : selection.filter((id) => id !== objectId)
+      const tile = element.getBoundingClientRect(),
+        rail = railRef.current.getBoundingClientRect()
+
+      setMenu((current) =>
+        current?.objectId === objectId
+          ? undefined
+          : { objectId, top: tile.top - rail.top }
       )
-
-      if (!selecting) return
-
-      const object = (objects ?? []).find(
-        (candidate) => candidate.id === objectId
-      )
-
-      // an object with no description has nothing to inspect, and a blank line in
-      // the stream is worse than none
-      if (object?.description) inspectObject(object.description)
     },
-    [selection, objects, inspectObject]
+    []
   )
 
   /*
-   * Neither handler shows what the action said. The take message, a recipe's
-   * message and the refusal when nothing combines are all written onto the live
-   * event and rendered in the stream, so the player reads them where they are
-   * already reading. The results are still awaited, because the *selection* is
-   * this component's business and depends on them.
+   * None of these show what the action said. The take message, a recipe's message,
+   * a description and the refusal when nothing combines are all written onto the
+   * live event and rendered in the stream, so the player reads them where they are
+   * already reading.
    */
-  const onTake = useCallback(async () => {
-    /*
-     * Sequential, not `Promise.all`. Each take is a read-modify-write of the same
-     * live event record — the deltas, the state and the messages all accumulate on
-     * it — so taking two things at once would have the second write clobber the
-     * first, exactly as a multi-element cut does to `Scene.children` in the editor.
-     */
-    let took = false
+  const onLookAt = useCallback(
+    (object: EngineObjectData) => {
+      closeMenu()
 
-    for (const objectId of selection) {
-      if (await takeObject(objectId)) took = true
-    }
-
-    // the selection refers to counts that just changed, so it is dropped rather
-    // than left pointing at a stale stack
-    if (took) setSelection([])
-  }, [selection, takeObject])
-
-  const onCombine = useCallback(async () => {
-    const result = await combineObjects(selection)
-
-    if (result?.outcome === COMBINE_OUTCOME.APPLIED) setSelection([])
-  }, [combineObjects, selection])
-
-  const selectedObjects = useMemo(
-    () =>
-      (objects ?? []).filter((object) => selection.includes(object.id)),
-    [objects, selection]
+      if (object.description) inspectObject(object.description)
+    },
+    [closeMenu, inspectObject]
   )
+
+  const onTake = useCallback(
+    async (objectId: ElementId) => {
+      closeMenu()
+
+      await takeObject(objectId)
+    },
+    [closeMenu, takeObject]
+  )
+
+  /**
+   * Uses or combines, which are one call apart: a selection of one is "use" and a
+   * selection of several is "combine". The pending selection is dropped only when a
+   * recipe actually fired — a refusal leaves it alone, so the player can try the
+   * same things against something else without picking them all again.
+   */
+  const onCombine = useCallback(
+    async (objectIds: ElementId[]) => {
+      closeMenu()
+
+      const result = await combineObjects(objectIds)
+
+      if (result?.outcome === COMBINE_OUTCOME.APPLIED) setCombining(undefined)
+    },
+    [closeMenu, combineObjects]
+  )
+
+  const onSelectForCombining = useCallback(
+    (objectId: ElementId) => {
+      closeMenu()
+
+      setCombining(objectId)
+    },
+    [closeMenu]
+  )
+
+  const onClearCombining = useCallback(() => {
+    closeMenu()
+
+    setCombining(undefined)
+  }, [closeMenu])
+
+  /*
+   * An object the player picked for combining can stop being reachable — taken into
+   * a scene they leave, or consumed by a recipe that fired without it. Dropping it
+   * here rather than at the point of every write keeps one rule: the selection only
+   * ever names things that are still in front of the player.
+   */
+  const reachable = useMemo(
+    () => new Set([...here, ...carrying].map(([object]) => object.id)),
+    [here, carrying]
+  )
+
+  useEffect(() => {
+    setCombining((current) =>
+      current && !reachable.has(current) ? undefined : current
+    )
+  }, [reachable])
+
+  // the open menu's tile can disappear the same way
+  useEffect(() => {
+    if (menu && !reachable.has(menu.objectId)) setMenu(undefined)
+  }, [menu, reachable])
 
   /*
    * The hovered tile's name, and where to draw it.
@@ -316,8 +366,6 @@ const ObjectPanel: React.FC = () => {
     { title: string; top: number } | undefined
   >(undefined)
 
-  const railRef = useRef<HTMLDivElement>(null)
-
   const onHover = useCallback(
     (title: string | undefined, element: HTMLElement | null) => {
       if (!title || !element || !railRef.current)
@@ -330,6 +378,63 @@ const ObjectPanel: React.FC = () => {
     },
     []
   )
+
+  /*
+   * A click anywhere else closes the menu, and so does escape.
+   *
+   * `mousedown` rather than `click`: a `click` listener on the document fires for
+   * the very press that opened the menu, in the same tick, and closed it again. The
+   * tile is excluded by asking whether the press landed inside the rail's menu or on
+   * a tile, because the tile's own handler already toggles.
+   */
+  useEffect(() => {
+    if (!menu) return
+
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+
+      if (target?.closest('.object-tile-menu, .object-tile')) return
+
+      setMenu(undefined)
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenu(undefined)
+    }
+
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menu])
+
+  /*
+   * Keeps the menu inside the rail.
+   *
+   * Its height is not known until it has rendered — it varies with how many verbs
+   * apply — so this measures after layout and nudges it up if it would hang off the
+   * bottom. Written straight onto the element rather than into state, because state
+   * would re-render, re-measure and re-write forever.
+   */
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const element = menuRef.current,
+      rail = railRef.current
+
+    if (!menu || !element || !rail) return
+
+    const overflow =
+      menu.top + element.offsetHeight - (rail.clientHeight - MENU_MARGIN)
+
+    element.style.top = `${Math.max(
+      MENU_MARGIN,
+      overflow > 0 ? menu.top - overflow : menu.top
+    )}px`
+  }, [menu])
 
   /*
    * Tells the layout how much room to leave, rather than the stylesheet guessing.
@@ -363,13 +468,6 @@ const ObjectPanel: React.FC = () => {
   // had to be cleaned of.
   if (!objects || objects.length === 0) return null
 
-  // one Take for the whole selection rather than one per object: "Take Buch über
-  // alte Schriften" does not fit a 12rem rail, and a button per selected object
-  // would stack them
-  const takeableSelected = here.some(
-    ([object]) => object.takeable && selection.includes(object.id)
-  )
-
   const group = (title: string, contents: typeof here) => (
     <div className="object-panel-group">
       <h4 className="object-panel-group-title">{title}</h4>
@@ -380,14 +478,22 @@ const ObjectPanel: React.FC = () => {
             key={object.id}
             object={object}
             count={count}
-            selected={selection.includes(object.id)}
-            onSelect={() => toggle(object.id)}
+            selected={combining === object.id}
+            open={menu?.objectId === object.id}
+            onOpen={(element) => openMenu(object.id, element)}
             onHover={onHover}
           />
         ))}
       </div>
     </div>
   )
+
+  const menuObject = menu
+      ? objects.find((object) => object.id === menu.objectId)
+      : undefined,
+    combiningObject = combining
+      ? objects.find((object) => object.id === combining)
+      : undefined
 
   return (
     <div
@@ -411,50 +517,44 @@ const ObjectPanel: React.FC = () => {
         )}
       </div>
 
-      <div className="object-panel-actions">
-        <button
-          className="object-panel-btn"
-          disabled={!takeableSelected}
-          onClick={onTake}
-          type="button"
-        >
-          {t(INTERFACE_TEXT_KEY.OBJECT_TAKE)}
-        </button>
-
-        <button
-          className="object-panel-btn"
-          disabled={
-            selection.length === 0 ||
-            // a selection with nothing combineable in it cannot produce a recipe,
-            // so the button says so by being unavailable rather than by failing
-            !selectedObjects.some((object) => object.combineable)
-          }
-          onClick={onCombine}
-          type="button"
-        >
-          {t(
-            selection.length > 1
-              ? INTERFACE_TEXT_KEY.OBJECT_COMBINE
-              : INTERFACE_TEXT_KEY.OBJECT_USE
-          )}
-        </button>
-
-        {selection.length > 0 && (
-          <button
-            className="object-panel-btn object-panel-btn-quiet"
-            onClick={() => setSelection([])}
-            type="button"
-          >
-            {t(INTERFACE_TEXT_KEY.OBJECT_CLEAR)}
-          </button>
-        )}
-      </div>
+      {/*
+        Says what the rings on the tiles mean. Passive: every action including
+        clearing is in the menu, so nothing here has to be travelled to — which is
+        the whole point of the menu replacing the old button row.
+      */}
+      {combiningObject && (
+        <p className="object-panel-selection">
+          {t(INTERFACE_TEXT_KEY.OBJECT_COMBINING)}:{' '}
+          <span className="object-panel-selection-name">
+            {combiningObject.title}
+          </span>
+        </p>
+      )}
 
       {/*
-        Drawn outside the scrolling groups so it can overhang the rail's left edge
-        into the stream, which is the only direction there is room in.
+        Both drawn outside the scrolling groups so they can overhang the rail's left
+        edge into the stream, which is the only direction there is room in. The menu
+        wins when both would show, since it carries the title itself.
       */}
-      {tooltip && (
+      {menuObject && menu && (
+        <ObjectMenu
+          object={menuObject}
+          combiningObject={combiningObject}
+          takeable={here.some(
+            ([candidate]) => candidate.id === menuObject.id && candidate.takeable
+          )}
+          top={menu.top}
+          menuRef={menuRef}
+          t={t}
+          onLookAt={onLookAt}
+          onTake={onTake}
+          onCombine={onCombine}
+          onSelectForCombining={onSelectForCombining}
+          onClearCombining={onClearCombining}
+        />
+      )}
+
+      {tooltip && !menu && (
         <span className="object-tile-tooltip" style={{ top: tooltip.top }}>
           {tooltip.title}
         </span>
@@ -462,5 +562,124 @@ const ObjectPanel: React.FC = () => {
     </div>
   )
 }
+
+/**
+ * The verbs that apply to one object, at the object.
+ *
+ * Replaces a row of buttons at the foot of the rail. The verbs were the same there,
+ * but reaching them meant clicking a tile at the top and then travelling the height
+ * of the rail, and they had to be *disabled* rather than absent — a permanent
+ * greyed-out **Take** beside something already in the player's pocket. Here a verb
+ * that does not apply is simply not listed.
+ *
+ * **Only `Look at` is unconditional**, because an object with no description still
+ * answers "there is nothing more to see" more usefully than an empty menu.
+ *
+ * Combining is a **pair**, per `MAX_RECIPE_INPUTS`, so the menu never accumulates:
+ * `Combine…` picks this object up and the next tile's menu offers `Combine with
+ * <it>`. A chain of three is authored as two recipes through an intermediate
+ * object rather than performed as one gesture.
+ */
+const ObjectMenu: React.FC<{
+  object: EngineObjectData
+  combiningObject?: EngineObjectData
+  takeable: boolean
+  top: number
+  menuRef: React.RefObject<HTMLDivElement>
+  t: (key: INTERFACE_TEXT_KEY) => string
+  onLookAt: (object: EngineObjectData) => void
+  onTake: (objectId: ElementId) => void
+  onCombine: (objectIds: ElementId[]) => void
+  onSelectForCombining: (objectId: ElementId) => void
+  onClearCombining: () => void
+}> = ({
+  object,
+  combiningObject,
+  takeable,
+  top,
+  menuRef,
+  t,
+  onLookAt,
+  onTake,
+  onCombine,
+  onSelectForCombining,
+  onClearCombining
+}) => {
+  const isPending = combiningObject?.id === object.id
+
+  return (
+    <div
+      className="object-tile-menu"
+      ref={menuRef}
+      role="menu"
+      style={{ top }}
+      // the rail's own dismiss listener asks whether a press landed in here
+      onMouseDown={(event) => event.stopPropagation()}
+    >
+      <div className="object-tile-menu-title">{object.title}</div>
+
+      <div className="object-tile-menu-verbs">
+        <MenuItem onSelect={() => onLookAt(object)}>
+          {t(INTERFACE_TEXT_KEY.OBJECT_LOOK_AT)}
+        </MenuItem>
+
+        {takeable && (
+          <MenuItem onSelect={() => onTake(object.id)}>
+            {t(INTERFACE_TEXT_KEY.OBJECT_TAKE)}
+          </MenuItem>
+        )}
+
+        {object.combineable && !combiningObject && (
+          <>
+            <MenuItem onSelect={() => onCombine([object.id])}>
+              {t(INTERFACE_TEXT_KEY.OBJECT_USE)}
+            </MenuItem>
+
+            <MenuItem onSelect={() => onSelectForCombining(object.id)}>
+              {t(INTERFACE_TEXT_KEY.OBJECT_COMBINE_START)}
+            </MenuItem>
+          </>
+        )}
+
+        {/*
+          The other half of a pair. Named rather than called "the selected one",
+          because the tile carrying it may be scrolled out of sight — the ring on it
+          is not enough on its own.
+        */}
+        {combiningObject && !isPending && object.combineable && (
+          <MenuItem onSelect={() => onCombine([combiningObject.id, object.id])}>
+            {t(INTERFACE_TEXT_KEY.OBJECT_COMBINE_WITH)} {combiningObject.title}
+          </MenuItem>
+        )}
+
+        {combiningObject && (
+          <MenuItem quiet onSelect={onClearCombining}>
+            {t(INTERFACE_TEXT_KEY.OBJECT_CLEAR)}
+          </MenuItem>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
+const MenuItem: React.FC<{ quiet?: boolean; onSelect: () => void }> = ({
+  children,
+  quiet,
+  onSelect
+}) => (
+  <button
+    className={`object-tile-menu-item${
+      quiet ? ' object-tile-menu-item-quiet' : ''
+    }`}
+    role="menuitem"
+    onClick={onSelect}
+    type="button"
+  >
+    {children}
+  </button>
+)
+
+ObjectMenu.displayName = 'ObjectMenu'
 
 export default ObjectPanel

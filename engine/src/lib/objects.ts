@@ -46,6 +46,23 @@ import { compareNumbers, applyVariableSets, variableCompareHolds } from './state
 /** The engine's own fallback when an author has set no message anywhere. */
 export const DEFAULT_NO_RECIPE_MESSAGE = 'Nothing happens.'
 
+/**
+ * How many objects one recipe may take: **one or two, never more**.
+ *
+ * One input is Use, two is Combine, and a chain of three is authored as two
+ * recipes through an intermediate object — a broken radio and an antenna give a
+ * repaired radio, which then combines with a battery. That is the adventure-game
+ * idiom, and it is also the honest shape: a storyteller that let a player heap up
+ * an arbitrary pile before asking what it makes has to explain the pile.
+ *
+ * The rule is declared here, in the model, because it binds two places that
+ * otherwise cannot see each other — the rail's verb menu, which can only ever
+ * offer a pair, and the recipe editor, which must not let an author write a
+ * recipe no player could trigger. `matchRecipe` does not filter on it: a longer
+ * recipe simply never matches, because no selection that size can be built.
+ */
+export const MAX_RECIPE_INPUTS = 2
+
 /** A scene id, or `INVENTORY_LOCATION_KEY`. */
 export type ObjectLocation = string
 

@@ -331,7 +331,9 @@ place to spend that. Reopen it only if the floor moves, not for taste.
   - [x] has a name
   - [x] has an optional dedicated image
   - [x] has a description shown when inspected
-  - [x] combineable with other objects, with no limit on how many
+  - [x] combineable with another object — a pair at a time, per
+        `MAX_RECIPE_INPUTS`; a chain of three is two recipes through an
+        intermediate object
 - [x] Combination by recipe
   - [x] each input is consumed or retained
   - [x] each output goes to the inventory or to the current scene

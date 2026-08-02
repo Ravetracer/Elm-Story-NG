@@ -4,6 +4,7 @@ import {
   appendMessage,
   canApplyRecipe,
   combine,
+  MAX_RECIPE_INPUTS,
   COMBINE_OUTCOME,
   DEFAULT_NO_RECIPE_MESSAGE,
   displayAssetId,
@@ -889,6 +890,61 @@ describe('stacked presentation', () => {
 
     expect(displayTitle(plain, 4)).toBe('Rock')
     expect(displayAssetId(plain, 4)).toBeUndefined()
+  })
+})
+
+describe('how many objects one recipe may take', () => {
+  it('is a pair, which is what the rail can offer and the editor may author', () => {
+    expect(MAX_RECIPE_INPUTS).toBe(2)
+  })
+
+  it('still fires a one-input recipe, which is Use', () => {
+    const battery = object('battery', { combineable: true }),
+      charged = object('charged', {})
+
+    const recipe: EngineRecipeData = {
+      id: 'r',
+      inputs: [{ objectId: 'battery', quantity: 1, consumed: true }],
+      outputs: [
+        {
+          objectId: 'charged',
+          quantity: 1,
+          destination: RECIPE_OUTPUT_DESTINATION.INVENTORY
+        }
+      ],
+      worldId: 'world-1'
+    }
+
+    const world = snapshot({
+      objects: [battery, charged],
+      deltas: { [INVENTORY_LOCATION_KEY]: { battery: 1 } }
+    })
+
+    expect(combine(world, [recipe], ['battery']).outcome).toBe(
+      COMBINE_OUTCOME.APPLIED
+    )
+  })
+
+  it('leaves a longer recipe unreachable rather than matching a subset', () => {
+    /*
+     * A world written before the cap, or edited by hand, can still hold a
+     * three-input recipe. The model does not filter those out — no selection that
+     * size can be built any more — but it must not fire one on a pair either, or
+     * capping the UI would silently change what an existing world does.
+     */
+    const three: EngineRecipeData = {
+      id: 'r3',
+      inputs: [
+        { objectId: 'radio', quantity: 1, consumed: true },
+        { objectId: 'antenna', quantity: 1, consumed: true },
+        { objectId: 'battery', quantity: 1, consumed: true }
+      ],
+      outputs: [],
+      worldId: 'world-1'
+    }
+
+    expect(matchRecipe([three], ['radio', 'antenna'])).toBeUndefined()
+    expect(matchRecipe([three], ['radio', 'antenna', 'battery'])).toBe(three)
   })
 })
 
