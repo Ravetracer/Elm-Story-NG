@@ -356,6 +356,34 @@ place to spend that. Reopen it only if the floor moves, not for taste.
         corridor. Without this, objects are scenery: `Condition.compare` tests
         variables only today.
 
+## 4.4 The PWA export, verified
+
+Exercised end to end for the first time since the revival: exported the imported
+storyworld, served it over HTTP and played it in a real browser.
+
+**The pipeline is healthy.** All four token replacements land (`___worldTitle___`,
+`___worldDescription___`, `___worldId___`, `"___storytellerData___"`), ~153KB of
+compressed world data reaches the single entry chunk, assets are copied, and the
+service worker's precache revisions are rewritten for exactly the two files the
+export modifies — `index.html` and the entry chunk — leaving `revision: null` on
+the untouched content-hashed assets, where null is correct. Objects, recipes, the
+rail, take, inspect and the interface text all work at runtime, and the title
+card and settings panel render, which the composer preview cannot show.
+
+**It found one real bug**: both bundled fonts were corrupt and had been since the
+initial commit, so every exported storyworld rendered in a system fallback. Fixed
+in 0.27.1; see `CLAUDE.md`, "Housekeeping".
+
+Two things to reuse when testing this again:
+
+- The export ends in a native directory dialog, which no CDP client can drive.
+  `electron-vite dev --inspect <port>` exposes the **main** process, where
+  `require('electron').dialog.showOpenDialog` can be stubbed to return a fixed
+  path — leaving the real handler to run.
+- **Serve each export from a fresh port.** An exported PWA registers a service
+  worker that precaches the CSS and fonts, so a second export on the same origin
+  hands back the first one's assets.
+
 ## 4.5 User contributed ideas
 
 Some ideas the developer had between the tasks are land here.
