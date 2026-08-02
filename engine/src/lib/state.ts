@@ -3,7 +3,9 @@ import { cloneDeep } from 'lodash'
 import {
   COMPARE_OPERATOR_TYPE,
   EngineLiveEventStateCollection,
+  EngineVariableData,
   SET_OPERATOR_TYPE,
+  VARIABLE_SCOPE,
   VARIABLE_TYPE,
   VariableCompare,
   VariableSet
@@ -157,4 +159,52 @@ export const applyVariableSets = (
   })
 
   return newState
+}
+
+/**
+ * Resets the variables scoped to a scene back to their initial values.
+ *
+ * `VARIABLE_SCOPE.SCENE` means exactly one thing, per `DESIGN.md` §11: the variable
+ * returns to its initial value when the player **enters** `scopeId`. It is per-scene
+ * scratch state — a counter for how many things have been tried in this room, a flag
+ * for something noticed here — and the whole value of it is that an author does not
+ * have to remember to reset it on every way in.
+ *
+ * Entering a scene is a `JUMP` and nothing else: a `Path` joins two events inside
+ * one scene, so a jump is the only thing that crosses a boundary. That is why this
+ * is called from one place rather than defensively from several.
+ *
+ * **Absent scope means WORLD**, so a variable written before this existed is
+ * untouched, and a world that never scopes anything gets the same object back.
+ *
+ * Scope changes lifetime, not namespace. Titles stay globally unique whatever the
+ * scope, because template expressions resolve a variable **by title** — two
+ * scene-scoped variables sharing one would be ambiguous, with whichever the map saw
+ * last winning.
+ */
+export const resetSceneScopedVariables = (
+  state: EngineLiveEventStateCollection,
+  variables: EngineVariableData[],
+  sceneId?: string
+): EngineLiveEventStateCollection => {
+  if (!sceneId) return state
+
+  const scoped = variables.filter(
+    (variable) =>
+      variable.scope === VARIABLE_SCOPE.SCENE &&
+      variable.scopeId === sceneId &&
+      // a variable the save has never seen is not reset into existence; the state
+      // is reconciled against the world elsewhere and this must not fight it
+      state[variable.id] !== undefined
+  )
+
+  if (scoped.length === 0) return state
+
+  const next = cloneDeep(state)
+
+  scoped.forEach((variable) => {
+    next[variable.id] = { ...next[variable.id], value: variable.initialValue }
+  })
+
+  return next
 }

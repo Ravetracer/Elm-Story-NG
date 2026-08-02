@@ -36,7 +36,8 @@ import {
   ObjectCondition,
   Path,
   Recipe,
-  WorldObject
+  WorldObject,
+  VARIABLE_SCOPE
 } from '../data/types'
 import {
   EngineBookmarkData,
@@ -2358,6 +2359,48 @@ export class LibraryDatabase extends Dexie {
         }
       } else {
         throw new Error('Unable to save variable type. Missing ID.')
+      }
+    })
+  }
+
+  /**
+   * How long a variable keeps its value.
+   *
+   * `scopeId` is cleared for a WORLD-scoped variable rather than left behind: a
+   * stale scene would resurrect the old scope the moment SCENE was chosen again,
+   * and `resetSceneScopedVariables` matches on `scopeId`, so a leftover one is a
+   * reset waiting to fire in a scene the author has stopped thinking about.
+   *
+   * Both fields are optional and unindexed, so this needed no migration — and
+   * absent `scope` means WORLD, which is what every variable written before 0.8.0
+   * has.
+   */
+  public async saveVariableScope(
+    variableId: ElementId,
+    scope: VARIABLE_SCOPE,
+    scopeId: ElementId | undefined
+  ) {
+    await this.transaction('rw', this.variables, async () => {
+      if (variableId) {
+        const component = await this.getElement(
+          LIBRARY_TABLE.VARIABLES,
+          variableId
+        )
+
+        if (component) {
+          await this.variables.update(variableId, {
+            ...component,
+            scope,
+            scopeId: scope === VARIABLE_SCOPE.SCENE ? scopeId : undefined,
+            updated: Date.now()
+          })
+        } else {
+          throw new Error(
+            'Unable to save variable scope. Variable missing.'
+          )
+        }
+      } else {
+        throw new Error('Unable to save variable scope. Missing variable ID.')
       }
     })
   }

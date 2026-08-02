@@ -21,12 +21,15 @@ import {
 
 import {
   applyVariableSets,
+  resetSceneScopedVariables,
   variableCompareHolds
 } from '../../engine/src/lib/state'
 
 import {
   COMPARE_OPERATOR_TYPE,
   ENGINE_LIVE_EVENT_MESSAGE_TYPE,
+  EngineVariableData,
+  VARIABLE_SCOPE,
   EngineObjectData,
   EngineRecipeData,
   INVENTORY_LOCATION_KEY,
@@ -890,6 +893,113 @@ describe('stacked presentation', () => {
 
     expect(displayTitle(plain, 4)).toBe('Rock')
     expect(displayAssetId(plain, 4)).toBeUndefined()
+  })
+})
+
+describe('scene-scoped variables', () => {
+  const variable = (
+    id: string,
+    overrides: Partial<EngineVariableData> = {}
+  ): EngineVariableData => ({
+    id,
+    initialValue: '0',
+    title: id,
+    type: VARIABLE_TYPE.NUMBER,
+    worldId: 'world-1',
+    ...overrides
+  })
+
+  const state = (id: string, value: string) => ({
+    [id]: {
+      title: id,
+      type: VARIABLE_TYPE.NUMBER,
+      value,
+      worldId: 'world-1'
+    }
+  })
+
+  it('resets a variable scoped to the scene being entered', () => {
+    const next = resetSceneScopedVariables(
+      state('tries', '3'),
+      [variable('tries', { scope: VARIABLE_SCOPE.SCENE, scopeId: KITCHEN })],
+      KITCHEN
+    )
+
+    expect(next.tries.value).toBe('0')
+  })
+
+  it('leaves a variable scoped to a different scene alone', () => {
+    const next = resetSceneScopedVariables(
+      state('tries', '3'),
+      [variable('tries', { scope: VARIABLE_SCOPE.SCENE, scopeId: STUDY })],
+      KITCHEN
+    )
+
+    expect(next.tries.value).toBe('3')
+  })
+
+  it('leaves world-scoped variables alone, scoped or absent', () => {
+    const explicit = resetSceneScopedVariables(
+      state('gold', '9'),
+      [variable('gold', { scope: VARIABLE_SCOPE.WORLD, scopeId: KITCHEN })],
+      KITCHEN
+    )
+
+    // absent scope means WORLD, which is what every variable written before this
+    // existed has
+    const absent = resetSceneScopedVariables(
+      state('gold', '9'),
+      [variable('gold')],
+      KITCHEN
+    )
+
+    expect(explicit.gold.value).toBe('9')
+    expect(absent.gold.value).toBe('9')
+  })
+
+  it('hands back the same object when nothing is scoped here', () => {
+    // identity, not just equality: the caller writes this straight onto a live
+    // event, and a fresh object every jump would be a needless write
+    const given = state('gold', '9')
+
+    expect(resetSceneScopedVariables(given, [variable('gold')], KITCHEN)).toBe(
+      given
+    )
+  })
+
+  it('does nothing without a scene, which is every non-jump', () => {
+    const given = state('tries', '3')
+
+    expect(
+      resetSceneScopedVariables(
+        given,
+        [variable('tries', { scope: VARIABLE_SCOPE.SCENE, scopeId: KITCHEN })],
+        undefined
+      )
+    ).toBe(given)
+  })
+
+  it('does not resurrect a variable the save has never seen', () => {
+    // the state is reconciled against the world elsewhere; this must not fight it
+    const next = resetSceneScopedVariables(
+      {},
+      [variable('tries', { scope: VARIABLE_SCOPE.SCENE, scopeId: KITCHEN })],
+      KITCHEN
+    )
+
+    expect(next.tries).toBeUndefined()
+  })
+
+  it('does not mutate the state it is given', () => {
+    const given = state('tries', '3')
+
+    resetSceneScopedVariables(
+      given,
+      [variable('tries', { scope: VARIABLE_SCOPE.SCENE, scopeId: KITCHEN })],
+      KITCHEN
+    )
+
+    expect(given.tries.value).toBe('3')
   })
 })
 

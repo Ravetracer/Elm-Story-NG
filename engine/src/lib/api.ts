@@ -41,7 +41,11 @@ import {
   DEFAULT_ENGINE_SETTINGS_KEY,
   INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY
 } from '../lib'
-import { applyVariableSets, variableCompareHolds } from './state'
+import {
+  applyVariableSets,
+  resetSceneScopedVariables,
+  variableCompareHolds
+} from './state'
 import {
   objectCompareHolds,
   pruneDeltas,
@@ -766,6 +770,47 @@ export const processEffectsByRoute = async (
     state,
     effects.map((effect) => effect.set)
   )
+}
+
+/**
+ * Resets the scene-scoped variables of the scene being entered, if one is.
+ *
+ * "Entering a scene" is **the destination event sitting in a different scene from
+ * the one just left**, which is not the same as a `JUMP` live event and that
+ * mattered. `DESIGN.md` §11 said to reset on a JUMP, but a live event's type comes
+ * from the *destination event's* type — `ENGINE_LIVE_EVENT_TYPE[eventType]` — so a
+ * transition into another scene is typed CHOICE or INPUT like any other, and JUMP
+ * only appears when the destination is itself a jump element. Keying off the type
+ * reset nothing, ever. Found by playing it, not by reading it.
+ *
+ * Comparing scenes is also the more honest test: it says what the author means
+ * regardless of how the player got there, and a loopback inside one scene is
+ * correctly not an entry.
+ *
+ * The decision of *what* resets is `resetSceneScopedVariables`, which is pure and
+ * tested; this resolves the two events and fetches the variables.
+ */
+export const processSceneScopeOnEntry = async (
+  studioId: StudioId,
+  worldId: WorldId,
+  fromEventId: ElementId | undefined,
+  toEventId: ElementId,
+  state: EngineLiveEventStateCollection
+) => {
+  const libraryDatabase = new LibraryDatabase(studioId)
+
+  const [fromEvent, toEvent] = await Promise.all([
+    fromEventId ? libraryDatabase.events.get(fromEventId) : undefined,
+    libraryDatabase.events.get(toEventId)
+  ])
+
+  if (!toEvent?.sceneId || toEvent.sceneId === fromEvent?.sceneId) return state
+
+  const variables = await libraryDatabase.variables
+    .where({ worldId })
+    .toArray()
+
+  return resetSceneScopedVariables(state, variables, toEvent.sceneId)
 }
 
 export const getEvent = async (studioId: StudioId, eventId: ElementId) => {

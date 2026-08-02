@@ -23,6 +23,7 @@ import {
   getLiveEvent,
   getLiveEventInitial,
   processEffectsByRoute,
+  processSceneScopeOnEntry,
   saveBookmarkLiveEvent,
   saveLiveEvent,
   saveLiveEventDate,
@@ -118,17 +119,29 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
             id: nextLiveEventId,
             destination: destinationId,
             origin: originId,
-            state:
+            /*
+             * Scene-scoped variables reset on the way in, *after* the path's own
+             * effects rather than before: an effect on the jump's path is the
+             * author saying "this is true as we arrive", and resetting afterwards
+             * would throw it away. The reset is a no-op unless the destination is a
+             * scene the author actually scoped something to.
+             */
+            state: await processSceneScopeOnEntry(
+              studioId,
+              worldId,
+              data.destination,
+              destinationId,
               initialLiveEventFromRestart?.state ||
-              (pathId &&
-                (await processEffectsByRoute(
-                  studioId,
-                  pathId,
-                  state || liveEvent?.state || data.state
-                ))) ||
-              state || // TODO: handles input loopback
-              liveEvent?.state ||
-              data.state,
+                (pathId &&
+                  (await processEffectsByRoute(
+                    studioId,
+                    pathId,
+                    state || liveEvent?.state || data.state
+                  ))) ||
+                state || // TODO: handles input loopback
+                liveEvent?.state ||
+                data.state
+            ),
             /*
              * Object deltas are carried forward the way variable state is, or the
              * inventory would empty itself on the next choice — every live event

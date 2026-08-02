@@ -488,10 +488,19 @@ export enum VARIABLE_SCOPE {
 ```
 
 **`SCENE` means exactly one thing: the variable resets to its initial value when
-the player enters that scene.** Per-scene scratch state, reset by the engine on a
-`JUMP` live event. That is the only semantic being reserved, stated so nobody has
-to guess later; the enum takes another member without a migration if section 6
-wants character or event scope.
+the player enters that scene.** Per-scene scratch state. That is the only semantic
+being reserved, stated so nobody has to guess later; the enum takes another member
+without a migration if section 6 wants character or event scope.
+
+**Corrected while building it: "entering a scene" is not a `JUMP` live event.**
+This section originally said the reset fires on one. It cannot: a live event's type
+comes from the *destination event's* type — `ENGINE_LIVE_EVENT_TYPE[eventType]` —
+so crossing into another scene is typed CHOICE or INPUT like anything else, and
+JUMP appears only when the destination is itself a jump element. Keyed off the
+type, the reset never fired at all, which is what playing it showed. The test is
+that the destination event's `sceneId` differs from the one just left, which also
+says what the author means regardless of how the player got there and correctly
+treats a loopback inside one scene as not an entry.
 
 **Scope changes lifetime, not namespace.** Variable titles stay globally unique
 regardless of scope, because `EventSnippet` and the engine both build their

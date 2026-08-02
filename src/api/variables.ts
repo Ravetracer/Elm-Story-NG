@@ -6,7 +6,8 @@ import {
   WorldId,
   StudioId,
   Variable,
-  VARIABLE_TYPE
+  VARIABLE_TYPE,
+  VARIABLE_SCOPE
 } from '../data/types'
 
 export async function getVariable(studioId: StudioId, variableId: ElementId) {
@@ -77,6 +78,23 @@ export async function saveVariableType(
     return await new LibraryDatabase(studioId).saveVariableType(
       variableId,
       type
+    )
+  } catch (error) {
+    throw error
+  }
+}
+
+export async function saveVariableScope(
+  studioId: StudioId,
+  variableId: ElementId,
+  scope: VARIABLE_SCOPE,
+  scopeId: ElementId | undefined
+) {
+  try {
+    return await new LibraryDatabase(studioId).saveVariableScope(
+      variableId,
+      scope,
+      scopeId
     )
   } catch (error) {
     throw error

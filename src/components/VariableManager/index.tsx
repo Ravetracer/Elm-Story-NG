@@ -21,6 +21,7 @@ import { VariableRow } from '../WorldVariables'
 import addVariable from './addVariable'
 import confirmRemoveVariable from './confirmRemoveVariable'
 import VariableDescription from './VariableDescription'
+import VariableScope from './VariableScope'
 import VariableHelp from './VariableHelp'
 import VariableUsageSummary from './VariableUsageSummary'
 
@@ -175,6 +176,14 @@ const VariableManager: React.FC<{
                   studioId={studioId}
                   variableId={variable.id}
                   description={variable.description}
+                />
+
+                <VariableScope
+                  studioId={studioId}
+                  worldId={worldId}
+                  variableId={variable.id}
+                  scope={variable.scope}
+                  scopeId={variable.scopeId}
                 />
 
                 <div className={styles.usageLine}>
