@@ -1091,7 +1091,26 @@ silently. The imported world is also renamed to `<title> (Imported)`.
   `chown root` + `chmod 4755` on `node_modules/electron/dist/chrome-sandbox`.
 - `.gitattributes` had a global `text eol=lf` with almost no binary
   declarations, which corrupted a `.mp3` and a `.ttf`. Declare new binary
-  extensions there.
+  extensions there. **Fixing the declaration does not repair the files it already
+  damaged**, and that is how both bundled fonts stayed broken until the first PWA
+  was exported: `Inter.ttf` was 22 bytes short and `RobotoSerif.ttf` 674, so
+  Chromium rejected them with `OTS parsing error: gvar: table overruns end of
+  file` and every exported storyworld rendered in a system fallback with the
+  Serif/Sans setting inert. CRLF collapsing is not reversible — the files had to be
+  re-downloaded. Verify a font by walking its table directory and checking every
+  `offset + length` against the file size; the editor never loads these, so nothing
+  in the app tells you.
+- **`roboto-serif-ofl.txt` carried Literata's copyright**, and `base.less`
+  declared a third `@font-face` for `Literata.ttf`, a file that has never existed
+  at any commit. Upstream appears to have set the storyteller in Literata and moved
+  to Roboto Serif without finishing. The dead rule is gone and the licence is the
+  right one; these ship inside every exported PWA, so it was an attribution bug
+  rather than a tidiness one.
+- **Two exports served on one origin will lie to you.** An exported PWA registers
+  a service worker that precaches the CSS and the fonts, so serving a second export
+  from the same `host:port` hands you the *first* one's assets — which presented
+  here as a font fix that had not worked and a deleted `@font-face` that was still
+  registered. Use a fresh port per export, or unregister the worker first.
 
 ## A shell gotcha that wasted real time
 

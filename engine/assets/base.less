@@ -1,11 +1,23 @@
 @import './variables.less';
 @import './engine.less';
 
-@font-face {
-  font-family: Literata;
-  src: url(../fonts/Literata.ttf);
-}
-
+/*
+ * The two faces the storyteller offers, as `html[data-font]` SERIF and SANS in
+ * variables.less. Both are variable fonts, so one file covers every weight.
+ *
+ * A third rule declared `Literata` against `../fonts/Literata.ttf` and is gone.
+ * That file has never existed at any commit in this repository, and no stylesheet
+ * ever asked for the family — so it registered a font in permanent error and
+ * bought nothing. The licence shipped as `roboto-serif-ofl.txt` was Literata's,
+ * which is the likely history: upstream set this in Literata and moved to Roboto
+ * Serif without finishing the change. Shipping Literata to make the rule true
+ * would have put ~900KB into every exported storyworld for a face nothing selects.
+ *
+ * `Roboto Serif` is the name this rule *assigns*; the file's own family name is
+ * "Roboto Serif 20pt", after the default instance of its `opsz` axis. The
+ * descriptor wins, which is why the stylesheets can keep asking for the shorter
+ * name. Verified in an exported PWA rather than assumed.
+ */
 @font-face {
   font-family: 'Roboto Serif';
   src: url(../fonts/RobotoSerif.ttf);
