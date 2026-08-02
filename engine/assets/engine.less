@@ -146,6 +146,20 @@
     text-align: center;
   }
 
+  // The storyworld's cover, above the studio line rather than behind the whole
+  // card. A full-bleed background would put type over an image the author did not
+  // choose for legibility, and there is no scrim to guarantee contrast; a banner
+  // keeps the title on the background colour where it is always readable.
+  #title-card-cover {
+    width: calc(100% - 4rem);
+    max-width: 48rem;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto 2.4rem auto;
+    border-radius: 0.4rem;
+    background-size: cover;
+    background-position: center;
+  }
+
   #title-card-studio-title {
     font-size: 1.2rem;
     margin-bottom: 2.4rem;

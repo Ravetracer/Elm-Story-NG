@@ -1,7 +1,8 @@
 import React, { useContext, useState } from 'react'
 import { useHistory } from 'react-router-dom'
 
-import { StudioId, World } from '../../data/types'
+import { StudioId, World, WorldId } from '../../data/types'
+import { ASSET_KIND } from '../../lib/assets'
 
 import {
   AppContext,
@@ -13,6 +14,7 @@ import { Card, Button, Tooltip } from 'antd'
 import { FormOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 
 import { SaveWorldModal, RemoveWorldModal } from '../Modal'
+import AssetThumbnail from '../AssetThumbnail'
 
 import styles from './styles.module.less'
 
@@ -115,6 +117,21 @@ const WorldBox: React.FC<WorldBoxProps> = ({ studioId, world }) => {
 
         {world && (
           <>
+            {/*
+              Only when there is one. A placeholder box on every card would make an
+              authored cover the exception rather than the addition, and the card
+              already reads fine without it.
+            */}
+            {world.coverAssetId && (
+              <AssetThumbnail
+                studioId={studioId}
+                worldId={world.id as WorldId}
+                kind={ASSET_KIND.WORLD_COVER}
+                assetId={world.coverAssetId}
+                className={styles.cover}
+              />
+            )}
+
             <Meta
               title="designed by"
               description={world.designer}

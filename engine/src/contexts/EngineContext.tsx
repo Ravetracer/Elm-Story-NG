@@ -21,6 +21,7 @@ interface EngineState {
   isComposer: boolean
   worldInfo?: {
     copyright?: string
+    coverAssetId?: string
     description?: string
     designer: string
     id: WorldId
@@ -93,6 +94,7 @@ type EngineActionType =
       type: ENGINE_ACTION_TYPE.SET_WORLD_INFO
       gameInfo?: {
         copyright?: string
+        coverAssetId?: string
         description?: string
         designer: string
         id: WorldId

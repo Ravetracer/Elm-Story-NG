@@ -151,6 +151,7 @@ const Installer: React.FC<{
           studioId, // games in editor database does not have studioId
           ...pick(worldInfo, [
             'copyright',
+            'coverAssetId',
             'description',
             'designer',
             'id',
@@ -164,6 +165,7 @@ const Installer: React.FC<{
         }
       : pick(worldInfo, [
           'copyright',
+          'coverAssetId',
           'description',
           'designer',
           'id',

@@ -28,7 +28,7 @@ import {
 
 import { AssetsModal } from '../Modal'
 import confirmRemoveObject from './confirmRemoveObject'
-import ObjectThumbnail from './ObjectThumbnail'
+import AssetThumbnail from '../AssetThumbnail'
 import PlacementConditions from './PlacementConditions'
 import VariableEffectRows from './VariableEffectRows'
 import { describeRecipe } from './Recipes'
@@ -205,9 +205,10 @@ const Objects: React.FC<{
               }`}
               onClick={() => onSelectObject(object.id)}
             >
-              <ObjectThumbnail
+              <AssetThumbnail
                 studioId={studioId}
                 worldId={worldId}
+                kind={ASSET_KIND.OBJECT_IMAGE}
                 assetId={object.assetId}
               />
 

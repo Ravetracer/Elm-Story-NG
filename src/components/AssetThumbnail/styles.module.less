@@ -1,0 +1,19 @@
+// The default is a list row's square. A caller wanting another shape passes a
+// className; the background rules below are what every shape needs.
+.thumbnail {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 3px;
+  background-color: hsla(0, 0%, 100%, 0.05);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnailEmpty {
+  font-size: 14px !important;
+  opacity: 0.3;
+}

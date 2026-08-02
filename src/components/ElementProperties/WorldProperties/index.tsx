@@ -9,6 +9,7 @@ import { useWorld, useScenes } from '../../../hooks'
 import { Button, Collapse, Form, Input } from 'antd'
 
 import ElementTitle from '../ElementTitle'
+import WorldCover from './WorldCover'
 import JumpTo from '../../JumpTo'
 
 import parentStyles from '../styles.module.less'
@@ -155,6 +156,16 @@ const WorldProperties: React.FC<{
                     )}
                   </div>
                 )}
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['cover-panel']}>
+              <Collapse.Panel header="Cover" key="cover-panel">
+                <div className={parentStyles.content}>
+                  <WorldCover studioId={studioId} world={world} />
+                </div>
               </Collapse.Panel>
             </Collapse>
           </div>

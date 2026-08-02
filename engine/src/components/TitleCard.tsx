@@ -7,6 +7,7 @@ import {
   SettingsContext,
   SETTINGS_ACTION_TYPE
 } from '../contexts/SettingsContext'
+import useImageLoader from '../lib/hooks/useImageLoader'
 import useInterfaceText from '../lib/hooks/useInterfaceText'
 import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
 
@@ -20,6 +21,22 @@ const TitleCard: React.FC<{
     { engine } = useContext(EngineContext)
 
   const t = useInterfaceText()
+
+  /*
+   * The storyworld's cover, behind the title. `eventId` is a correlation token
+   * rather than a real event — the composer's GET_ASSET_URL handler resolves on the
+   * asset's id and echoes this back so the requesting hook recognises its own reply
+   * — so the world's id serves, there being exactly one cover.
+   *
+   * The placeholder is empty: a world with no cover shows no cover, which is how
+   * every storyworld written before this keeps the title card it has.
+   */
+  const coverData = useImageLoader({
+    eventId: engine.worldInfo?.id ?? '',
+    assetId: engine.worldInfo?.coverAssetId,
+    placeholder: '',
+    ext: 'webp'
+  })
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
@@ -37,6 +54,13 @@ const TitleCard: React.FC<{
     <>
       {engine.worldInfo && autoBookmark.data && (
         <div id="title-card">
+          {coverData && (
+            <div
+              id="title-card-cover"
+              style={{ backgroundImage: `url(${coverData})` }}
+            />
+          )}
+
           <div id="title-card-studio-title">
             {engine.worldInfo.studioTitle} presents...
           </div>

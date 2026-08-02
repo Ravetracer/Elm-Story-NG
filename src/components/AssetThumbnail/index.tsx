@@ -11,7 +11,7 @@ import { PictureOutlined } from '@ant-design/icons'
 import styles from './styles.module.less'
 
 /**
- * An object's image in the list, so a list of names is also a list of things.
+ * Any image asset, as a thumbnail.
  *
  * The URL comes from the `GET_ASSET` IPC rather than a filesystem path: user
  * assets live under `userData`, outside the bundle, and the renderer is served over
@@ -22,12 +22,21 @@ import styles from './styles.module.less'
  *
  * A placeholder is shown rather than nothing when there is no image or the file has
  * gone missing, so a row keeps its shape and an absent image is visible as absent.
+ *
+ * **The extension comes from the kind**, which is what makes this reusable: every
+ * read site asks for the extension its kind was processed as, and the picker filters
+ * on the same, so an asset offered for a slot is always fetchable in it. Getting
+ * that wrong fetches a file that comes back missing — the failure `CLAUDE.md`
+ * records for character masks.
  */
-const ObjectThumbnail: React.FC<{
+const AssetThumbnail: React.FC<{
   studioId: StudioId
   worldId: WorldId
+  kind: ASSET_KIND
   assetId?: string
-}> = ({ studioId, worldId, assetId }) => {
+  /** sizing is the caller's, since a 32px row and a 16:9 cover want different boxes */
+  className?: string
+}> = ({ studioId, worldId, kind, assetId, className }) => {
   const [quotedUrl, setQuotedUrl] = useState<string | undefined>(undefined)
 
   useEffect(() => {
@@ -42,16 +51,11 @@ const ObjectThumbnail: React.FC<{
 
       const [url, exists]: [string, boolean] = await ipcRenderer.invoke(
         WINDOW_EVENT_TYPE.GET_ASSET,
-        {
-          studioId,
-          worldId,
-          id: assetId,
-          ext: ASSET_KINDS[ASSET_KIND.OBJECT_IMAGE].ext
-        }
+        { studioId, worldId, id: assetId, ext: ASSET_KINDS[kind].ext }
       )
 
-      // the list re-renders as objects are edited, so a resolved URL can arrive
-      // after this row has moved on to another asset
+      // a list re-renders as its rows are edited, so a resolved URL can arrive
+      // after this one has moved on to another asset
       if (!stale) setQuotedUrl(exists ? url : undefined)
     }
 
@@ -60,20 +64,18 @@ const ObjectThumbnail: React.FC<{
     return () => {
       stale = true
     }
-  }, [studioId, worldId, assetId])
+  }, [studioId, worldId, kind, assetId])
 
   return (
     <div
-      className={styles.thumbnail}
-      style={
-        quotedUrl ? { backgroundImage: `url(${quotedUrl})` } : undefined
-      }
+      className={`${styles.thumbnail} ${className ?? ''}`}
+      style={quotedUrl ? { backgroundImage: `url(${quotedUrl})` } : undefined}
     >
       {!quotedUrl && <PictureOutlined className={styles.thumbnailEmpty} />}
     </div>
   )
 }
 
-ObjectThumbnail.displayName = 'ObjectThumbnail'
+AssetThumbnail.displayName = 'AssetThumbnail'
 
-export default ObjectThumbnail
+export default AssetThumbnail

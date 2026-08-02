@@ -5,3 +5,23 @@
     }
   }
 }
+
+// The cover slot: the image, then what can be done to it. A 16:9 box rather than
+// the thumbnail's default square, because that is the crop the pipeline produces
+// and a square preview would misrepresent what a player sees.
+.cover {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coverThumbnail {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.coverActions {
+  display: flex;
+  justify-content: space-between;
+}
