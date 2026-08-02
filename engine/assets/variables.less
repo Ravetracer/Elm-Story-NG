@@ -60,6 +60,12 @@ html[data-theme='BOOK'] {
   --event-character-reference-text-color: hsl(0, 0%, 70%);
   --event-character-reference-past-text-color: hsl(0, 0%, 70%);
 
+  // An object's description, printed into the stream when the player selects it.
+  // 7.1:1 against BOOK's white, which is WCAG AAA for body text; the CONSOLE value
+  // below is 7.5:1 against its near-black. Both are set apart from the prose by the
+  // italic and the citation rule as well, so nothing here rests on colour alone.
+  --event-object-inspection-text-color: hsl(0, 0%, 33%);
+
   --event-choice-top-border-color: hsla(262, 100%, 60%, 0.4);
   --event-past-text-color: hsl(0, 0%, 70%);
   --event-past-choice-text-color: hsl(0, 0%, 60%);
@@ -93,4 +99,8 @@ html[data-theme='CONSOLE'] {
   --event-past-text-color: hsl(0, 0%, 30%);
   --event-past-choice-text-color: hsl(0, 0%, 30%);
   --event-past-choice-result-text-color: hsl(0, 0%, 70%);
+
+  // 7.5:1 against this theme's near-black background — WCAG AAA for body text.
+  // See the BOOK value above for why it is a token rather than one grey.
+  --event-object-inspection-text-color: hsl(0, 0%, 62%);
 }

@@ -3,8 +3,10 @@ import { useCallback, useContext } from 'react'
 import {
   ElementId,
   EngineLiveEventData,
+  EngineLiveEventMessageData,
   EngineObjectDeltaCollection,
-  EngineLiveEventStateCollection
+  EngineLiveEventStateCollection,
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE
 } from '../../types'
 
 import {
@@ -55,6 +57,12 @@ import { EngineContext, ENGINE_ACTION_TYPE } from '../../contexts/EngineContext'
  * The decisions all live in `lib/objects.ts` and are tested there. This hook is
  * only the persistence and the dispatch.
  */
+/** An author's sentence about what just happened, or nothing if they wrote none. */
+const narration = (
+  text?: string
+): EngineLiveEventMessageData | undefined =>
+  text ? { text, type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.NARRATION } : undefined
+
 const useObjectActions = (liveEvent: EngineLiveEventData) => {
   const { engine, engineDispatch } = useContext(EngineContext)
 
@@ -90,7 +98,7 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
     }: {
       objects?: EngineObjectDeltaCollection
       state?: EngineLiveEventStateCollection
-      message?: string
+      message?: EngineLiveEventMessageData
       collapseRepeat?: boolean
     }) => {
       if (!studioId || !worldId) return
@@ -150,7 +158,7 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
       await apply({
         objects: result.deltas,
         state: result.state,
-        message: result.message
+        message: narration(result.message)
       })
 
       return result
@@ -181,9 +189,9 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
           ? {
               objects: result.deltas,
               state: result.state,
-              message: result.message
+              message: narration(result.message)
             }
-          : { message: result.message, collapseRepeat: true }
+          : { message: narration(result.message), collapseRepeat: true }
       )
 
       return result
@@ -191,7 +199,30 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
     [studioId, worldId, snapshot, apply]
   )
 
-  return { takeObject, combineObjects }
+  /**
+   * Prints what an object is into the stream.
+   *
+   * Changes nothing — `DESIGN.md` §5's "inspecting an object changes no state"
+   * still holds, and this writes no delta and no variable. What it does write is a
+   * line, because the rail shows icons and a title on hover: the description has
+   * nowhere else to go, and the stream is where the player is reading anyway.
+   *
+   * Collapsed against an identical line directly above it, so deselecting a tile
+   * and selecting it again does not print the same paragraph twice.
+   */
+  const inspectObject = useCallback(
+    async (description?: string) =>
+      await apply({
+        message: {
+          text: description ?? '',
+          type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.INSPECTION
+        },
+        collapseRepeat: true
+      }),
+    [apply]
+  )
+
+  return { takeObject, combineObjects, inspectObject }
 }
 
 export default useObjectActions

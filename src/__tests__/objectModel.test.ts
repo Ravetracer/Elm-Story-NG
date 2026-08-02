@@ -25,6 +25,7 @@ import {
 
 import {
   COMPARE_OPERATOR_TYPE,
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE,
   EngineObjectData,
   EngineRecipeData,
   INVENTORY_LOCATION_KEY,
@@ -892,54 +893,68 @@ describe('stacked presentation', () => {
 })
 
 describe('what the storyteller has already said on this event', () => {
+  const narration = (text: string) => ({
+      text,
+      type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.NARRATION
+    }),
+    inspection = (text: string) => ({
+      text,
+      type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.INSPECTION
+    })
+
+  const refusal = narration(DEFAULT_NO_RECIPE_MESSAGE)
+
   it('starts the list when the event has said nothing', () => {
-    expect(appendMessage(undefined, 'You take the book.')).toEqual([
-      'You take the book.'
+    expect(appendMessage(undefined, narration('You take the book.'))).toEqual([
+      narration('You take the book.')
     ])
   })
 
   it('keeps what was said before, in order', () => {
-    expect(appendMessage(['First.'], 'Second.')).toEqual(['First.', 'Second.'])
+    expect(
+      appendMessage([narration('First.')], narration('Second.'))
+    ).toEqual([narration('First.'), narration('Second.')])
   })
 
   it('says nothing about an action with no message', () => {
-    expect(appendMessage(['First.'], undefined)).toBeUndefined()
-    expect(appendMessage(['First.'], '')).toBeUndefined()
+    expect(appendMessage([narration('First.')], undefined)).toBeUndefined()
+    expect(appendMessage([narration('First.')], narration(''))).toBeUndefined()
   })
 
   it('repeats an identical take message, because that is two things taken', () => {
-    expect(appendMessage(['You pocket a coin.'], 'You pocket a coin.')).toEqual([
-      'You pocket a coin.',
-      'You pocket a coin.'
-    ])
+    expect(
+      appendMessage([narration('You pocket a coin.')], narration('You pocket a coin.'))
+    ).toEqual([narration('You pocket a coin.'), narration('You pocket a coin.')])
   })
 
   it('collapses a refusal against the same refusal directly above it', () => {
-    expect(
-      appendMessage([DEFAULT_NO_RECIPE_MESSAGE], DEFAULT_NO_RECIPE_MESSAGE, true)
-    ).toBeUndefined()
+    expect(appendMessage([refusal], refusal, true)).toBeUndefined()
   })
 
   it('collapses only against the last thing said, not anything earlier', () => {
     expect(
-      appendMessage(
-        [DEFAULT_NO_RECIPE_MESSAGE, 'You take the book.'],
-        DEFAULT_NO_RECIPE_MESSAGE,
-        true
-      )
-    ).toEqual([
-      DEFAULT_NO_RECIPE_MESSAGE,
-      'You take the book.',
-      DEFAULT_NO_RECIPE_MESSAGE
-    ])
+      appendMessage([refusal, narration('You take the book.')], refusal, true)
+    ).toEqual([refusal, narration('You take the book.'), refusal])
+  })
+
+  it('does not collapse an inspection against a narration that reads the same', () => {
+    expect(
+      appendMessage([narration('An old brass key.')], inspection('An old brass key.'), true)
+    ).toEqual([narration('An old brass key.'), inspection('An old brass key.')])
+  })
+
+  it('collapses an inspection against the same inspection, for a tile clicked twice', () => {
+    expect(
+      appendMessage([inspection('An old brass key.')], inspection('An old brass key.'), true)
+    ).toBeUndefined()
   })
 
   it('does not mutate the list it was given', () => {
-    const said = ['First.']
+    const said = [narration('First.')]
 
-    appendMessage(said, 'Second.')
+    appendMessage(said, narration('Second.'))
 
-    expect(said).toEqual(['First.'])
+    expect(said).toEqual([narration('First.')])
   })
 })
 

@@ -854,8 +854,25 @@ builds against them.
   event from the copy it was clicked on, whose `objects` predate the take, so
   picking something up and then clicking the upper of two identical choices threw
   it away. What an action says now goes in `EngineLiveEventData.messages` and is
-  rendered by `Event` between the prose and the choices. The object panel says
+  rendered by `Event` between the prose and the choices. The object rail says
   nothing about outcomes at all.
+- **The object rail is icon-only, so three things it does not show have to go
+  somewhere.** The name is a tooltip, positioned from JavaScript because the rail's
+  groups scroll and a CSS `::after` is clipped by that scroll container. The
+  description is printed into the stream as an `INSPECTION` message when a tile is
+  selected — the one thing inspecting writes, against `DESIGN.md`'s "changes no
+  state", which is still true of deltas and variables. And an object with no image
+  falls back to its initials, because with no title beside it the tile would
+  otherwise be an empty square.
+- **The three kinds of paragraph in the reading column are told apart without
+  colour.** Prose is upright, a narration is italic, an inspection is italic *and*
+  set aside with a citation rule — WCAG 1.4.1, since a reader who cannot separate
+  the grey still has the indent. `--event-object-inspection-text-color` is a theme
+  token for the same reason `--event-past-text-color` is: the grey that is AAA on
+  CONSOLE's near-black is below AA on BOOK's white. **A token added to
+  `variables.less` must also be added to `engine-editor.less`**, which declares its
+  own set rather than inheriting a `html[data-theme]` block — miss it and the text
+  silently falls back to the prose colour in the composer preview only.
 - **Object quantity is derived, never stored as a census.** What a location holds
   is the authored placement (with its gate re-evaluated *now*) plus a signed
   delta, clamped at zero. That is what makes a gate turning true mid-play reveal an

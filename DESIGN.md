@@ -290,7 +290,12 @@ Neither original reason survives:
   all written onto one after the fact. What a bookmark must do is hand back the
   state the player earned, which is what reading the current record does.
 
-Inspecting an object still changes no state and writes nothing.
+Inspecting an object still changes no state — no delta, no variable — but it does
+now write a line. Once the rail shows icons with the name on hover, the
+description has nowhere else to go, so selecting a tile prints it into the stream
+as an `INSPECTION` message. The two kinds are styled apart: a narration is a beat
+of the story and reads in the story's colour, an inspection is set aside like a
+citation. Neither is distinguished from the prose by colour alone.
 
 `ENGINE_LIVE_EVENT_TYPE` is persisted in `EngineLiveEventData.type`, and the two
 members remain declared but unwritten — `transport/types/0.8.0.ts` names them, and

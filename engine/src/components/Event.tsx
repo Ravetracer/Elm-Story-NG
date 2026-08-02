@@ -15,6 +15,7 @@ import {
   EngineEventData,
   EnginePathData,
   EngineLiveEventResult,
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE,
   ENGINE_MOTION
 } from '../types'
 import {
@@ -226,20 +227,37 @@ export const Event: React.FC<{
             </div>
 
             {/*
-              What taking and combining objects said, in the order it was said,
-              between the prose and the choices — which is where the player is
-              looking and is why these are not in the object panel. The panel is
-              chrome; this is the story. See useObjectActions for why the beat is a
-              line on this event rather than a live event of its own.
+              What the objects said, in the order it was said, between the prose
+              and the choices — which is where the player is looking and is why
+              these are not in the object rail. The rail is chrome; this is the
+              story. See useObjectActions for why the beat is a line on this event
+              rather than a live event of its own.
+
+              The two kinds are styled apart because they are read differently: a
+              narration is a beat of the story, an inspection is the player turning
+              something over in their hands.
             */}
-            {liveEvent.messages?.map((message, index) => (
-              <p
-                className="event-content-object-message"
-                key={`${liveEvent.id}-message-${index}`}
-              >
-                {message}
-              </p>
-            ))}
+            {liveEvent.messages?.map((message, index) => {
+              const inspection =
+                message.type === ENGINE_LIVE_EVENT_MESSAGE_TYPE.INSPECTION
+
+              return (
+                <p
+                  className={
+                    inspection
+                      ? 'event-content-object-inspection'
+                      : 'event-content-object-message'
+                  }
+                  key={`${liveEvent.id}-message-${index}`}
+                  // an inspection is ancillary to the story rather than part of
+                  // it, which `note` says and `<cite>` — the title of a work —
+                  // would not
+                  role={inspection ? 'note' : undefined}
+                >
+                  {message.text}
+                </p>
+              )
+            })}
 
             {event.type === EVENT_TYPE.CHOICE && (
               <EventChoices

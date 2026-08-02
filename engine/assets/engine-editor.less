@@ -53,6 +53,10 @@
   --event-character-mask-border: 0.1rem solid hsl(0, 0%, 20%);
   --event-character-reference-text-color: hsl(0, 0%, 50%);
   --event-character-reference-past-text-color: hsl(0, 0%, 30%);
+  // The composer preview declares its own token set rather than inheriting a
+  // `html[data-theme]` block, so a token added to variables.less and not here
+  // resolves to nothing and the text silently falls back to the prose colour.
+  --event-object-inspection-text-color: hsl(0, 0%, 62%);
   --event-past-text-color: hsl(0, 0%, 30%);
   --event-past-choice-background-color: none;
   --event-past-choice-border: 1px solid hsl(0, 0%, 10%);

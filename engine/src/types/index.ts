@@ -663,19 +663,39 @@ export type EngineLiveEventResult = {
   value: string
 }
 
+/**
+ * Why a line of object text is in the stream, which is the only thing that
+ * distinguishes them once they are sitting in the same column as the prose.
+ *
+ * `NARRATION` is what an action *did* — a take message, a recipe's message, or the
+ * refusal when nothing combines. `INSPECTION` is what an object *is*, printed when
+ * the player selects it in the rail. They are styled apart because they are read
+ * differently: narration is a beat of the story, an inspection is the player
+ * turning something over in their hands.
+ */
+export enum ENGINE_LIVE_EVENT_MESSAGE_TYPE {
+  NARRATION = 'NARRATION',
+  INSPECTION = 'INSPECTION'
+}
+
+export interface EngineLiveEventMessageData {
+  text: string
+  type: ENGINE_LIVE_EVENT_MESSAGE_TYPE
+}
+
 export interface EngineLiveEventData {
   // TODO: may need to change to tuple with id and type
   id: ElementId // or INITIAL_ENGINE_EVENT_ORIGIN_KEY
   destination: ElementId // passage ID
   /**
-   * What taking, using and combining objects said, in the order it was said, on
-   * the event where it happened. Rendered by `Event` beneath the prose, which is
-   * what puts an object beat in the reading flow rather than in the panel.
+   * What the objects said, in the order they said it, on the event where it
+   * happened. Rendered by `Event` beneath the prose, which is what puts an object
+   * beat in the reading flow rather than in the panel.
    *
    * Absent on every live event written before this shipped, and absent means
    * "nothing was said" — so an old save needs no migration, like `objects`.
    */
-  messages?: string[]
+  messages?: EngineLiveEventMessageData[]
   next?: ElementId // event ID
   /**
    * Absent on every live event written before 0.8.0, and absent means "no

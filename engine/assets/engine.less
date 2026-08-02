@@ -277,34 +277,41 @@
   }
 
   // Zero unless ObjectPanel is showing, which is what keeps a storyworld with no
-  // objects laid out exactly as it was before 0.8.0. The panel sets it on #runtime
+  // objects laid out exactly as it was before 0.8.0. The rail sets it on #runtime
   // while mounted; see the note in ObjectPanel.tsx for why it is not a :has().
-  --object-panel-height: 0rem;
+  --object-panel-width: 0rem;
 
   #live-event-stream {
     position: absolute;
     top: var(--title-bar-height);
-    bottom: var(--object-panel-height);
+    bottom: 0;
+    left: 0;
+    right: var(--object-panel-width);
     overflow-y: auto;
     overflow-x: hidden;
-    width: 100%;
     margin: 0 auto;
   }
 
+  // The rail of objects, beside the stream rather than docked under it. Its width
+  // comes from --object-panel-width, which ObjectPanel sets from OBJECT_RAIL_WIDTH,
+  // so the rail and the room the stream gives up cannot disagree.
+  //
+  // `overflow: visible` rather than auto: the tooltip has to overhang the left
+  // edge, and a scroll container clips it. The scrolling is on the groups inside.
   #object-panel {
     position: absolute;
+    top: var(--title-bar-height);
     bottom: 0;
-    left: 0;
     right: 0;
-    height: var(--object-panel-height);
+    width: var(--object-panel-width);
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
-    padding: 0.8rem 1.4rem;
-    overflow-y: auto;
+    gap: 0.6rem;
+    padding: 0.8rem;
+    overflow: visible;
     background: var(--background-color);
-    border-top: 0.1rem solid var(--renderer-border-color);
-    // The panel is chrome rather than prose, so it does not inherit the reading
+    border-left: 0.1rem solid var(--renderer-border-color);
+    // The rail is chrome rather than prose, so it does not inherit the reading
     // measure the event content uses.
     font-size: 1.3rem;
   }
@@ -312,11 +319,13 @@
   .object-panel-groups {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.8rem;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .object-panel-group-title {
-    margin: 0 0 0.2rem 0;
+    margin: 0 0 0.4rem 0;
     font-size: 1.1rem;
     font-weight: normal;
     letter-spacing: 0.08rem;
@@ -330,17 +339,23 @@
     font-style: italic;
   }
 
+  // Two 4.4rem tiles across a 12rem rail, less its 0.8rem padding either side.
+  // Fixed columns rather than wrapping flex, so a row holding one tile still lines
+  // up with the row above it.
   .object-panel-tiles {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, 4.4rem);
     gap: 0.4rem;
   }
 
   .object-tile {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.8rem;
+    position: relative;
+    display: grid;
+    place-items: center;
+    // square, at the minimum interaction height, so a finger can hit it
+    width: 4.4rem;
+    height: 4.4rem;
+    padding: 0.3rem;
     background: transparent;
     color: inherit;
     border: 0.1rem solid var(--renderer-border-color);
@@ -348,10 +363,9 @@
     cursor: pointer;
     font-size: inherit;
     font-family: inherit;
-    // a tap target that a finger can hit; the tiles wrap rather than shrink
-    min-height: 3.2rem;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       border-color: var(--link-color);
     }
 
@@ -362,34 +376,61 @@
   }
 
   .object-tile-image {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     border-radius: 0.2rem;
   }
 
+  // Stands in for an object whose author set no image. With no title beside it the
+  // tile would otherwise be an empty square.
+  .object-tile-initials {
+    font-size: 1.4rem;
+    letter-spacing: 0.05rem;
+    opacity: 0.7;
+  }
+
   .object-tile-count {
-    opacity: 0.6;
-  }
-
-  .object-panel-detail {
-    margin: 0;
-  }
-
-  .object-panel-description {
-    margin: 0;
+    position: absolute;
+    right: 0.1rem;
+    bottom: 0.1rem;
+    padding: 0 0.3rem;
+    border-radius: 0.3rem;
+    background: var(--background-color);
+    font-size: 1rem;
     opacity: 0.85;
   }
 
+  // The hovered tile's name. Positioned from JavaScript, because the groups above
+  // scroll and this has to overhang the rail to be readable at all.
+  .object-tile-tooltip {
+    position: absolute;
+    right: calc(100% + 0.6rem);
+    transform: translateY(-50%);
+    padding: 0.3rem 0.6rem;
+    max-width: 24rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: var(--background-color);
+    border: 0.1rem solid var(--renderer-border-color);
+    border-radius: 0.3rem;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  // Stacked rather than wrapped: three buttons side by side do not fit 12rem, and
+  // wrapping them gives a ragged block that moves as the selection changes.
   .object-panel-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.4rem;
     margin-top: auto;
   }
 
   .object-panel-btn {
-    padding: 0.4rem 1rem;
+    padding: 0.4rem 0.6rem;
     min-height: 3.2rem;
     background: transparent;
     color: var(--link-color);
@@ -640,13 +681,53 @@
     }
 
     // What taking or combining an object said, rendered between the prose and the
-    // choices. It inherits the reading column's measure, size and leading from the
-    // `p` rules above on purpose — it is narration, not chrome — and carries the
-    // italic and the 0.85 the object panel's notice used to, so the one thing that
-    // changed for a reader is where the sentence appears.
-    .event-content-object-message {
+    // choices. Both kinds inherit the reading column's measure, size and leading
+    // from the `p` rules above on purpose — they are read, not operated.
+    //
+    // Both are italic, so **neither is distinguished from the prose by colour
+    // alone** — WCAG 1.4.1, and the reason the grey below is not carrying that
+    // job on its own. They differ from each other by value rather than by hue,
+    // which is what makes them separable under every form of colour blindness:
+    // there is no hue to confuse. Measured against the near-black background,
+    // the inspection grey is 7.5:1 and the narration 13.4:1, so both clear
+    // WCAG AAA for body text.
+    //
+    // The narration is a beat of the story and stays in the story's own colour.
+    // An inspection is the player turning something over in their hands rather
+    // than the world moving, so it steps back.
+    // Both carry a top margin, which the prose paragraphs do not need: the last
+    // paragraph of the event content is the last child of its own container, so
+    // `:last-child` above zeroes its bottom margin, and a message following it as a
+    // sibling would otherwise sit flush against it. Adjacent messages collapse
+    // these against each other, so a run of them keeps the single line rhythm.
+    .event-content-object-message,
+    .event-content-object-inspection {
+      margin-top: 1.4rem;
       font-style: italic;
+    }
+
+    .event-content-object-message {
       opacity: 0.85;
+    }
+
+    // Set aside like a citation: indented, with a rule down its left edge. That is
+    // a *structural* cue rather than a colour one, which is what makes it hold up
+    // for a reader who cannot separate the grey from the prose — and it is also
+    // what separates an inspection from a narration, since both are italic.
+    //
+    // The rule is `currentColor` so it follows the token above into either theme
+    // rather than needing a second one. The indent is 1.4rem against blockquote's
+    // 3rem, so an author's quotation still reads as the heavier mark of the two,
+    // and the rule takes the text colour where a blockquote's takes the accent.
+    //
+    // `<p role="note">`, not `<cite>`: cite means the title of a work, and a
+    // screen reader announces it as one. The citation here is a look, not a claim
+    // about what the text is.
+    .event-content-object-inspection {
+      color: var(--event-object-inspection-text-color);
+      margin-left: 1.4rem;
+      padding-left: 1.3rem;
+      border-left: 0.1rem solid currentColor;
     }
 
     .expression {

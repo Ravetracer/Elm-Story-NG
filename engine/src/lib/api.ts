@@ -33,7 +33,8 @@ import {
   ENGINE_MOTION,
   ENGINE_SIZE,
   EngineObjectConditionData,
-  EngineObjectDeltaCollection
+  EngineObjectDeltaCollection,
+  EngineLiveEventMessageData
 } from '../types'
 import {
   AUTO_ENGINE_BOOKMARK_KEY,
@@ -1017,7 +1018,7 @@ export const saveLiveEventObjectOutcome = async (
   }: {
     objects?: EngineObjectDeltaCollection
     state?: EngineLiveEventStateCollection
-    messages?: string[]
+    messages?: EngineLiveEventMessageData[]
   }
 ) => {
   try {

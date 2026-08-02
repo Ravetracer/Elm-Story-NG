@@ -313,6 +313,11 @@ skipped.
 1. **`Variable.scope`, `Path.notification` and `choicePresentation` are carried but
    unread.** Fields shipped in section 3 against sections 6 and 7; the engine does
    not act on any of them yet.
+2. **Whether the inspection's presentation should be a player setting.** It is a
+   theme token today, so a theme can change it but a player cannot. The engine
+   already carries `ENGINE_MOTION` as a player-facing accessibility setting, which
+   is the shape this would take. Undecided rather than rejected — the current
+   treatment does not rest on colour, so this is a preference rather than a gap.
 
 - [x] World objects
   - [x] placed on a scene, static or takeable
@@ -333,8 +338,12 @@ skipped.
   - [x] holds takeable objects from anywhere in the world
   - [x] objects combine inside the inventory
   - [x] objects combine with static objects in the current scene
-  - [ ] panel beside the event stream, centre of the storyteller, filling as the
-        world is played
+  - [x] panel beside the event stream, centre of the storyteller, filling as the
+        world is played — a 12rem rail inside the runtime column, HERE above
+        INVENTORY, icon tiles with the name on hover and the description printed
+        into the stream on select. An earlier `ObjectPanel` argued this made the
+        prose too narrow; that holds for two panes and not for a rail, which takes
+        the measure from about 81 characters a line to 69.
 - [x] Inventory conditions
   - [x] paths gated on holding an object, so a charged flashlight can open a dark
         corridor. Without this, objects are scenery: `Condition.compare` tests

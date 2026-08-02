@@ -2,6 +2,7 @@ import { cloneDeep } from 'lodash'
 
 import {
   ElementId,
+  EngineLiveEventMessageData,
   EngineLiveEventStateCollection,
   EngineObjectData,
   EngineObjectDeltaCollection,
@@ -527,23 +528,30 @@ export const take = (
  * clickable choices whose `objects` predated the take, so taking something and then
  * clicking the *upper* copy of a choice silently dropped it. See `TODO.md` §4.5.
  *
- * `collapseRepeat` is for refusals only. "Nothing happens." said four times because
- * the player pressed Use four times is noise, while two identical take messages are
- * two things genuinely picked up and both belong in the log.
+ * `collapseRepeat` is for refusals and inspections. "Nothing happens." said four
+ * times because the player pressed Use four times is noise, and so is the same
+ * description printed twice because a tile was deselected and selected again. Two
+ * identical *take* messages are two things genuinely picked up, and both belong in
+ * the log, which is why this is per call rather than always on.
+ *
+ * A repeat is only a repeat against the line directly above it, and only when both
+ * the text and the reason for it match — an inspection that happens to read the
+ * same as a take message is still a different beat.
  *
  * Returns `undefined` when there is nothing to add, so the caller can skip the
  * write rather than touching the record to store what it already holds.
  */
 export const appendMessage = (
-  messages: string[] | undefined,
-  message: string | undefined,
+  messages: EngineLiveEventMessageData[] | undefined,
+  message: EngineLiveEventMessageData | undefined,
   collapseRepeat = false
-): string[] | undefined => {
-  if (!message) return undefined
+): EngineLiveEventMessageData[] | undefined => {
+  if (!message?.text) return undefined
 
-  const current = messages ?? []
+  const current = messages ?? [],
+    last = current[current.length - 1]
 
-  if (collapseRepeat && current[current.length - 1] === message)
+  if (collapseRepeat && last?.text === message.text && last.type === message.type)
     return undefined
 
   return [...current, message]
