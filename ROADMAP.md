@@ -172,10 +172,11 @@ mid-change:
 
 1. The two documentation corrections above, and distraction-free mode. Hours, not
    days.
-2. ~~Reverse/rewind, then multiple bookmarks.~~ Rewind is refused on principle,
-   see above. Multiple bookmarks still exploit data that is already persisted, but
-   whether they are wanted at all is an open question for the same reason — a
-   reloadable save is a rewind with extra steps. `TODO.md` section 5 carries it.
+2. ~~Reverse/rewind, then multiple bookmarks.~~ Both settled, and neither is being
+   built. Rewind is refused on principle, see above. Multiple bookmarks fall to the
+   same reasoning — a reloadable save is a rewind with extra steps — and to the fact
+   that the automatic bookmark already resumes a playthrough with its inventory and
+   variables intact. `TODO.md` section 5, now obsolete, records the verification.
 3. Transitions, then custom backgrounds and colours. Extends existing machinery.
 4. Scene Map copy/paste and auto layout. Editor-only, no schema risk, but the id
    remapper deserves tests.

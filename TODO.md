@@ -401,36 +401,55 @@ Some ideas the developer had between the tasks are land here.
       **Per storyworld, with no language picker** — the prose cannot be switched at runtime, so a picker would put German
       chrome around English prose. An author writing in two languages writes two storyworlds.
 
-## 5. Save and load
+## 5. Save and load — OBSOLETE
 
-Deliberately after section 4, so the state snapshot already includes objects.
-Doing it earlier means building it twice. `EngineBookmarkData` already carries
-`id`, `title` and `liveEventId`, and a live event already carries a full state
-snapshot, so most of this is UI.
+*Nothing to do here. Kept rather than deleted because the numbering is referenced
+from `DESIGN.md` and `ROADMAP.md`, and because what was found while closing it is
+worth keeping — particularly the last paragraph, if multiple bookmarks are ever
+reconsidered.*
 
-**Open question, and it is the author's to answer, not a technical one.** Rewind
-is refused above because a decision the player has taken is final. **A reloadable
-save is a rewind with extra steps** — save before the fork, choose, reload, choose
-again — so "multiple bookmarks" as written is in tension with the principle that
-closed the rewind item. Three coherent positions, and the scope of this section
-differs sharply between them:
+**Resume only, and it already works.** Verified end to end in an exported
+PWA rather than reasoned about — played, took an object, moved a scene on, reloaded
+the page as a player closing the app, and pressed Continue. The scene, its choices,
+the carried object with its image, the whole visible stream and the take narration
+all came back.
 
-1. **Resume only.** One automatic bookmark that moves forward and is never chosen
-   from, so a player can close the app and come back without being able to
-   revisit a decision. **This is what the engine already does today** via
-   `AUTO_ENGINE_BOOKMARK_KEY`, which would make this section nearly empty — UI to
-   surface it, and nothing else.
-2. **Named saves, one slot per run.** Several worlds or several playthroughs in
-   parallel, each still forward-only; a save is overwritten as you play, not
-   accumulated. Keeps the principle and adds the convenience.
-3. **Full save slots.** The conventional feature, and an explicit decision that
-   reloading is allowed even though rewinding is not.
+The decision is the one the section was waiting on, and the reasoning that settled
+it is that **there was nothing to build**. One automatic bookmark per storyworld is
+rewritten on every live event, so the playhead is always current; the title card
+reads it and offers Continue instead of Start; and a live event carries the full
+variable state, the object deltas and the object messages, so resuming a live event
+resumes everything. Two repair paths already exist and needed no work:
 
-Not decided. Until it is, treat the checkboxes below as position 3's scope, which
-is the largest, and expect them to shrink.
+- `findLiveEventFromBookmarkWithExistingDestination` walks backwards when a bookmark
+  points at an event the author has since deleted.
+- `updateEngineDefaultWorldCollectionData` carries a save across an author's version
+  bump — it copies the bookmarked live event forward under the new version with
+  variables reconciled and deltas for deleted objects pruned, then repoints the
+  bookmark. Without it the `version` filter in `getRecentLiveEvents` would strand
+  every existing player on update.
 
-- [ ] Multiple storyworld bookmarks
-- [ ] Loading and saving a game state
+- [x] Loading and saving a game state — automatic, forward-only, verified
+- [ ] ~~Multiple storyworld bookmarks~~ — **decided against**
+
+**Why multiple bookmarks were dropped, and what it would cost to revisit.** A
+reloadable save is a rewind with extra steps, and rewind is refused on principle in
+"Not included" below. Named forward-only runs were designed as the compromise —
+several playthroughs in parallel, none of them rewindable — and dropped once it was
+clear the automatic save already covers the actual want.
+
+If it is ever revisited, the expensive part is **not** the bookmarks table, which
+already carries a `title` and already has an unused `getBookmarks`. It is that
+**the event stream is not assembled by walking the chain**. `getRecentLiveEvents`
+queries `[worldId+updated]` — the world's most recently updated live events — and
+slices around the current one; nothing reads `next` at all. Two runs in one world
+would therefore interleave in the stream, and it would look plausible while being
+wrong. Making them separate needs a `runId` on every live event and a filter in
+that query (optional and unindexed, so no migration — absent means the original
+run), and then it spreads: `getLiveEventInitial` returns one shared
+`___initial___<worldId>` event, so Restart inside a second run lands on the first
+run's beginning; a new run needs its own starting event cloned from it; and
+`resetWorld` wipes every live event for the world.
 
 ## 6. Features whose fields section 3 already migrated
 

@@ -838,6 +838,31 @@ resume before any play or fade. Diagnose it by reading
 alone is misleading. Note also that the preview's mute defaults to **on**
 (`devTools.muted`), which is a far more common reason for hearing nothing.
 
+## Resuming a storyworld
+
+A playthrough saves and resumes on its own, and there is deliberately no save/load
+feature — `TODO.md` section 5 is obsolete rather than pending. One bookmark per
+storyworld, `___auto___<worldId>`, is rewritten on **every** live event, and a live
+event carries the full variable state, the object deltas and the object messages,
+so resuming one resumes everything. The title card reads the bookmark and offers
+Continue instead of Start. Verified in an exported PWA, which is the only place it
+can be: the composer preview reinstalls on open.
+
+Two repair paths make it survive an author still working on the world, and both are
+easy to break by accident:
+
+- `findLiveEventFromBookmarkWithExistingDestination` walks backwards when a bookmark
+  points at an event that has since been deleted.
+- `updateEngineDefaultWorldCollectionData` carries a save across a **version bump**,
+  copying the bookmarked live event forward under the new version with variables
+  reconciled and deltas for deleted objects pruned. `getRecentLiveEvents` filters on
+  `version`, so without this every existing player's stream would vanish on update.
+
+**The stream is not assembled by walking the chain.** `getRecentLiveEvents` queries
+`[worldId+updated]` — the world's most recently updated live events — and slices
+around the current one; nothing reads `next` at all. Anything that puts two
+independent playthroughs in one world would see them interleave.
+
 ## The PWA export contract
 
 `src/main.ts` post-processes the built engine when exporting a storyworld. It is
