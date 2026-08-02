@@ -313,11 +313,18 @@ skipped.
 1. **`Variable.scope`, `Path.notification` and `choicePresentation` are carried but
    unread.** Fields shipped in section 3 against sections 6 and 7; the engine does
    not act on any of them yet.
-2. **Whether the inspection's presentation should be a player setting.** It is a
-   theme token today, so a theme can change it but a player cannot. The engine
-   already carries `ENGINE_MOTION` as a player-facing accessibility setting, which
-   is the shape this would take. Undecided rather than rejected — the current
-   treatment does not rest on colour, so this is a preference rather than a gap.
+**Decided against: a setting for how object text is presented.** It stays a theme
+token, changeable by a theme and not by a player. The question was raised as an
+accessibility one — whether a reader with a colour vision deficiency could
+separate an object's description from the prose — and the treatment answers it
+without a setting: prose is upright, a narration is italic, an inspection is
+italic *and* indented behind a citation rule, so **nothing rests on colour**
+(WCAG 1.4.1). The two greys differ in lightness rather than hue, which no form of
+colour blindness collapses, and both clear WCAG AAA for body text — measured
+against what the app paints, 7.48:1 for the inspection and 13.38:1 for the
+narration on CONSOLE, and 7.07:1 computed for BOOK. A setting would therefore be
+a preference rather than access, and the storyteller's Settings panel is not the
+place to spend that. Reopen it only if the floor moves, not for taste.
 
 - [x] World objects
   - [x] placed on a scene, static or takeable
