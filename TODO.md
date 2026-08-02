@@ -453,11 +453,27 @@ run's beginning; a new run needs its own starting event cloned from it; and
 
 ## 6. Features whose fields section 3 already migrated
 
-- [ ] Character relationship mapping
-      *(same shape as object recipes — a graph between entities. Build that
-      editing pattern once in section 4, use it again here.)*
-- [ ] Storyworld cover image
-- [ ] Scoped variables
+**Done.** All three were fields with no behaviour and no way to set them; none
+needed a migration, and the work was interface plus, for scope, the runtime
+semantics.
+
+- [x] Character relationship mapping — `components/RelationshipManager`, opened
+      from the storyworld outline's title bar. The same two-column shape as the
+      recipe editor, which is what `DESIGN.md` §10 asked for: a relationship is a
+      labelled edge between two entities that belongs to neither, exactly like a
+      recipe. **Editor-only** — never compiled into an exported storyworld — so the
+      panel says so, and points at the optional variable as the way to make one
+      matter in play. The hook reads both ends, because a relationship names a
+      character in `from` or `to` and reading one would show a character half its
+      own relationships.
+- [x] Storyworld cover image — set from a Cover panel in the storyworld's
+      properties, shown on the dashboard card and above the title in the engine.
+- [x] Scoped variables — `VARIABLE_SCOPE.SCENE` resets a variable to its initial
+      value on entering its scene, set from the variable manager.
+      **`DESIGN.md` §11 was wrong about the trigger** and is corrected there: a live
+      event's type comes from the destination event's type, so entering a scene is
+      not a `JUMP` live event and keying off one reset nothing. The test is that the
+      destination's `sceneId` differs from the one just left.
 
 ## 7. Presentation
 

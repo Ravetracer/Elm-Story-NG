@@ -8,6 +8,7 @@ import RemoveWorldModal from './RemoveWorldModal'
 import ExportWorldModal from './ExportWorldModal'
 import ImportJSONModal from './ImportJSONModal'
 import InterfaceTextModal from './InterfaceTextModal'
+import RelationshipsModal from './RelationshipsModal'
 import ObjectsModal from './ObjectsModal'
 import StoryworldMapModal from './StoryworldMapModal'
 import VariablesModal from './VariablesModal'
@@ -17,6 +18,7 @@ export {
   CharacterModal,
   InterfaceTextModal,
   ObjectsModal,
+  RelationshipsModal,
   StoryworldMapModal,
   VariablesModal,
   ESGModal,

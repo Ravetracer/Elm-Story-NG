@@ -399,6 +399,32 @@ Two more things worth knowing:
   keyboard also stands down inside a text field and while a text selection exists,
   so copying words out of an event preview still works.
 
+## What section 6 added, and the one trap in it
+
+Three features whose fields section 3 had already migrated, so all three were
+interface work with no schema cost.
+
+- **The storyworld cover** is `World.coverAssetId`, set from the Cover panel in the
+  storyworld's properties and shown on the dashboard card and above the title in the
+  engine. `AssetThumbnail` is the shared component behind every image preview; it
+  takes the **kind** and reads the extension from it, which is what keeps a
+  thumbnail fetchable — asking for the wrong extension returns a file that comes
+  back missing.
+- **`VARIABLE_SCOPE.SCENE` resets a variable to its initial value on entry to its
+  scene**, and **"entering a scene" is not a `JUMP` live event** whatever
+  `DESIGN.md` §11 originally said. A live event's type comes from the *destination
+  event's* type, so crossing a scene boundary is typed CHOICE or INPUT like anything
+  else and JUMP appears only when the destination is a jump element; keyed off the
+  type, the reset never fired. The test is that the destination event's `sceneId`
+  differs from the one just left, which is also right for a loopback — same scene,
+  no reset. The reset runs *after* the path's effects, since an effect on the way in
+  is the author saying "this is true as we arrive".
+- **Character relationships are editor-only.** No engine table, no `format.ts`
+  entry, nothing at runtime — the manager says so on screen, because an author would
+  otherwise reasonably expect adding one to change play. What must reach the engine
+  goes through the optional `variableId`. They do ride the transport, so an
+  export/import round trip keeps them.
+
 ## Interface text
 
 Every word the storyteller says that an author did not write — 43 of them, from the

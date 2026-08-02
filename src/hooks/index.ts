@@ -4,6 +4,9 @@ import useCharacters, {
   useCharacter,
   useCharacterEvents
 } from './useCharacters'
+import useCharacterRelationships, {
+  useCharacterRelationshipsByCharacter
+} from './useCharacterRelationships'
 import useStudios, { useStudio } from './useStudios'
 import useWorlds, { useWorld } from './useWorlds'
 import useFolders, { useFolder } from './useFolders'
@@ -41,6 +44,8 @@ export {
   useDebouncedResizeObserver,
   useCharacters,
   useCharacter,
+  useCharacterRelationships,
+  useCharacterRelationshipsByCharacter,
   useCharacterEvents,
   useStudios,
   useStudio,

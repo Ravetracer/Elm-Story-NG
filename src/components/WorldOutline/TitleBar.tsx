@@ -18,6 +18,7 @@ import {
   NodeIndexOutlined,
   PictureOutlined,
   PlusOutlined,
+  ShareAltOutlined,
   TranslationOutlined
 } from '@ant-design/icons'
 
@@ -25,6 +26,7 @@ import {
   AssetsModal,
   InterfaceTextModal,
   ObjectsModal,
+  RelationshipsModal,
   StoryworldMapModal
 } from '../Modal'
 
@@ -47,7 +49,8 @@ const TitleBar: React.FC<{
   const [assetsModalVisible, setAssetsModalVisible] = useState(false),
     [mapModalVisible, setMapModalVisible] = useState(false),
     [objectsModalVisible, setObjectsModalVisible] = useState(false),
-    [interfaceTextModalVisible, setInterfaceTextModalVisible] = useState(false)
+    [interfaceTextModalVisible, setInterfaceTextModalVisible] = useState(false),
+    [relationshipsModalVisible, setRelationshipsModalVisible] = useState(false)
 
   /**
    * Opening a scene from the map is the same selection the outline makes when a
@@ -107,6 +110,14 @@ const TitleBar: React.FC<{
         subject={world.title}
         visible={interfaceTextModalVisible}
         onCancel={() => setInterfaceTextModalVisible(false)}
+      />
+
+      <RelationshipsModal
+        studioId={studioId}
+        worldId={world.id as WorldId}
+        subject={world.title}
+        visible={relationshipsModalVisible}
+        onCancel={() => setRelationshipsModalVisible(false)}
       />
 
       <div className={styles.TitleBar}>
@@ -176,10 +187,28 @@ const TitleBar: React.FC<{
           </Tooltip>
 
           {/*
-            A fifth tool costs nothing here. The action row was given a line of
-            its own precisely so buttons could be added without the arithmetic
-            that used to reserve room for exactly four.
+            Extra tools cost nothing here: the action row was given a line of its
+            own precisely so buttons could be added without the arithmetic that
+            used to reserve room for exactly four.
+
+            Relationships are world-scoped, so they belong beside the other
+            managers rather than in the Characters panel — a relationship relates
+            two characters and belongs to neither, which is the same reason it is
+            a table rather than a field.
           */}
+          <Tooltip
+            title="Character Relationships..."
+            placement="bottom"
+            mouseEnterDelay={1}
+          >
+            <Button
+              type="link"
+              onClick={() => setRelationshipsModalVisible(true)}
+            >
+              <ShareAltOutlined />
+            </Button>
+          </Tooltip>
+
           <Tooltip
             title="Interface Text..."
             placement="bottom"
