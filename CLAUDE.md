@@ -437,11 +437,24 @@ is added. It opens from **Interface Text** in the storyworld outline's title bar
   switched at runtime — it *is* the storyworld — so a picker would put German chrome
   around English prose. An author writing in two languages writes two storyworlds.
 - **A new field has to be named in five places, and four of them fail silently.**
-  `compiler/format.ts` (what the engine can see), `Installer`'s `pick` — *both*
-  branches — (what the runtime receives), `getWorldDataJSON` (export),
+  `compiler/format.ts` (what the engine can see), `Installer`'s
+  `WORLD_INFO_FIELDS` (what the runtime receives), `getWorldDataJSON` (export),
   `importWorldData` (import), and `transport/schema/0.8.0.json`, whose `_` block is
   `additionalProperties: false`. Only the last one produces an error, and it produces
   it at the worst moment: the app refuses to import its own export.
+- **`worldInfo` has two writers and one field list, and the list is why.** They were
+  two hand-written `pick`s, and the install path did not even use one — it dispatched
+  the **raw world record**. A world row in the editor's database carries no
+  `studioId` of its own, since the id is in the database name, so a re-install over a
+  *playing* preview replaced a good `worldInfo` with one whose `studioId` was
+  `undefined`. Nothing threw: `LiveEventStream` destructures `studioId` off
+  `worldInfo` and guards on it before refilling the stream, so the stream was simply
+  never refilled and the preview went on rendering live events whose records
+  `resetWorld` had just deleted. That is the blank storyteller behind **RESET, and
+  the "On world start jump has changed." notice, appearing to do nothing** — and it
+  could not recover, because `lastDispatched` then compared an unchanged world and
+  declined to send the repaired copy. Restarting the app was the only way out. The
+  branch runs only when `engine.playing`, which is why first open was always fine.
 - **`Installer` reads the world through a live query now, and that was a fix.** It
   ran once on `[engine.installed]`, which is right for a PWA and wrong in the
   composer, where the author is editing the record it read. Translating a word and
