@@ -17,10 +17,16 @@ import {
   LeftOutlined,
   NodeIndexOutlined,
   PictureOutlined,
-  PlusOutlined
+  PlusOutlined,
+  TranslationOutlined
 } from '@ant-design/icons'
 
-import { AssetsModal, ObjectsModal, StoryworldMapModal } from '../Modal'
+import {
+  AssetsModal,
+  InterfaceTextModal,
+  ObjectsModal,
+  StoryworldMapModal
+} from '../Modal'
 
 import api from '../../api'
 import ExportWorldMenu from './ExportWorldMenu'
@@ -40,7 +46,8 @@ const TitleBar: React.FC<{
 
   const [assetsModalVisible, setAssetsModalVisible] = useState(false),
     [mapModalVisible, setMapModalVisible] = useState(false),
-    [objectsModalVisible, setObjectsModalVisible] = useState(false)
+    [objectsModalVisible, setObjectsModalVisible] = useState(false),
+    [interfaceTextModalVisible, setInterfaceTextModalVisible] = useState(false)
 
   /**
    * Opening a scene from the map is the same selection the outline makes when a
@@ -92,6 +99,14 @@ const TitleBar: React.FC<{
         subject={world.title}
         visible={objectsModalVisible}
         onCancel={() => setObjectsModalVisible(false)}
+      />
+
+      <InterfaceTextModal
+        studioId={studioId}
+        worldId={world.id as WorldId}
+        subject={world.title}
+        visible={interfaceTextModalVisible}
+        onCancel={() => setInterfaceTextModalVisible(false)}
       />
 
       <div className={styles.TitleBar}>
@@ -157,6 +172,24 @@ const TitleBar: React.FC<{
           >
             <Button type="link" onClick={() => setAssetsModalVisible(true)}>
               <PictureOutlined />
+            </Button>
+          </Tooltip>
+
+          {/*
+            A fifth tool costs nothing here. The action row was given a line of
+            its own precisely so buttons could be added without the arithmetic
+            that used to reserve room for exactly four.
+          */}
+          <Tooltip
+            title="Interface Text..."
+            placement="bottom"
+            mouseEnterDelay={1}
+          >
+            <Button
+              type="link"
+              onClick={() => setInterfaceTextModalVisible(true)}
+            >
+              <TranslationOutlined />
             </Button>
           </Tooltip>
 

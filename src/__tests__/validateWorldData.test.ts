@@ -308,6 +308,38 @@ describe('0.8.0 schema', () => {
     expect(valid).toBe(true)
   })
 
+  it('accepts a storyworld that has translated the interface', () => {
+    // `_` is additionalProperties: false, so a field the schema does not name is
+    // one the app writes on export and then refuses to import
+    const [valid, errors] = validateWorldData(
+      world080({
+        _: {
+          ...world({}, '0.8.0')._,
+          interfaceText: { OBJECT_TAKE: 'nehmen', OBJECT_INVENTORY: 'Inventar' }
+        }
+      }),
+      '0.8.0'
+    )
+
+    expect(errors).toEqual([])
+    expect(valid).toBe(true)
+  })
+
+  it('refuses a translation that is not a string', () => {
+    const [valid] = validateWorldData(
+      world080({
+        _: {
+          ...world({}, '0.8.0')._,
+          // the schema is what rejects this, not the type
+          interfaceText: { OBJECT_TAKE: 3 as unknown as string }
+        }
+      }),
+      '0.8.0'
+    )
+
+    expect(valid).toBe(false)
+  })
+
   it('refuses a property the new collections do not name', () => {
     // the additionalProperties guard has to hold for the new collections too, or
     // the app exports objects it then refuses to import

@@ -25,6 +25,9 @@ import {
 } from '../lib/objects'
 
 import useObjectActions from '../lib/hooks/useObjectActions'
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
 import useImageLoader from '../lib/hooks/useImageLoader'
 
 import { EngineContext } from '../contexts/EngineContext'
@@ -147,6 +150,8 @@ const initialsOf = (title: string): string =>
 
 const ObjectPanel: React.FC = () => {
   const { engine } = useContext(EngineContext)
+
+  const t = useInterfaceText()
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
@@ -394,12 +399,15 @@ const ObjectPanel: React.FC = () => {
       style={{ top: engine.isComposer ? 0 : '' }}
     >
       <div className="object-panel-groups">
-        {here.length > 0 && group('Here', here)}
+        {here.length > 0 &&
+          group(t(INTERFACE_TEXT_KEY.OBJECT_HERE), here)}
 
-        {group('Inventory', carrying)}
+        {group(t(INTERFACE_TEXT_KEY.OBJECT_INVENTORY), carrying)}
 
         {carrying.length === 0 && (
-          <p className="object-panel-empty">Nothing yet.</p>
+          <p className="object-panel-empty">
+            {t(INTERFACE_TEXT_KEY.OBJECT_EMPTY)}
+          </p>
         )}
       </div>
 
@@ -410,7 +418,7 @@ const ObjectPanel: React.FC = () => {
           onClick={onTake}
           type="button"
         >
-          Take
+          {t(INTERFACE_TEXT_KEY.OBJECT_TAKE)}
         </button>
 
         <button
@@ -424,7 +432,11 @@ const ObjectPanel: React.FC = () => {
           onClick={onCombine}
           type="button"
         >
-          {selection.length > 1 ? 'Combine' : 'Use'}
+          {t(
+            selection.length > 1
+              ? INTERFACE_TEXT_KEY.OBJECT_COMBINE
+              : INTERFACE_TEXT_KEY.OBJECT_USE
+          )}
         </button>
 
         {selection.length > 0 && (
@@ -433,7 +445,7 @@ const ObjectPanel: React.FC = () => {
             onClick={() => setSelection([])}
             type="button"
           >
-            Clear
+            {t(INTERFACE_TEXT_KEY.OBJECT_CLEAR)}
           </button>
         )}
       </div>

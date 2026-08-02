@@ -363,8 +363,13 @@ Some ideas the developer had between the tasks are land here.
 - [x] Put the messages for combining and taking objects into the story stream instead of the inventory. It's better
       for the reading flow if it appears there. Done as `EngineLiveEventData.messages`; see section 4 and `DESIGN.md`
       §5. It also removed a data-loss bug the appended live event had introduced.
-- [ ] Add options for translating some hardcoded strings. E.g. I would like to write "nehmen" instead of "take" for
+- [x] Add options for translating some hardcoded strings. E.g. I would like to write "nehmen" instead of "take" for
       objects in German games. All strings should be translatable too which are now hardcoded English and visible to the player.
+      Done as `World.interfaceText`, a sparse map keyed by `INTERFACE_TEXT_KEY`, edited from **Interface Text** in the
+      storyworld outline's title bar. All 43 player-facing strings are covered; `engine/src/lib/interfaceText.ts` is the one
+      declaration of the keys, their English and their grouping, and the editor's manager is generated from it.
+      **Per storyworld, with no language picker** — the prose cannot be switched at runtime, so a picker would put German
+      chrome around English prose. An author writing in two languages writes two storyworlds.
 
 ## 5. Save and load
 

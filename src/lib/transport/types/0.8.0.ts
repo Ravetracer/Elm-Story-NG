@@ -104,6 +104,7 @@ export interface RootData {
   designer: string
   engine: string
   id: string
+  interfaceText?: { [key: string]: string }
   jump: string | null
   objectNoRecipeMessage?: string
   schema: string
@@ -870,6 +871,7 @@ export interface EngineWorldData {
   designer: string
   engine: string
   id: WorldId
+  interfaceText?: { [key: string]: string }
   jump: ElementId
   objectNoRecipeMessage?: string
   schema: string

@@ -1,15 +1,21 @@
 import React, { useContext } from 'react'
 
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
 import { EngineContext, ENGINE_ACTION_TYPE } from '../contexts/EngineContext'
 
 const ErrorNotification: React.FC = () => {
+  const t = useInterfaceText()
+
   const { engine, engineDispatch } = useContext(EngineContext)
 
   return (
     <>
       {engine.errorNotification.showing && (
         <div id="engine-error-notification">
-          <span>{engine.errorNotification.message || 'Unknown error.'}</span>
+          <span>{engine.errorNotification.message ||
+              t(INTERFACE_TEXT_KEY.NOTIFICATION_UNKNOWN_ERROR)}</span>
 
           <div style={{ textAlign: 'right' }}>
             <button

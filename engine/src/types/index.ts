@@ -1,3 +1,5 @@
+import type { InterfaceTextOverrides } from '../lib/interfaceText'
+
 export enum ELEMENT_TYPE {
   CHARACTER = 'CHARACTER',
   CHOICE = 'CHOICE',
@@ -811,6 +813,13 @@ export interface EngineWorldData {
   designer: string
   engine: string
   id: WorldId
+  /**
+   * The author's words for the engine's own, sparse and keyed by
+   * `INTERFACE_TEXT_KEY`. Absent means the storyteller speaks English. See
+   * `lib/interfaceText.ts` for why this is per storyworld rather than a language
+   * the player picks.
+   */
+  interfaceText?: InterfaceTextOverrides
   jump: ElementId
   /** the storyteller's fallback when two objects have no matching recipe */
   objectNoRecipeMessage?: string

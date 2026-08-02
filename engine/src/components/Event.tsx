@@ -23,6 +23,8 @@ import {
   ENGINE_LIVE_EVENT_LOOPBACK_RESULT_VALUE,
   ENGINE_EVENT_PASSTHROUGH_RESULT_VALUE
 } from '../lib'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
 import { NextLiveEventProcessor } from './LiveEvent'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../contexts/EngineContext'
@@ -46,9 +48,19 @@ export type PathProcessor = ({
   state?: EngineLiveEventStateCollection
 }) => Promise<void>
 
-// TODO: move to event
-// TODO: only used with EventInput?
-export function translateLiveEventResultValue(value: string) {
+/*
+ * Takes `t` rather than calling useInterfaceText itself: it is a function that
+ * returns JSX rather than a component, so it has no hook context of its own, and
+ * both call sites are components that already have one.
+ *
+ * Only STORY_OVER is translated. The other values are either an icon or the text
+ * the player themselves chose — a choice title, or their own typed input — and
+ * none of those are the engine's words to change.
+ */
+export function translateLiveEventResultValue(
+  value: string,
+  t: (key: INTERFACE_TEXT_KEY) => string
+) {
   let finalValue: JSX.Element
 
   switch (value) {
@@ -59,7 +71,7 @@ export function translateLiveEventResultValue(value: string) {
       finalValue = <>{PassthroughIcon}</>
       break
     case ENGINE_LIVE_EVENT_STORY_OVER_RESULT_VALUE:
-      finalValue = <>Restart</>
+      finalValue = <>{t(INTERFACE_TEXT_KEY.STREAM_RESTART)}</>
       break
     default:
       finalValue = <>{value}</>

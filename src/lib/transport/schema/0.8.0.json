@@ -36,6 +36,12 @@
         "id": {
           "type": "string"
         },
+        "interfaceText": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
         "jump": {
           "type": [
             "string",

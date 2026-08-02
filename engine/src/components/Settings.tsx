@@ -10,9 +10,14 @@ import {
   SETTINGS_ACTION_TYPE
 } from '../contexts/SettingsContext'
 
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
 import SettingsTitleBar from './SettingsTitleBar'
 
 const Settings: React.FC = () => {
+  const t = useInterfaceText()
+
   const { engine } = useContext(EngineContext),
     { settings, settingsDispatch } = useContext(SettingsContext)
 
@@ -126,10 +131,10 @@ const Settings: React.FC = () => {
 
         <div id="settings-content">
           <section>
-            <h1>Presentation</h1>
+            <h1>{t(INTERFACE_TEXT_KEY.SETTINGS_PRESENTATION)}</h1>
 
             <div>
-              <h2>Theme</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_THEME)}</h2>
               <p>
                 <a
                   className={
@@ -139,7 +144,7 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setTheme(ENGINE_THEME.CONSOLE)}
                 >
-                  Dark
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_THEME_DARK)}
                 </a>{' '}
                 <span>|</span>{' '}
                 <a
@@ -150,13 +155,13 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setTheme(ENGINE_THEME.BOOK)}
                 >
-                  Light
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_THEME_LIGHT)}
                 </a>
               </p>
             </div>
 
             <div>
-              <h2>Font</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_FONT)}</h2>
               <p>
                 <a
                   className={
@@ -164,7 +169,7 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setFont(ENGINE_FONT.SERIF)}
                 >
-                  Serif
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_FONT_SERIF)}
                 </a>{' '}
                 <span>|</span>{' '}
                 <a
@@ -173,13 +178,13 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setFont(ENGINE_FONT.SANS)}
                 >
-                  Sans
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_FONT_SANS)}
                 </a>
               </p>
             </div>
 
             <div>
-              <h2>Size</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_SIZE)}</h2>
               <p>
                 <a
                   className={
@@ -189,7 +194,7 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setSize(ENGINE_SIZE.DEFAULT)}
                 >
-                  Default
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_SIZE_DEFAULT)}
                 </a>{' '}
                 <span>|</span>{' '}
                 <a
@@ -198,13 +203,13 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setSize(ENGINE_SIZE.LARGE)}
                 >
-                  Large
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_SIZE_LARGE)}
                 </a>
               </p>
             </div>
 
             <div>
-              <h2>Motion</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_MOTION)}</h2>
               <p>
                 <a
                   className={
@@ -214,7 +219,7 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setMotion(ENGINE_MOTION.FULL)}
                 >
-                  Full
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_MOTION_FULL)}
                 </a>{' '}
                 <span>|</span>{' '}
                 <a
@@ -225,52 +230,52 @@ const Settings: React.FC = () => {
                   }
                   onClick={() => setMotion(ENGINE_MOTION.REDUCED)}
                 >
-                  Reduced
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_MOTION_REDUCED)}
                 </a>
               </p>
             </div>
           </section>
 
           <section>
-            <h1>Storyworld</h1>
+            <h1>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD)}</h1>
 
             <div>
-              <h2>Title</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_TITLE)}</h2>
               <p>{title}</p>
             </div>
 
             {description && (
               <div>
-                <h2>Description</h2>
+                <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_DESCRIPTION)}</h2>
                 <p>{description}</p>
               </div>
             )}
 
             <div>
-              <h2>Studio</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_STUDIO)}</h2>
               <p>{studioTitle}</p>
             </div>
 
             <div>
-              <h2>Designer</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_DESIGNER)}</h2>
               <p>{designer}</p>
             </div>
 
             <div>
-              <h2>Version</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_VERSION)}</h2>
               <p>{version}</p>
             </div>
 
             {copyright && (
               <div>
-                <h2>Copyright</h2>
+                <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_COPYRIGHT)}</h2>
                 <p>{copyright}</p>
               </div>
             )}
 
             {website && (
               <div>
-                <h2>Website</h2>
+                <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_WORLD_WEBSITE)}</h2>
                 <p>
                   <a href={website} target="_blank" rel="noreferrer">
                     {website}
@@ -287,7 +292,7 @@ const Settings: React.FC = () => {
             )}
 
             <div>
-              <h2>Tools</h2>
+              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_TOOLS)}</h2>
               <p>
                 <a
                   onClick={async () => {
@@ -297,7 +302,7 @@ const Settings: React.FC = () => {
                     }
                   }}
                 >
-                  Reset World
+                  {t(INTERFACE_TEXT_KEY.SETTINGS_RESET_WORLD)}
                 </a>
               </p>
             </div>

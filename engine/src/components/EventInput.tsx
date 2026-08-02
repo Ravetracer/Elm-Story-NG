@@ -20,6 +20,9 @@ import {
   EngineVariableData,
   ENGINE_MOTION
 } from '../types'
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
 import { PathProcessor, translateLiveEventResultValue } from './Event'
 
 import { EngineContext } from '../contexts/EngineContext'
@@ -35,6 +38,8 @@ const EventInput: React.FC<{
 }> = React.memo(({ event, liveEvent, onSubmitPath }) => {
   const { engine } = useContext(EngineContext),
     { settings } = useContext(SettingsContext)
+
+  const t = useInterfaceText()
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
@@ -131,9 +136,15 @@ const EventInput: React.FC<{
               id: input.id,
               value:
                 boolValue !== undefined
-                  ? boolValue === 'true'
-                    ? 'Yes'
-                    : 'No'
+                  ? // the answer is written into the save as the word that was
+                    // shown, which is what it has always been; translating the
+                    // button therefore translates what new saves record, and an
+                    // older save keeps the word it was played with
+                    t(
+                      boolValue === 'true'
+                        ? INTERFACE_TEXT_KEY.STREAM_INPUT_YES
+                        : INTERFACE_TEXT_KEY.STREAM_INPUT_NO
+                    )
                   : `${inputValue}`
             },
             path: foundOpenPath,
@@ -253,7 +264,7 @@ const EventInput: React.FC<{
                                   ? 'text'
                                   : 'number'
                               }
-                              placeholder="Response..."
+                              placeholder={t(INTERFACE_TEXT_KEY.STREAM_INPUT_PLACEHOLDER)}
                               onChange={(event) =>
                                 setInputValue(event.target.value)
                               }
@@ -299,7 +310,7 @@ const EventInput: React.FC<{
                         <span className="event-content-choice-icon">
                           &raquo;
                         </span>
-                        Yes
+                        {t(INTERFACE_TEXT_KEY.STREAM_INPUT_YES)}
                       </button>
                       <button
                         className="event-content-choice-boolean"
@@ -309,14 +320,16 @@ const EventInput: React.FC<{
                         <span className="event-content-choice-icon">
                           &raquo;
                         </span>
-                        No
+                        {t(INTERFACE_TEXT_KEY.STREAM_INPUT_NO)}
                       </button>
                     </div>
                   </div>
                 )}
 
                 {pathError && (
-                  <div className="engine-warning-message">Missing path.</div>
+                  <div className="engine-warning-message">
+                    {t(INTERFACE_TEXT_KEY.STREAM_MISSING_PATH)}
+                  </div>
                 )}
               </>
             )}
@@ -332,7 +345,7 @@ const EventInput: React.FC<{
         {liveEvent.result && (
           <div className="event-content-choice">
             <button disabled={true}>
-              {translateLiveEventResultValue(liveEvent.result.value)}
+              {translateLiveEventResultValue(liveEvent.result.value, t)}
             </button>
           </div>
         )}

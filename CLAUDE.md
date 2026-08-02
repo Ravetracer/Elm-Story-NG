@@ -399,6 +399,43 @@ Two more things worth knowing:
   keyboard also stands down inside a text field and while a text selection exists,
   so copying words out of an event preview still works.
 
+## Interface text
+
+Every word the storyteller says that an author did not write — 43 of them, from the
+object rail's "Take" to the settings panel's "Motion". `engine/src/lib/interfaceText.ts`
+is **the** declaration of the keys, their English and their grouping; the editor's
+`components/InterfaceTextManager` is generated from it and needs no edit when a key
+is added. It opens from **Interface Text** in the storyworld outline's title bar.
+
+- **It is per storyworld and there is no language picker.** The prose cannot be
+  switched at runtime — it *is* the storyworld — so a picker would put German chrome
+  around English prose. An author writing in two languages writes two storyworlds.
+- **A new field has to be named in five places, and four of them fail silently.**
+  `compiler/format.ts` (what the engine can see), `Installer`'s `pick` — *both*
+  branches — (what the runtime receives), `getWorldDataJSON` (export),
+  `importWorldData` (import), and `transport/schema/0.8.0.json`, whose `_` block is
+  `additionalProperties: false`. Only the last one produces an error, and it produces
+  it at the worst moment: the app refuses to import its own export.
+- **`Installer` reads the world through a live query now, and that was a fix.** It
+  ran once on `[engine.installed]`, which is right for a PWA and wrong in the
+  composer, where the author is editing the record it read. Translating a word and
+  watching the preview go on saying "Take" was the visible half; the storyworld
+  title, description and copyright in the settings panel had been equally stale
+  since before this. It dispatches only when the serialized info actually differs,
+  because Dexie re-runs a live query on any write to the table — including to a
+  different world — and does not compare what it hands back.
+- **Blank means "use the English", which is why `pruneInterfaceText` exists.** It is
+  called on save rather than on edit, and drops both blanks and overrides that merely
+  repeat the English, so clearing a field reverts the word *and* stops it being
+  exported. An empty map is stored as `undefined` rather than `{}`.
+- **`Yes` and `No` are also written into the save** as the answer the player gave,
+  which is what they have always been. Translating them translates what new saves
+  record; an older save keeps the word it was played with.
+- **Only the object rail and the stream are reachable from the composer preview.**
+  The title card, the settings panel and the update notifications render in an
+  exported PWA only, so those 29 strings are covered by the key-coverage test rather
+  than by eye.
+
 ## The storyworld map
 
 `components/StoryworldMap`, opened from the node button in the storyworld

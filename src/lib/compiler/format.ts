@@ -65,6 +65,7 @@ function format(worldData: WorldDataJSON): string {
         'designer',
         'engine',
         'id',
+        'interfaceText',
         'jump',
         'objectNoRecipeMessage',
         'schema',

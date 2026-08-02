@@ -546,6 +546,7 @@ export default (
             designer: _.designer,
             engine: _.engine,
             id: _.id,
+            interfaceText: _.interfaceText,
             jump: _.jump,
             objectNoRecipeMessage: _.objectNoRecipeMessage,
             tags: _.tags,

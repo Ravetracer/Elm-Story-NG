@@ -1,3 +1,5 @@
+import type { InterfaceTextOverrides } from '../../engine/src/lib/interfaceText'
+
 export enum PLATFORM_TYPE {
   WINDOWS = 'win32',
   MACOS = 'darwin',
@@ -207,6 +209,16 @@ export interface World extends Element {
   designer: string
   engine: string
   id?: WorldId
+  /**
+   * The author's words for the engine's own — "nehmen" for "Take" — sparse and
+   * keyed by `INTERFACE_TEXT_KEY`. Absent means the storyteller speaks English.
+   *
+   * Per storyworld rather than a language the player picks, because the prose
+   * cannot be switched at runtime: a picker would put German chrome around
+   * English prose. `engine/src/lib/interfaceText.ts` is the table of keys and
+   * defaults, and the only place either is declared.
+   */
+  interfaceText?: InterfaceTextOverrides
   jump: ElementId | null // Jump
   /**
    * What the storyteller says when two objects have no matching recipe. Silence

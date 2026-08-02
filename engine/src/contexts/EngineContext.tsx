@@ -3,6 +3,7 @@ import { cloneDeep } from 'lodash'
 import React, { createContext, useMemo, useReducer } from 'react'
 
 import { ElementId, EngineLiveEventData, WorldId, StudioId } from '../types'
+import type { InterfaceTextOverrides } from '../lib/interfaceText'
 
 interface EngineState {
   currentLiveEvent: ElementId | undefined
@@ -23,6 +24,13 @@ interface EngineState {
     description?: string
     designer: string
     id: WorldId
+    /**
+     * Carried on the context rather than read per component, because almost every
+     * component that renders a word needs it and a `useLiveQuery` apiece would be
+     * a database round trip per label. **`Installer`'s `pick` list has to name it**
+     * or it arrives undefined and every world silently speaks English.
+     */
+    interfaceText?: InterfaceTextOverrides
     studioId: StudioId
     studioTitle: string
     title: string
@@ -88,6 +96,7 @@ type EngineActionType =
         description?: string
         designer: string
         id: WorldId
+        interfaceText?: InterfaceTextOverrides
         studioId: StudioId
         studioTitle: string
         title: string

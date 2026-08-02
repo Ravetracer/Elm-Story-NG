@@ -27,6 +27,9 @@ import {
   EngineLiveEventResult,
   ENGINE_MOTION
 } from '../types'
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
 import { PathProcessor, translateLiveEventResultValue } from './Event'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../contexts/EngineContext'
@@ -60,6 +63,8 @@ const EventPassthroughChoice: React.FC<{
   ({ paths: routes, liveEvent: event, onSubmitPath, originId }) => {
     const { engine } = useContext(EngineContext),
       { settings } = useContext(SettingsContext)
+
+    const t = useInterfaceText()
 
     const { studioId, id: worldId } = engine.worldInfo ?? {}
 
@@ -183,7 +188,7 @@ const EventPassthroughChoice: React.FC<{
                 ) : engine.currentLiveEvent === event.id &&
                   !openPath &&
                   !openRouteIsLoading ? (
-                  'Open path not found...'
+                  t(INTERFACE_TEXT_KEY.STREAM_NO_OPEN_PATH)
                 ) : (
                   <>{PassthroughIcon}</>
                 )}
@@ -333,6 +338,8 @@ const EventChoices: React.FC<{
   const eventChoicesRef = useRef<HTMLDivElement>(null)
 
   const { engine, engineDispatch } = useContext(EngineContext)
+
+  const t = useInterfaceText()
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
@@ -495,11 +502,11 @@ const EventChoices: React.FC<{
               disabled={liveEvent.result ? true : false}
             >
               {liveEvent.result?.value ? (
-                translateLiveEventResultValue(liveEvent.result?.value)
+                translateLiveEventResultValue(liveEvent.result?.value, t)
               ) : (
                 <>
                   <span className="event-content-choice-icon">&raquo;</span>{' '}
-                  <span>Restart</span>
+                  <span>{t(INTERFACE_TEXT_KEY.STREAM_RESTART)}</span>
                 </>
               )}
             </button>
@@ -516,7 +523,7 @@ const EventChoices: React.FC<{
               >
                 <>
                   <span className="event-content-choice-icon">&raquo;</span>{' '}
-                  <span>Title Screen</span>
+                  <span>{t(INTERFACE_TEXT_KEY.STREAM_TITLE_SCREEN)}</span>
                 </>
               </button>
             </div>

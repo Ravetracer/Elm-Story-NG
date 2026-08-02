@@ -69,6 +69,7 @@ export default async (
         designer: world.designer,
         engine: schemaVersion,
         id: world.id as ElementId,
+        interfaceText: world.interfaceText,
         jump: world.jump,
         objectNoRecipeMessage: world.objectNoRecipeMessage,
         schema: `https://elmstory.com/schema/elm-story-${schemaVersion}.json`,

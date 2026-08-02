@@ -2,7 +2,13 @@ import React, { useEffect, useState } from 'react'
 
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
+
 const ServiceWorker: React.FC = () => {
+  const t = useInterfaceText()
+
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker
@@ -22,7 +28,11 @@ const ServiceWorker: React.FC = () => {
     <>
       {needRefresh && (
         <div id="world-update-toast">
-          <span>{!updateApp ? 'Update available.' : 'Updating...'}</span>
+          <span>{t(
+              updateApp
+                ? INTERFACE_TEXT_KEY.NOTIFICATION_UPDATING
+                : INTERFACE_TEXT_KEY.NOTIFICATION_UPDATE_AVAILABLE
+            )}</span>
 
           <button
             onClick={() => {

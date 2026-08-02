@@ -7,6 +7,9 @@ import {
   SettingsContext,
   SETTINGS_ACTION_TYPE
 } from '../contexts/SettingsContext'
+import useInterfaceText from '../lib/hooks/useInterfaceText'
+import { INTERFACE_TEXT_KEY } from '../lib/interfaceText'
+
 import { EngineContext } from '../contexts/EngineContext'
 
 const TitleCard: React.FC<{
@@ -15,6 +18,8 @@ const TitleCard: React.FC<{
 }> = ({ onStartWorld, onContinueWorld }) => {
   const { settingsDispatch } = useContext(SettingsContext),
     { engine } = useContext(EngineContext)
+
+  const t = useInterfaceText()
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
@@ -52,7 +57,11 @@ const TitleCard: React.FC<{
               }
             >
               <span className="event-content-choice-icon">&raquo;</span>
-              {!autoBookmark.data.liveEventId ? 'Start' : 'Continue'}
+              {t(
+                autoBookmark.data.liveEventId
+                  ? INTERFACE_TEXT_KEY.TITLE_CARD_CONTINUE
+                  : INTERFACE_TEXT_KEY.TITLE_CARD_START
+              )}
             </button>
 
             <button
@@ -62,7 +71,7 @@ const TitleCard: React.FC<{
               }
             >
               <span className="event-content-choice-icon">&raquo;</span>
-              Settings
+              {t(INTERFACE_TEXT_KEY.TITLE_CARD_SETTINGS)}
             </button>
           </div>
 
