@@ -99,6 +99,20 @@ const EventPassthroughChoice: React.FC<{
       { enabled: !!studioId }
     )
 
+    /*
+     * `onSubmitPath` is a dependency, and leaving it out was a bug rather than an
+     * oversight that happened to be harmless.
+     *
+     * It is rebuilt whenever the live event changes, and it carries the record the
+     * next live event's state and object deltas are copied from. `openPath` alone
+     * does not stand in for it here: this one comes from react-query, which hashes
+     * its key by value, so looking the same paths up again returns the *cached*
+     * object and this callback is never rebuilt. `EventChoice` below took its
+     * `openPath` from a Dexie live query instead, got a new object each run and so
+     * hid the same mistake — which is why picking an object up and continuing
+     * through a choice worked while continuing through this arrow silently threw
+     * the object away.
+     */
     const submitChoice = useCallback(
       async () =>
         openPath &&
@@ -110,7 +124,7 @@ const EventPassthroughChoice: React.FC<{
             value: ENGINE_EVENT_PASSTHROUGH_RESULT_VALUE
           }
         })),
-      [openPath]
+      [openPath, openRouteIsLoading, onSubmitPath, originId]
     )
 
     const passthroughRef = useRef<HTMLDivElement>(null)
@@ -223,6 +237,8 @@ const EventChoice: React.FC<{
     const { engine } = useContext(EngineContext),
       { settings } = useContext(SettingsContext)
 
+    // see EventPassthroughChoice: this one survived on the identity of `openPath`
+    // changing for unrelated reasons, which is not a guarantee
     const submitChoice = useCallback(
       async () =>
         openPath &&
@@ -234,7 +250,7 @@ const EventChoice: React.FC<{
             value: data.title
           }
         })),
-      [openPath]
+      [openPath, onSubmitPath, originId, data.id, data.title]
     )
 
     const choiceWrapperRef = useRef<HTMLDivElement>(null),

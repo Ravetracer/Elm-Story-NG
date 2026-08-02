@@ -967,6 +967,22 @@ builds against them.
   it away. What an action says now goes in `EngineLiveEventData.messages` and is
   rendered by `Event` between the prose and the choices. The object rail says
   nothing about outcomes at all.
+- **The next live event's `state` and `objects` are read from the database, not
+  from the component that renders the button.** `gotoNextLiveEvent` used
+  `liveEvent?.objects ?? data.objects`, both render-time snapshots, and it is
+  reached through a chain of memoized callbacks that can be older than the last
+  write: `EventChoice` and `EventPassthroughChoice` each memoize their click
+  handler on `[openPath]` and omitted `onSubmitPath`. A choice's `openPath` comes
+  from a Dexie live query and is a new object on every `liveEvent` change, so the
+  handler was rebuilt and the staleness never showed. A **passthrough's** comes
+  from react-query, which hashes its key **by value** — the same paths looked up
+  again return the cached object, the handler is never rebuilt, and the » arrow
+  fires a pre-take closure. The symptom was an object taken and then gone from
+  both the scene and the inventory, but only when the event was continued by the
+  arrow rather than by a choice, which is what made it look like a fault in the
+  object model. Deps are the cheap half of the fix; **the write reading the stored
+  record is the load-bearing half**, and it is the pattern `useObjectActions.apply`
+  already follows.
 - **The object rail is icon-only, so three things it does not show have to go
   somewhere.** The name is a tooltip, positioned from JavaScript because the rail's
   groups scroll and a CSS `::after` is clipped by that scroll container. The

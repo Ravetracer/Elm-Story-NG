@@ -78,6 +78,34 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
     try {
       await saveLiveEventResult(studioId, data.id, liveEventResult)
 
+      /*
+       * What the player is leaving, read back off the **stored** record rather
+       * than off `liveEvent` or `data`.
+       *
+       * Both of those are render-time snapshots, and this function is reached
+       * through a chain of memoized callbacks that can hand back a closure older
+       * than the last write: `EventChoice` and `EventPassthroughChoice` both
+       * memoize their click handler on `[openPath]` alone, so a fresh
+       * `onSubmitPath` only reaches the button when `openPath` changes identity.
+       * It does for a choice, whose paths come from a Dexie live query that
+       * re-runs on every `liveEvent` change — and it does *not* for a
+       * passthrough, whose `openPath` comes from react-query, which hashes its
+       * key by value and hands back the cached object when the same paths are
+       * looked up again.
+       *
+       * The symptom was an object picked up and then lost: a take writes its
+       * deltas onto this live event, the » arrow copied the pre-take snapshot
+       * forward, and the object was in neither the scene nor the inventory. It
+       * cost the take's variable effects the same way. Taking something and then
+       * clicking an ordinary choice worked, which is what made it look like a
+       * problem with the object model rather than with what the arrow copied.
+       *
+       * `useObjectActions.apply` already reads the stored record for the same
+       * reason. Deps are the cheaper fix and the wrong one to rely on alone:
+       * this is the write, and a write has no business trusting a snapshot.
+       */
+      const storedLiveEvent = await getLiveEvent(studioId, data.id)
+
       const nextLiveEventId = uuid()
 
       // This live event does not yet exist in the database!
@@ -136,10 +164,10 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
                   (await processEffectsByRoute(
                     studioId,
                     pathId,
-                    state || liveEvent?.state || data.state
+                    state || storedLiveEvent?.state || data.state
                   ))) ||
                 state || // TODO: handles input loopback
-                liveEvent?.state ||
+                storedLiveEvent?.state ||
                 data.state
             ),
             /*
@@ -156,7 +184,7 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
             objects:
               liveEventType === ENGINE_LIVE_EVENT_TYPE.RESTART
                 ? initialLiveEventFromRestart?.objects
-                : liveEvent?.objects ?? data.objects,
+                : storedLiveEvent?.objects ?? data.objects,
             prev: data.id,
             type: liveEventType,
             updated: Date.now(),
