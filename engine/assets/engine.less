@@ -372,19 +372,13 @@
     opacity: 0.6;
   }
 
-  .object-panel-detail,
-  .object-panel-notice {
+  .object-panel-detail {
     margin: 0;
   }
 
   .object-panel-description {
     margin: 0;
     opacity: 0.85;
-  }
-
-  .object-panel-notice {
-    opacity: 0.85;
-    font-style: italic;
   }
 
   .object-panel-actions {
@@ -643,6 +637,16 @@
       border-left: 0.1rem solid var(--primary-color);
       line-height: 2.8rem;
       padding-right: 4.4rem;
+    }
+
+    // What taking or combining an object said, rendered between the prose and the
+    // choices. It inherits the reading column's measure, size and leading from the
+    // `p` rules above on purpose — it is narration, not chrome — and carries the
+    // italic and the 0.85 the object panel's notice used to, so the one thing that
+    // changed for a reader is where the sentence appears.
+    .event-content-object-message {
+      font-style: italic;
+      opacity: 0.85;
     }
 
     .expression {

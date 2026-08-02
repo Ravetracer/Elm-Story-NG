@@ -996,6 +996,48 @@ export const saveLiveEventState = async (
   }
 }
 
+/**
+ * Writes the outcome of an object action onto the live event it happened on.
+ *
+ * One update rather than three, because the three belong together: an inventory
+ * change, the variables its effects set and the sentence the storyteller says
+ * about it are one beat, and a partial write is a save that has the object but
+ * not the flag that says so.
+ *
+ * Every field is optional so a refusal — which changes nothing but still has
+ * something to say — is the same call with only `messages`.
+ */
+export const saveLiveEventObjectOutcome = async (
+  studioId: StudioId,
+  liveEventId: ElementId,
+  {
+    objects,
+    state,
+    messages
+  }: {
+    objects?: EngineObjectDeltaCollection
+    state?: EngineLiveEventStateCollection
+    messages?: string[]
+  }
+) => {
+  try {
+    const libraryDatabase = new LibraryDatabase(studioId),
+      foundLiveEvent = await libraryDatabase.live_events.get(liveEventId)
+
+    if (foundLiveEvent) {
+      await libraryDatabase.live_events.update(liveEventId, {
+        ...foundLiveEvent,
+        objects: objects ?? foundLiveEvent.objects,
+        state: state ?? foundLiveEvent.state,
+        messages: messages ?? foundLiveEvent.messages,
+        updated: Date.now()
+      })
+    }
+  } catch (error) {
+    throw error
+  }
+}
+
 export const saveLiveEventType = async (
   studioId: StudioId,
   liveEventId: ElementId,

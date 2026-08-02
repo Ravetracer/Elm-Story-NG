@@ -225,6 +225,22 @@ export const Event: React.FC<{
               />
             </div>
 
+            {/*
+              What taking and combining objects said, in the order it was said,
+              between the prose and the choices — which is where the player is
+              looking and is why these are not in the object panel. The panel is
+              chrome; this is the story. See useObjectActions for why the beat is a
+              line on this event rather than a live event of its own.
+            */}
+            {liveEvent.messages?.map((message, index) => (
+              <p
+                className="event-content-object-message"
+                key={`${liveEvent.id}-message-${index}`}
+              >
+                {message}
+              </p>
+            ))}
+
             {event.type === EVENT_TYPE.CHOICE && (
               <EventChoices
                 event={event}

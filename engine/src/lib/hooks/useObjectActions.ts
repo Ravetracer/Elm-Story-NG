@@ -1,28 +1,21 @@
-import { v4 as uuid } from 'uuid'
-
 import { useCallback, useContext } from 'react'
 
 import {
   ElementId,
   EngineLiveEventData,
   EngineObjectDeltaCollection,
-  EngineLiveEventStateCollection,
-  ENGINE_LIVE_EVENT_TYPE
+  EngineLiveEventStateCollection
 } from '../../types'
-
-import { AUTO_ENGINE_BOOKMARK_KEY } from '..'
 
 import {
   getLiveEvent,
   getObjectWorldSnapshot,
   getRecipes,
-  saveBookmarkLiveEvent,
-  saveLiveEvent,
-  saveLiveEventDate,
-  saveLiveEventNext
+  saveLiveEventObjectOutcome
 } from '../api'
 
 import {
+  appendMessage,
   combine,
   COMBINE_OUTCOME,
   take,
@@ -36,17 +29,28 @@ import { EngineContext, ENGINE_ACTION_TYPE } from '../../contexts/EngineContext'
 /**
  * Taking and combining, as writes.
  *
- * Both **append a live event** rather than editing the current one, which is the
- * decision `DESIGN.md` settled and the reason is worth keeping in view: the live
- * event stream is the player's visible history, so a combination has to *be* an
- * event to narrate anything at all, and a bookmark names a live event id, which
- * only resumes unambiguously while that event is immutable. It is not for rewind —
- * that feature is refused on principle.
+ * Both **update the live event the player is on** — its deltas, the variables the
+ * action's effects set, and the sentence the storyteller says about it — rather
+ * than appending a live event of their own.
  *
- * The new event keeps the **same destination**, because neither action moves the
- * player. That is what distinguishes it from `gotoNextLiveEvent`, which this
- * otherwise mirrors: same `prev`/`next` chaining, same bookmark update, same
- * stream dispatch.
+ * That reverses `DESIGN.md` §5, so the reasoning it gave is worth answering rather
+ * than quietly dropping. It argued a beat has to *be* a live event to appear in the
+ * stream, since the stream renders the chain. It does not: `Event` renders
+ * `liveEvent.messages` under the prose, which puts the beat exactly where it
+ * happened and keeps it in history for good. What the appended event actually
+ * produced was worse than nothing, because it carried the **same `destination`**:
+ *
+ * - the whole event, prose and choices, was drawn a second time; and
+ * - the first copy's choices stayed enabled, and taking a path from one is a write
+ *   built on that copy's `objects` — so taking something and then clicking the
+ *   upper copy of the same choice silently threw the take away. Confirmed in the
+ *   running app before this changed.
+ *
+ * The other reason it gave — that a bookmark resolves unambiguously only while a
+ * live event is immutable — does not survive contact either: `result`, `next` and
+ * `state` are all already written onto live events after the fact, and resuming a
+ * save should hand back the inventory the player earned, which is what reading the
+ * current record does.
  *
  * The decisions all live in `lib/objects.ts` and are tested there. This hook is
  * only the persistence and the dispatch.
@@ -69,79 +73,67 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
     )
   }, [studioId, worldId, liveEvent])
 
-  const append = useCallback(
-    async (
-      type: ENGINE_LIVE_EVENT_TYPE,
-      objects: EngineObjectDeltaCollection,
+  /**
+   * Writes an outcome onto the current live event and tells the stream.
+   *
+   * The messages are read back off the **stored** record rather than off the
+   * `liveEvent` prop, which is a snapshot taken when the panel rendered: two takes
+   * in quick succession would otherwise both append to the same one-element array
+   * and the first sentence would be lost.
+   */
+  const apply = useCallback(
+    async ({
+      objects,
+      state,
+      message,
+      collapseRepeat
+    }: {
+      objects?: EngineObjectDeltaCollection
       state?: EngineLiveEventStateCollection
-    ) => {
-      if (!studioId || !worldId || !engine.worldInfo) return
+      message?: string
+      collapseRepeat?: boolean
+    }) => {
+      if (!studioId || !worldId) return
 
-      const nextLiveEventId = uuid()
+      const stored = await getLiveEvent(studioId, liveEvent.id)
 
-      engineDispatch({
-        type: ENGINE_ACTION_TYPE.SET_CURRENT_LIVE_EVENT,
-        id: nextLiveEventId
+      if (!stored) return
+
+      const messages = appendMessage(stored.messages, message, collapseRepeat)
+
+      // nothing to say and nothing to change is not a write
+      if (!objects && !state && !messages) return
+
+      await saveLiveEventObjectOutcome(studioId, liveEvent.id, {
+        objects,
+        state,
+        messages
       })
 
-      await Promise.all([
-        saveLiveEventNext(studioId, liveEvent.id, nextLiveEventId),
-        saveLiveEvent(studioId, {
-          worldId,
-          id: nextLiveEventId,
-          // unchanged: taking and combining do not move the player
-          destination: liveEvent.destination,
-          origin: liveEvent.origin,
-          state: state ?? liveEvent.state,
-          objects,
-          prev: liveEvent.id,
-          type,
-          updated: Date.now(),
-          version: engine.worldInfo.version
-        })
-      ])
+      const updated = await getLiveEvent(studioId, liveEvent.id)
 
-      const updatedBookmark = await saveBookmarkLiveEvent(
-        studioId,
-        `${AUTO_ENGINE_BOOKMARK_KEY}${worldId}`,
-        nextLiveEventId
-      )
-
-      await saveLiveEventDate(studioId, nextLiveEventId, updatedBookmark?.updated)
-
-      const [nextLiveEvent, currentLiveEvent] = await Promise.all([
-        getLiveEvent(studioId, nextLiveEventId),
-        getLiveEvent(studioId, liveEvent.id)
-      ])
-
-      if (!nextLiveEvent || !currentLiveEvent) return
+      if (!updated) return
 
       // The 10ms defer matches gotoNextLiveEvent's, which feedback#214 introduced;
       // dispatching synchronously here races the live query that renders the stream.
-      setTimeout(() => {
-        engineDispatch({
-          type: ENGINE_ACTION_TYPE.UPDATE_LIVE_EVENT_IN_STREAM,
-          liveEvent: currentLiveEvent
-        })
-
-        engineDispatch({
-          type: ENGINE_ACTION_TYPE.APPEND_LIVE_EVENTS_TO_STREAM,
-          liveEvents: [nextLiveEvent],
-          reset: false
-        })
-      }, 10)
+      setTimeout(
+        () =>
+          engineDispatch({
+            type: ENGINE_ACTION_TYPE.UPDATE_LIVE_EVENT_IN_STREAM,
+            liveEvent: updated
+          }),
+        10
+      )
     },
-    [studioId, worldId, engine.worldInfo, engineDispatch, liveEvent]
+    [studioId, worldId, engineDispatch, liveEvent.id]
   )
 
   /**
-   * Picks an object up, applying the object's take effects and returning its take
-   * message for the caller to show.
+   * Picks an object up, applying the object's take effects and narrating it.
    *
    * Resolves to undefined when there was nothing to take or the object is static,
-   * in which case **no live event is written at all** — an event that changes
-   * nothing is noise in the stream, and a bookmark pointing at it says the player
-   * did something they did not.
+   * in which case **nothing is written at all** — an action that changed nothing
+   * has nothing to record and nothing to say.
    */
   const takeObject = useCallback(
     async (objectId: ElementId): Promise<TakeResult | undefined> => {
@@ -155,24 +147,24 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
 
       // the state is passed through even when there are no effects, in which case
       // applyVariableSets returned the same object it was given
-      await append(
-        ENGINE_LIVE_EVENT_TYPE.OBJECT_TAKE,
-        result.deltas,
-        result.state
-      )
+      await apply({
+        objects: result.deltas,
+        state: result.state,
+        message: result.message
+      })
 
       return result
     },
-    [snapshot, append]
+    [snapshot, apply]
   )
 
   /**
    * Combines a selection. Always resolves to a result, because a failed
    * combination still has something to say — silence reads as a broken game.
    *
-   * A live event is written only when a recipe actually fired. A refusal is
-   * returned to the caller to show transiently rather than recorded as history,
-   * since nothing about the world changed.
+   * A refusal narrates without changing anything, and collapses against an
+   * identical sentence directly above it: four presses of Use against two things
+   * that do not combine is one refusal the player made four times, not four beats.
    */
   const combineObjects = useCallback(
     async (selection: ElementId[]): Promise<CombineResult | undefined> => {
@@ -184,16 +176,19 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
 
       const result = combine(world, await getRecipes(studioId, worldId), selection)
 
-      if (result.outcome === COMBINE_OUTCOME.APPLIED)
-        await append(
-          ENGINE_LIVE_EVENT_TYPE.OBJECT_COMBINE,
-          result.deltas,
-          result.state
-        )
+      await apply(
+        result.outcome === COMBINE_OUTCOME.APPLIED
+          ? {
+              objects: result.deltas,
+              state: result.state,
+              message: result.message
+            }
+          : { message: result.message, collapseRepeat: true }
+      )
 
       return result
     },
-    [studioId, worldId, snapshot, append]
+    [studioId, worldId, snapshot, apply]
   )
 
   return { takeObject, combineObjects }

@@ -296,16 +296,21 @@ skipped.
       variable effects. An object's recipes are listed on the object and open from
       there, which is the "either side of the relationship" requirement.
 
+- [x] **Placement gate conditions and path object conditions have editors.**
+      `ObjectManager/PlacementConditions` and
+      `ElementProperties/PathProperties/PathObjectConditions`. Both mechanisms were
+      already evaluated by the engine and carried by the transport, so a world
+      authored by hand worked; what was missing was any way to author one.
+- [x] **Object actions narrate in the story stream**, not in the object panel —
+      `EngineLiveEventData.messages`, rendered by `Event` between the prose and the
+      choices. This reversed `DESIGN.md` §5, which had a take append a live event of
+      its own; that event carried the same `destination`, so it drew the whole event
+      a second time and left a stale twin whose choices were still clickable and
+      whose `objects` predated the take. §5 records the reversal.
+
 **Still open, and none of it blocks authoring:**
 
-1. **Placement gate conditions have no editor.** The model evaluates them and the
-   transport carries them, so a gated placement authored by hand works — there is
-   just no UI, and the manager says so where the gates would go. This is what the
-   drawer scenario needs, so it is the first thing to add.
-2. **Object conditions on a path have no editor**, for the same reason —
-   `ElementProperties/PathProperties` needs a row type beside its condition and
-   effect rows. `isPathOpen` already evaluates them.
-3. **`Variable.scope`, `Path.notification` and `choicePresentation` are carried but
+1. **`Variable.scope`, `Path.notification` and `choicePresentation` are carried but
    unread.** Fields shipped in section 3 against sections 6 and 7; the engine does
    not act on any of them yet.
 
@@ -331,7 +336,7 @@ skipped.
   - [ ] panel beside the event stream, centre of the storyteller, filling as the
         world is played
 - [x] Inventory conditions
-  - [x] paths gated on holding an object (evaluated; no editor row yet), so a charged flashlight can open a dark
+  - [x] paths gated on holding an object, so a charged flashlight can open a dark
         corridor. Without this, objects are scenery: `Condition.compare` tests
         variables only today.
 
@@ -339,10 +344,11 @@ skipped.
 
 Some ideas the developer had between the tasks are land here.
 
-- [ ] Template database: It should be possible to save scenes or events as templates which then can be used
-      in other scenes or even other studios and worlds.
-      The uses assets should be saved along the template to have a starting point. 
-      This is nice if there's a story part which can be reused over and over.
+- [x] Put the messages for combining and taking objects into the story stream instead of the inventory. It's better
+      for the reading flow if it appears there. Done as `EngineLiveEventData.messages`; see section 4 and `DESIGN.md`
+      §5. It also removed a data-loss bug the appended live event had introduced.
+- [ ] Add options for translating some hardcoded strings. E.g. I would like to write "nehmen" instead of "take" for
+      objects in German games. All strings should be translatable too which are now hardcoded English and visible to the player.
 
 ## 5. Save and load
 

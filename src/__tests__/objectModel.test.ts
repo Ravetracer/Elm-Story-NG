@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  appendMessage,
   canApplyRecipe,
   combine,
   COMBINE_OUTCOME,
@@ -887,6 +888,58 @@ describe('stacked presentation', () => {
 
     expect(displayTitle(plain, 4)).toBe('Rock')
     expect(displayAssetId(plain, 4)).toBeUndefined()
+  })
+})
+
+describe('what the storyteller has already said on this event', () => {
+  it('starts the list when the event has said nothing', () => {
+    expect(appendMessage(undefined, 'You take the book.')).toEqual([
+      'You take the book.'
+    ])
+  })
+
+  it('keeps what was said before, in order', () => {
+    expect(appendMessage(['First.'], 'Second.')).toEqual(['First.', 'Second.'])
+  })
+
+  it('says nothing about an action with no message', () => {
+    expect(appendMessage(['First.'], undefined)).toBeUndefined()
+    expect(appendMessage(['First.'], '')).toBeUndefined()
+  })
+
+  it('repeats an identical take message, because that is two things taken', () => {
+    expect(appendMessage(['You pocket a coin.'], 'You pocket a coin.')).toEqual([
+      'You pocket a coin.',
+      'You pocket a coin.'
+    ])
+  })
+
+  it('collapses a refusal against the same refusal directly above it', () => {
+    expect(
+      appendMessage([DEFAULT_NO_RECIPE_MESSAGE], DEFAULT_NO_RECIPE_MESSAGE, true)
+    ).toBeUndefined()
+  })
+
+  it('collapses only against the last thing said, not anything earlier', () => {
+    expect(
+      appendMessage(
+        [DEFAULT_NO_RECIPE_MESSAGE, 'You take the book.'],
+        DEFAULT_NO_RECIPE_MESSAGE,
+        true
+      )
+    ).toEqual([
+      DEFAULT_NO_RECIPE_MESSAGE,
+      'You take the book.',
+      DEFAULT_NO_RECIPE_MESSAGE
+    ])
+  })
+
+  it('does not mutate the list it was given', () => {
+    const said = ['First.']
+
+    appendMessage(said, 'Second.')
+
+    expect(said).toEqual(['First.'])
   })
 })
 

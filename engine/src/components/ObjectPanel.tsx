@@ -32,6 +32,13 @@ import { EngineContext } from '../contexts/EngineContext'
  * What the player is carrying and what is in reach, with take, inspect and
  * combine.
  *
+ * It says nothing about what an action *did*. Every sentence an object action
+ * produces — the take message, a recipe's message, the refusal when nothing
+ * combines — is written onto the live event by `useObjectActions` and rendered in
+ * the stream by `Event`. The panel is chrome and the stream is the story; a beat
+ * of narration read out of a drawer at the bottom of the window is a beat the
+ * player has to look away from the prose to find.
+ *
  * **Renders nothing at all when the world has no objects**, which is the whole of
  * how every storyworld written before 0.8.0 keeps the presentation it has today.
  * The panel is not a feature those worlds opted out of; it is one they never
@@ -105,8 +112,7 @@ const ObjectPanel: React.FC = () => {
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
-  const [selection, setSelection] = useState<ElementId[]>([]),
-    [notice, setNotice] = useState<string | undefined>(undefined)
+  const [selection, setSelection] = useState<ElementId[]>([])
 
   const liveEvent = useLiveQuery(async () => {
     if (!studioId || !engine.currentLiveEvent) return undefined
@@ -182,8 +188,6 @@ const ObjectPanel: React.FC = () => {
   )
 
   const toggle = useCallback((objectId: ElementId) => {
-    setNotice(undefined)
-
     setSelection((current) =>
       current.includes(objectId)
         ? current.filter((id) => id !== objectId)
@@ -191,18 +195,20 @@ const ObjectPanel: React.FC = () => {
     )
   }, [])
 
+  /*
+   * Neither handler shows what the action said. The take message, a recipe's
+   * message and the refusal when nothing combines are all written onto the live
+   * event and rendered in the stream, so the player reads them where they are
+   * already reading. The results are still awaited, because the *selection* is
+   * this component's business and depends on them.
+   */
   const onTake = useCallback(
     async (objectId: ElementId) => {
-      setNotice(undefined)
-
       const result = await takeObject(objectId)
 
       // the selection refers to counts that just changed, so it is dropped rather
       // than left pointing at a stale stack
-      if (result) {
-        setSelection([])
-        setNotice(result.message)
-      }
+      if (result) setSelection([])
     },
     [takeObject]
   )
@@ -210,11 +216,7 @@ const ObjectPanel: React.FC = () => {
   const onCombine = useCallback(async () => {
     const result = await combineObjects(selection)
 
-    if (!result) return
-
-    setNotice(result.message)
-
-    if (result.outcome === COMBINE_OUTCOME.APPLIED) setSelection([])
+    if (result?.outcome === COMBINE_OUTCOME.APPLIED) setSelection([])
   }, [combineObjects, selection])
 
   const selectedObjects = useMemo(
@@ -342,18 +344,13 @@ const ObjectPanel: React.FC = () => {
         {selection.length > 0 && (
           <button
             className="object-panel-btn object-panel-btn-quiet"
-            onClick={() => {
-              setSelection([])
-              setNotice(undefined)
-            }}
+            onClick={() => setSelection([])}
             type="button"
           >
             Clear
           </button>
         )}
       </div>
-
-      {notice && <p className="object-panel-notice">{notice}</p>}
     </div>
   )
 }

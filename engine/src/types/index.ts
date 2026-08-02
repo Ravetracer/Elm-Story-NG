@@ -642,9 +642,16 @@ export enum ENGINE_LIVE_EVENT_TYPE {
   INPUT_LOOPBACK = 'INPUT_LOOPBACK',
   JUMP = 'JUMP',
   /**
-   * Taking or combining objects writes a live event of its own, with the same
-   * `destination` as the one it follows. Purely additive — no save written before
-   * 0.8.0 can contain either — so this needs no migration.
+   * **Reserved, and deliberately not written.** `DESIGN.md` §5 had taking and
+   * combining append a live event of their own; they update the one the player is
+   * on instead and narrate through `messages`, because an appended event carrying
+   * the same `destination` drew the whole event a second time and left a stale
+   * twin whose choices could still be clicked — throwing the take away. See
+   * `useObjectActions`.
+   *
+   * The members stay because they are named in `transport/types/0.8.0.ts`, which
+   * describes JSON already on disk, and because a save written by an earlier
+   * 0.8.0 build can still contain them. Nothing produces them now.
    */
   OBJECT_COMBINE = 'OBJECT_COMBINE',
   OBJECT_TAKE = 'OBJECT_TAKE',
@@ -660,6 +667,15 @@ export interface EngineLiveEventData {
   // TODO: may need to change to tuple with id and type
   id: ElementId // or INITIAL_ENGINE_EVENT_ORIGIN_KEY
   destination: ElementId // passage ID
+  /**
+   * What taking, using and combining objects said, in the order it was said, on
+   * the event where it happened. Rendered by `Event` beneath the prose, which is
+   * what puts an object beat in the reading flow rather than in the panel.
+   *
+   * Absent on every live event written before this shipped, and absent means
+   * "nothing was said" — so an old save needs no migration, like `objects`.
+   */
+  messages?: string[]
   next?: ElementId // event ID
   /**
    * Absent on every live event written before 0.8.0, and absent means "no

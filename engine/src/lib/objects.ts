@@ -516,6 +516,40 @@ export const take = (
 }
 
 /**
+ * Adds what the storyteller just said to what it has already said on this event.
+ *
+ * The messages live on the live event rather than in the object panel, so a take
+ * or a combination reads as a beat in the prose. `DESIGN.md` §5 reasoned that a
+ * beat has to *be* a live event to appear in the stream at all; it does not — the
+ * beat is a line on the event where it happened, which reads better and avoids
+ * writing a second live event with the same `destination` as the one it follows.
+ * That second event rendered the whole event again, and its stale twin kept
+ * clickable choices whose `objects` predated the take, so taking something and then
+ * clicking the *upper* copy of a choice silently dropped it. See `TODO.md` §4.5.
+ *
+ * `collapseRepeat` is for refusals only. "Nothing happens." said four times because
+ * the player pressed Use four times is noise, while two identical take messages are
+ * two things genuinely picked up and both belong in the log.
+ *
+ * Returns `undefined` when there is nothing to add, so the caller can skip the
+ * write rather than touching the record to store what it already holds.
+ */
+export const appendMessage = (
+  messages: string[] | undefined,
+  message: string | undefined,
+  collapseRepeat = false
+): string[] | undefined => {
+  if (!message) return undefined
+
+  const current = messages ?? []
+
+  if (collapseRepeat && current[current.length - 1] === message)
+    return undefined
+
+  return [...current, message]
+}
+
+/**
  * Drops deltas naming an object the world no longer has.
  *
  * Called when a save is reconciled against a newer world. Without it a save keeps

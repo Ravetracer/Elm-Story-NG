@@ -233,38 +233,74 @@ Without it, an author who wants "combining these advances the quest counter" has
 to invent a path whose only purpose is to carry the effect, for a state change
 that has nothing to do with movement.
 
-**The engine consequence is the important half.** A recipe application must
-produce a **new live event**, not mutate the current one:
+**The engine consequence is the important half**, and it was decided wrongly here
+first. The original reasoning is kept below rather than deleted, because the way
+it failed is the useful part.
 
-```ts
-// additions to ENGINE_LIVE_EVENT_TYPE
-OBJECT_TAKE = 'OBJECT_TAKE',
-OBJECT_COMBINE = 'OBJECT_COMBINE'
-```
+> A recipe application must produce a **new live event**, not mutate the current
+> one:
+>
+> ```ts
+> // additions to ENGINE_LIVE_EVENT_TYPE
+> OBJECT_TAKE = 'OBJECT_TAKE',
+> OBJECT_COMBINE = 'OBJECT_COMBINE'
+> ```
+>
+> with the same `destination` as the event it follows, carrying the updated
+> `state` and object deltas, chained through the existing `prev`/`next`.
+>
+> Two reasons, and **neither of them is rewind** — that feature is decided
+> against on principle, per `TODO.md`'s "Not included", so nobody should reach
+> for it to justify anything here, and nobody should mutate the live event in
+> place on the grounds that "we do not rewind anyway":
+>
+> - **The live event stream is the player's visible history.**
+>   `getRecentLiveEvents` renders the chain, so a combination has to *be* an
+>   event to appear as a beat in the prose. That is where `Recipe.message` is
+>   rendered. Mutating the current event would apply the effect and narrate
+>   nothing.
+> - **A bookmark names a live event id.** Resuming is unambiguous only while a
+>   live event is immutable — an event that can change after a bookmark points at
+>   it means the same saved id yields different state depending on when it is
+>   read.
 
-with the same `destination` as the event it follows, carrying the updated `state`
-and object deltas, chained through the existing `prev`/`next`.
+**Superseded.** Taking and combining update the live event the player is on,
+writing their deltas, their variable effects and their sentence onto it. The
+sentence is a new optional `EngineLiveEventData.messages`, rendered by `Event`
+between the prose and the choices.
 
-Two reasons, and **neither of them is rewind** — that feature is decided against
-on principle, per `TODO.md`'s "Not included", so nobody should reach for it to
-justify anything here, and nobody should mutate the live event in place on the
-grounds that "we do not rewind anyway":
+The clause that broke it is *"with the same `destination` as the event it
+follows"*. `LiveEvent` renders `Event` for `destination`, so an appended object
+event drew the whole event a second time — the prose, and a second copy of the
+choices. **Both copies stayed enabled**, and taking a path builds the next event
+out of the copy it was clicked on, whose `objects` predate the take. Picking
+something up and then clicking the *upper* of the two identical choices silently
+threw it away. Verified in the running app.
 
-- **The live event stream is the player's visible history.** `getRecentLiveEvents`
-  renders the chain, so a combination has to *be* an event to appear as a beat in
-  the prose. That is where `Recipe.message` is rendered. Mutating the current
-  event would apply the effect and narrate nothing.
-- **A bookmark names a live event id.** Resuming is unambiguous only while a live
-  event is immutable — an event that can change after a bookmark points at it
-  means the same saved id yields different state depending on when it is read.
+Neither original reason survives:
 
-Inspecting an object changes no state and writes no live event.
+- A beat does not have to be a live event to appear in the stream. It has to be
+  *rendered* in the stream, and a line on the event where it happened is both
+  better placed — the player is already reading there, not in the object panel at
+  the bottom of the window — and permanent, since it stays with that event in the
+  history. It also keeps the beats out of the 3-event window
+  `getRecentLiveEvents` restores, where picking up three things would have pushed
+  the prose itself off the top.
+- A live event is not immutable and never was: `result`, `next` and `state` are
+  all written onto one after the fact. What a bookmark must do is hand back the
+  state the player earned, which is what reading the current record does.
 
-`ENGINE_LIVE_EVENT_TYPE` is persisted in `EngineLiveEventData.type`, but new
-members are purely additive — no existing save contains them — so this needs no
-migration. Dropping an object is deliberately **not** modelled: nothing asks for
-it, and a recipe that outputs to `CURRENT_SCENE` covers "put it down" wherever an
-author wants it.
+Inspecting an object still changes no state and writes nothing.
+
+`ENGINE_LIVE_EVENT_TYPE` is persisted in `EngineLiveEventData.type`, and the two
+members remain declared but unwritten — `transport/types/0.8.0.ts` names them, and
+a save from an earlier 0.8.0 build can contain them. `messages` needs no migration
+for the same reason `objects` does not: Dexie declares indexes, not shapes, and
+absent means "nothing was said".
+
+Dropping an object is deliberately **not** modelled: nothing asks for it, and a
+recipe that outputs to `CURRENT_SCENE` covers "put it down" wherever an author
+wants it.
 
 ## 6. What the storyteller says when nothing matches
 
@@ -633,8 +669,8 @@ So four items are outstanding and belong with the UI that drives them:
   booleans join the same `isOpenAgg` so ALL/ANY still composes across both kinds,
   **and `totalConditions` must count object conditions too**, or a path gated only
   on objects loses the feedback#105 preference for conditional paths.
-- **The take and combine writers**, each appending a live event rather than
-  mutating the current one.
+- **The take and combine writers.** Section 5 above said each should append a
+  live event; they update the current one instead, and that section records why.
 - **The object clause in `updateEngineDefaultWorldCollectionData`** — drop deltas
   naming an object that no longer exists, keep the rest. Nothing can create a
   delta until the writers exist, which is exactly why it waits for them.

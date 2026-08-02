@@ -845,6 +845,17 @@ builds against them.
   for the inventory state, which is an optional unindexed property on the existing
   `live_events` table — an old save simply lacks it, and absent means "no deltas",
   so it reads as a pristine world.
+- **Taking and combining update the live event the player is on; they do not
+  append one.** `ENGINE_LIVE_EVENT_TYPE.OBJECT_TAKE` and `OBJECT_COMBINE` are
+  declared and never written, and `DESIGN.md` §5 still describes the appending
+  design it superseded. The appended event carried the *same* `destination`, and
+  `LiveEvent` renders `Event` for `destination` — so it drew the whole event a
+  second time, and both copies kept enabled choices. Taking a path builds the next
+  event from the copy it was clicked on, whose `objects` predate the take, so
+  picking something up and then clicking the upper of two identical choices threw
+  it away. What an action says now goes in `EngineLiveEventData.messages` and is
+  rendered by `Event` between the prose and the choices. The object panel says
+  nothing about outcomes at all.
 - **Object quantity is derived, never stored as a census.** What a location holds
   is the authored placement (with its gate re-evaluated *now*) plus a signed
   delta, clamped at zero. That is what makes a gate turning true mid-play reveal an
