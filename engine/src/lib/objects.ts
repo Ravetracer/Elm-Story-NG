@@ -277,8 +277,18 @@ export const displayAssetId = (
 ): string | undefined =>
   count > 1 && object.stackedAssetId ? object.stackedAssetId : object.assetId
 
+/**
+ * A set of element ids as one comparable key.
+ *
+ * The separator is a NUL because no element id can contain one, so no two
+ * different id sets can collide on it. It is written as the escape `\x00` and
+ * must stay that way: a literal NUL byte makes the entire file binary, and the
+ * tools do not report that as an error. `git diff` says "Binary files differ"
+ * and `grep` prints **nothing at all** for a pattern that is present, which is
+ * a search returning a false negative rather than a failure.
+ */
 const sortedIds = (ids: ElementId[]): string =>
-  [...ids].sort().join(' ')
+  [...ids].sort().join('\x00')
 
 /**
  * The recipe whose inputs are **exactly** the selection, or undefined.
