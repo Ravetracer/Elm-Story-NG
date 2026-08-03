@@ -590,11 +590,18 @@ point at it.
   exactly like that from the list's side. `openInlineChoiceCount` is why it does
   not — and it counts only *open* ones, because a shut inline choice renders as
   plain prose and the event really is a dead end.
-- **Three states, one of them clickable.** Open is a real `<button>`, so it takes
-  focus and answers the keyboard; closed and already-taken are a `<span>` reading
-  as the prose around them, since a dead link asks the player to try something that
-  cannot happen. The underline on the open state is not decoration — WCAG 1.4.1,
-  and this text sits mid-paragraph with no second example to compare against.
+- **Three states, one of them clickable**, and all three are inline text. Closed
+  and already-taken read as the prose around them, since a dead link asks the
+  player to try something that cannot happen. The underline on the open state is
+  not decoration — WCAG 1.4.1, and this text sits mid-paragraph with no second
+  example to compare against.
+- **It is a `<span role="button">` and not a `<button>`, which was measured rather
+  than preferred.** Chromium refuses `display: inline` on a button and blockifies
+  it to `inline-block`, so a title of more than a word or two cannot break across a
+  line and overflows the reading column; and the engine's base `button` rule sets
+  `min-height: 44px`, which inflates every 28px line box a choice sits in. Both
+  were read off the running app. `tabIndex` and an `onKeyDown` answering Enter and
+  Space give back the two things the button was providing.
 - **`EventContent` holds its parsed content in state, so `liveEvent` and
   `onSubmitPath` are dependencies of the effect that builds it.** The
   `EventInlineChoice` elements capture whatever those were when it last ran, and a

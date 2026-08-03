@@ -806,24 +806,17 @@
       border-left: 0.1rem solid currentColor;
     }
 
-    // A choice offered inside the sentence. It is a real `<button>`, so everything
-    // a button brings with it has to be taken back off: the reading column's font,
-    // size and leading are what make it part of the prose rather than a control
-    // sitting in it.
+    // A choice offered inside the sentence. Inline text carrying `role="button"`
+    // rather than a `<button>`, so it wraps mid-phrase like the words around it and
+    // escapes the base `button` rule's 44px `min-height` — see `EventInlineChoice`,
+    // where both were measured. Being a span, it inherits the reading column's font,
+    // size and leading with nothing to reset.
     //
     // **The underline is not decoration.** WCAG 1.4.1 — the accent colour cannot be
     // the only thing that says "this is takeable", and this text sits mid-paragraph
     // where a reader has no second example to compare it against. Same reason the
     // narration and the inspection differ by more than their grey.
-    button.event-content-inline-choice {
-      display: inline;
-      margin: 0;
-      padding: 0;
-      border: none;
-      background: none;
-      font: inherit;
-      line-height: inherit;
-      text-align: left;
+    .event-content-inline-choice {
       color: var(--primary-color);
       text-decoration: underline;
       text-underline-offset: 0.3rem;

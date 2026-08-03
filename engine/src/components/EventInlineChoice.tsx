@@ -28,14 +28,23 @@ import { PathProcessor } from './Event'
  *
  * Three states, and only the first is clickable:
  *
- * - **open** — the choice has a path whose conditions hold. A `<button>`, not a
- *   styled span, because it is one: it takes focus and answers the keyboard for
- *   free, which a clickable span in the middle of a paragraph would not.
+ * - **open** — the choice has a path whose conditions hold.
  * - **closed** — no open path. Rendered as plain prose rather than a dead link, so
  *   the sentence still reads. `blockedChoicesVisible` in the composer is the one
  *   exception, since an author asking to see blocked choices means it.
  * - **past** — this live event already has a result, so the reader is looking at
  *   history. Nothing in the stream's past is clickable.
+ *
+ * **A `<span role="button">` rather than a `<button>`, and that was measured rather
+ * than preferred.** A button would bring the keyboard and the focus ring for free,
+ * but it cannot be part of a sentence: Chromium refuses `display: inline` on one and
+ * blockifies it to `inline-block`, so a title of more than a word or two — "up the
+ * wide marble staircase" — cannot break across a line and overflows the reading
+ * column instead. It also inherits the engine's base `button` rule, whose
+ * `min-height: 44px` inflates every line box a choice sits in from 28px. So the
+ * element is inline text, and the two things the button was giving are given back
+ * explicitly: `tabIndex` puts it in the tab order and `onKeyDown` answers Enter and
+ * Space, which is what a button does with them.
  *
  * A choice that has been deleted renders as nothing at all. Deleting a choice does
  * not reach into the document that mentions it — see `serializeDescendantToText`
@@ -113,9 +122,23 @@ const EventInlineChoice: React.FC<{
     )
 
   return (
-    <button className="event-content-inline-choice" onClick={submitChoice}>
+    <span
+      className="event-content-inline-choice"
+      role="button"
+      tabIndex={0}
+      onClick={submitChoice}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          // Space scrolls the stream otherwise, which is what it does everywhere
+          // else in the reading column and is not what it means on a control
+          event.preventDefault()
+
+          submitChoice()
+        }
+      }}
+    >
       {choice.title}
-    </button>
+    </span>
   )
 }
 
