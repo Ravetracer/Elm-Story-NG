@@ -15,6 +15,7 @@ import {
 import {
   useCharacters,
   useChoicesByEventRef,
+  useWorld,
   useEvent,
   usePathPassthroughsByEventRef
 } from '../../../hooks'
@@ -30,6 +31,7 @@ import { CheckboxChangeEvent } from 'antd/lib/checkbox'
 
 import ElementTitle from '../ElementTitle'
 import EventTypeSelect from '../../EventTypeSelect'
+import ChoicePresentationSelect from '../../ChoicePresentationSelect'
 import VariableSelectForInput from '../../VariableSelectForInput'
 import ElementAudio from '../../ElementAudio'
 
@@ -242,6 +244,47 @@ const EventInput: React.FC<{
   )
 }
 
+/**
+ * This event's override of the storyworld's choice presentation.
+ *
+ * Only for a CHOICE event: an INPUT event has a field rather than a set of choices
+ * and a JUMP has neither, so the setting would be stored and never read. Nothing
+ * stops an author setting it on one — `Event.choicePresentation` is a plain optional
+ * field — but a control that does nothing is worse than an absent one.
+ */
+const EventChoicePresentation: React.FC<{
+  studioId: StudioId
+  event: Event
+}> = React.memo(({ studioId, event }) => {
+  const world = useWorld(studioId, event.worldId, [studioId, event.worldId])
+
+  return (
+    <div className={styles.EventChoicePresentation}>
+      <div className={styles.header}>Choices</div>
+
+      <ChoicePresentationSelect
+        value={event.choicePresentation}
+        inheritedFrom={world?.choicePresentation}
+        allowInherit
+        onChange={async (choicePresentation) => {
+          if (!event.id) return
+
+          // spreading the rendered event, as every other write in this panel does:
+          // this one is a single explicit click rather than a debounced field, and
+          // `event` comes from a live query, so there is no keystroke-old copy to
+          // clobber the way `savePathNotification` guards against
+          await api().events.saveEvent(studioId, {
+            ...event,
+            choicePresentation
+          })
+        }}
+      />
+    </div>
+  )
+})
+
+EventChoicePresentation.displayName = 'EventChoicePresentation'
+
 const StoryworldEndingToggle: React.FC<{
   studioId: StudioId
   event: Event
@@ -367,6 +410,10 @@ const EventProperties: React.FC<{
             )}
 
             <EventTypeSelect studioId={studioId} event={event} />
+
+            {event.type === EVENT_TYPE.CHOICE && (
+              <EventChoicePresentation studioId={studioId} event={event} />
+            )}
 
             {event.id && (
               <StoryworldEndingToggle studioId={studioId} event={event} />

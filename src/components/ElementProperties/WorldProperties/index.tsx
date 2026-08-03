@@ -9,6 +9,7 @@ import { useWorld, useScenes } from '../../../hooks'
 import { Button, Collapse, Form, Input } from 'antd'
 
 import ElementTitle from '../ElementTitle'
+import ChoicePresentationSelect from '../../ChoicePresentationSelect'
 import WorldCover from './WorldCover'
 import JumpTo from '../../JumpTo'
 
@@ -165,6 +166,41 @@ const WorldProperties: React.FC<{
               <Collapse.Panel header="Cover" key="cover-panel">
                 <div className={parentStyles.content}>
                   <WorldCover studioId={studioId} world={world} />
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          {/*
+            CHOICES
+
+            The storyworld's default presentation, which every event follows unless
+            it overrides it in its own properties. Above Metadata because it changes
+            what the player sees rather than what the About box says.
+          */}
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['choices-panel']}>
+              <Collapse.Panel header="Choices" key="choices-panel">
+                <div className={parentStyles.content}>
+                  <ChoicePresentationSelect
+                    value={world.choicePresentation}
+                    onChange={async (choicePresentation) => {
+                      if (!world.id) return
+
+                      await api().worlds.saveWorld(studioId, {
+                        // re-read rather than spreading the rendered copy: this
+                        // panel's metadata form writes to the same row
+                        ...(await api().worlds.getWorld(studioId, world.id)),
+                        choicePresentation
+                      })
+                    }}
+                  />
+
+                  <div className={styles.choicesHint}>
+                    How an event offers its choices. Any event can override this.
+                    Not the same as an inline choice, which is one choice placed
+                    inside a sentence from the content editor.
+                  </div>
                 </div>
               </Collapse.Panel>
             </Collapse>

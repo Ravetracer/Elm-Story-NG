@@ -545,6 +545,73 @@ identifier branch (`value || 'undefined'`), it has been true of event prose sinc
 0.7.0, and changing it means changing `templates.ts` in both projects and every
 storyworld's prose along with it.
 
+## How a set of choices is offered
+
+`World.choicePresentation` is the storyworld's default and `Event.choicePresentation`
+overrides it per event, both set from a **Choices** panel — the storyworld's
+properties for the default, a CHOICE event's properties for the override.
+`resolveChoicePresentation` is the rule and `src/__tests__/choicePresentation.test.ts`
+holds it. The last of section 7's three cheap items; both fields shipped unused in
+section 3, so this was interface work with no schema cost.
+
+- **`CHOICE_PRESENTATION.INLINE` is not the inline choices feature**, and this is the
+  likeliest confusion in the whole area — they share a word and mean different
+  things. INLINE is per *event* and lays the whole set out as a wrapping row instead
+  of a stack. An inline *choice* is per choice and lives inside a sentence, placed by
+  the author as a node in the prose. An enum could never express the second: which
+  words in which sentence a choice attaches to is not derivable from a setting. The
+  editor labels this one **Row** for that reason, and the panel hint says outright
+  what it is not.
+- **LIST is the fallback rather than a stored default.** Neither field is written as
+  LIST unless an author picks it, so a storyworld written before either existed
+  presents exactly as it always did, and "Storyworld default" on an event stores
+  `undefined`. LIST is still a real member because an author with a MODAL storyworld
+  needs a way to say "not this event".
+- **`choicePresentation` had to be added to `Installer`'s `WORLD_INFO_FIELDS`.**
+  `format.ts` already compiled it, which is exactly the trap that section warns
+  about: the field arrives in the engine's data and still never reaches a component,
+  because `worldInfo` is built from its own `pick` list. Without it every world
+  silently falls back to LIST and the storyworld setting appears to do nothing.
+- **"The player is on this event" is `!liveEvent.result`, not
+  `engine.currentLiveEvent === liveEvent.id`.** Both are true in ordinary play, since
+  every event behind the newest carries the result that led out of it — but the
+  engine's pointer lags a reinstall, and the composer reinstalls on every open. Read
+  off the running app: with the preview already sitting on an event, setting that
+  event to MODAL left the choices in the column and they only became a modal after
+  playing away and back. An author changing a setting has to see it change.
+- **An ending is never a modal.** Its choices are Restart and Title Screen — the way
+  out of the story rather than a decision inside it, and a modal over the last page
+  is a door in front of the exit.
+- **The modal is portalled to `#renderer`, and that was measured.** Left where it is
+  declared, `position: absolute` resolves against `.event-content` — every ancestor
+  up to the stream is `position: relative` — so it covered only the current event's
+  own block, 229px of a 1046px column, and grew and shrank with the prose.
+  `#renderer` is the reading area and sits *outside* `#live-event-stream`, the scroll
+  container, so the overlay also stays put rather than scrolling away with the story
+  behind it. It is not `position: fixed` because this engine renders inside a dock
+  panel in the composer as well as full-window in an export, and a fixed overlay
+  would sit over the storyworld outline.
+- **It is an overlay rather than a `<dialog>`**, which would have brought the focus
+  trap and Escape for free. `showModal()` on a nested dialog puts it in the top
+  layer, above the object rail and outside the engine's box, and it is one more
+  thing to get wrong across the browsers an exported PWA meets. Escape and
+  backdrop-dismissal are written out instead.
+- **Dismissable, so it needed two words of its own.**
+  `STREAM_CHOICES_OPEN` ("Choose") and `STREAM_CHOICES_CLOSE` ("Close") are the only
+  new interface text: a modal the player cannot dismiss cannot be read around, and
+  one that dismisses with no way back is a dead end. Adding a key costs
+  `interfaceText.ts` alone — the manager is generated from it — and
+  `interfaceText.test.ts` fails if a key has no English or no group.
+- **INLINE's stylesheet undoes the stack's rules, each of which is load-bearing
+  above it**: the full-width button, the rule across the top of every choice, and the
+  grid that puts one per row. A row separated by per-choice rules would draw a line
+  through the middle of a line of text, so the row carries one rule above the whole
+  of it instead.
+- **The override is offered on CHOICE events only.** An INPUT event has a field
+  rather than a set and a JUMP has neither, so the setting would be stored and never
+  read. Nothing stops it being set — it is a plain optional field — but a control
+  that does nothing is worse than an absent one.
+
 ## Inline choices
 
 A choice offered inside the prose instead of in the list beneath it — `/` →

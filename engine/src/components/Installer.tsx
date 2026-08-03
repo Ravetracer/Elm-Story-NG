@@ -46,6 +46,7 @@ import { INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY } from '../lib'
  * runtime with no error, which is how `interfaceText` was once quietly lost.
  */
 const WORLD_INFO_FIELDS = [
+  'choicePresentation',
   'copyright',
   'coverAssetId',
   'description',

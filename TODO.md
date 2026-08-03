@@ -490,9 +490,16 @@ migration rather than three.
 - [ ] Transitions *(no field yet — design first)*
 - [ ] Custom backgrounds and colors *(no field yet — design first)*
 - [ ] Animated images *(no field yet — design first)*
-- [ ] Choice modals
-      *(`World.choicePresentation` and `Event.choicePresentation` are shipped,
-      compiled into `format.ts` and exported; nothing sets or reads them yet.)*
+- [x] Choice modals — a **Choices** panel on the storyworld sets the default and one
+      on a CHOICE event overrides it, offering List, Row and Modal. See `CLAUDE.md`,
+      "How a set of choices is offered".
+      *(Interface work only, as section 3 intended. Two things it needed that were
+      not obvious: `choicePresentation` was missing from `Installer`'s
+      `WORLD_INFO_FIELDS`, so the compiled field never reached a component and the
+      storyworld setting did nothing; and the modal is portalled to `#renderer`,
+      because absolutely positioned where it is declared it covered only the current
+      event's own block. `CHOICE_PRESENTATION.INLINE` is a **row layout for the whole
+      set** and is not the inline choices feature — the editor labels it Row.)*
 - [x] Storyworld notifications — `Path.notification`, set from the Notification
       panel at the bottom of a path's properties and said in the story stream when
       the path is crossed. See `CLAUDE.md`, "Path notifications".

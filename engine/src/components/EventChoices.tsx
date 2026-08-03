@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState
 } from 'react'
+import { createPortal } from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useQuery } from 'react-query'
 import { useSpring } from 'react-spring'
@@ -18,9 +19,11 @@ import {
   ENGINE_EVENT_PASSTHROUGH_RESULT_VALUE,
   ENGINE_LIVE_EVENT_STORY_OVER_RESULT_VALUE,
   INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY,
-  getChoiceIdsFromEventContent
+  getChoiceIdsFromEventContent,
+  resolveChoicePresentation
 } from '../lib'
 import {
+  CHOICE_PRESENTATION,
   ElementId,
   EngineChoiceData,
   EngineLiveEventData,
@@ -355,6 +358,8 @@ const EventChoices: React.FC<{
 }> = React.memo(({ event, liveEvent, onSubmitPath }) => {
   const eventChoicesRef = useRef<HTMLDivElement>(null)
 
+  const [choicesModalOpen, setChoicesModalOpen] = useState(true)
+
   const { engine, engineDispatch } = useContext(EngineContext)
 
   const t = useInterfaceText()
@@ -495,10 +500,72 @@ const EventChoices: React.FC<{
     })
   }, [liveEvent])
 
+  /*
+   * How this set is offered. Resolved here rather than in the components below,
+   * because it is a property of the *set* — the modal holds all of them at once and
+   * the inline row lays them out against each other.
+   */
+  const presentation = resolveChoicePresentation(
+    event.choicePresentation,
+    engine.worldInfo?.choicePresentation
+  )
+
+  /*
+   * A modal is only ever the presentation of the event the player is *on*.
+   *
+   * Everything above it is a log of what already happened, and a log does not
+   * interrupt: the choices of a past event stay in the column, disabled, exactly as
+   * LIST draws them. That also settles what the modal does about history — nothing,
+   * because it is never asked to draw any.
+   *
+   * **"The player is on it" is `!liveEvent.result`, not
+   * `engine.currentLiveEvent === liveEvent.id`.** Both are true in ordinary play —
+   * every event behind the newest carries the result that led out of it — but the
+   * engine's own pointer lags a reinstall, which the composer does on every open.
+   * Read off the running app: with the preview already sitting on an event, setting
+   * that event to MODAL left it in the column, and it only became a modal after
+   * playing away and back. An author changing a setting has to see it, which is the
+   * same argument that put `Installer` on a live query.
+   *
+   * An ending is excluded because its "choices" are Restart and Title Screen. Those
+   * are the way out of the story, not a decision inside it, and a modal over the
+   * last page is a door in front of the exit.
+   */
+  const asModal =
+    presentation === CHOICE_PRESENTATION.MODAL &&
+    !liveEvent.result &&
+    !event.ending
+
+  // Dismissable, so the player can go back and read the prose the modal covers; the
+  // Choose button below is how it comes back. Keyed off the live event so moving on
+  // opens the next one rather than inheriting this one's dismissal.
+  useEffect(() => setChoicesModalOpen(true), [liveEvent.id])
+
+  // Escape, which is the other half of what a `<dialog>` would have given. Bound
+  // only while this event's modal is actually showing, so the composer's own Escape
+  // handling is untouched the rest of the time.
+  useEffect(() => {
+    if (!asModal || !choicesModalOpen) return
+
+    const onKeyDown = (keyEvent: KeyboardEvent) =>
+      keyEvent.key === 'Escape' && setChoicesModalOpen(false)
+
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [asModal, choicesModalOpen])
+
   if (!engine.worldInfo) return null
 
-  return (
-    <div className="event-content-choices" ref={eventChoicesRef}>
+  const choicesBody = (
+    <div
+      className={`event-content-choices${
+        presentation === CHOICE_PRESENTATION.INLINE
+          ? ' event-content-choices-inline'
+          : ''
+      }`}
+      ref={eventChoicesRef}
+    >
       {!event.ending && choices && pathPassthroughs && (
         <>
           {pathPassthroughs.length > 0 && (
@@ -613,6 +680,71 @@ const EventChoices: React.FC<{
       )}
     </div>
   )
+
+  if (!asModal) return choicesBody
+
+  /*
+   * The modal. A `<dialog>` would bring the focus trap and Escape for free, but the
+   * engine ships into an exported PWA where `showModal()` on a nested dialog is one
+   * more thing to get wrong across browsers, and this has to sit inside the engine's
+   * own box rather than in the top layer above everything. So it is an overlay with
+   * the two behaviours written out.
+   *
+   * **Portalled to `#renderer`, and that was measured rather than assumed.** Left
+   * where it is declared, `position: absolute` resolves against `.event-content` —
+   * every ancestor up to the stream is `position: relative` — so the "modal" covered
+   * only the current event's own block, 229px of a 1046px column, and grew and shrank
+   * with the prose. `#renderer` is the reading area and sits *outside*
+   * `#live-event-stream`, which is the scroll container, so the overlay also stays
+   * put instead of scrolling away with the story behind it.
+   */
+  const modal = (
+    <>
+      {!choicesModalOpen && (
+        <div className="event-content-choices">
+          <div className="event-content-choice">
+            <button onClick={() => setChoicesModalOpen(true)}>
+              <span className="event-content-choice-icon">&raquo;</span>{' '}
+              <span>{t(INTERFACE_TEXT_KEY.STREAM_CHOICES_OPEN)}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {choicesModalOpen && (
+        <div
+          className="event-content-choices-modal-backdrop"
+          // the backdrop dismisses, as a modal's does; the panel stops the click so
+          // choosing inside it is not also a dismissal
+          onClick={() => setChoicesModalOpen(false)}
+        >
+          <div
+            className="event-content-choices-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(clickEvent) => clickEvent.stopPropagation()}
+          >
+            {choicesBody}
+
+            <div className="event-content-choices-modal-close">
+              <button onClick={() => setChoicesModalOpen(false)}>
+                {t(INTERFACE_TEXT_KEY.STREAM_CHOICES_CLOSE)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+
+  const rendererRoot =
+    typeof document === 'undefined'
+      ? null
+      : document.getElementById('renderer')
+
+  // rendered in place if the mount point is missing rather than throwing: nothing
+  // about a choice should depend on a div existing
+  return rendererRoot ? createPortal(modal, rendererRoot) : modal
 })
 
 EventChoices.displayName = 'EventChoices'

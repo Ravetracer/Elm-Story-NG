@@ -919,6 +919,96 @@
     }
   }
 
+  /*
+   * CHOICE_PRESENTATION.INLINE — the same choices as a wrapping row rather than a
+   * stack. Not to be confused with the inline choices feature, which puts a single
+   * choice inside a sentence; this is a layout for the whole set. See
+   * `resolveChoicePresentation`.
+   *
+   * The rules being undone here are the stack's, and each one is load-bearing above:
+   * the full-width button, the rule across the top of every choice that separates
+   * them vertically, and the grid that puts one per row. A row separated by rules
+   * would draw a line through the middle of the line of text.
+   */
+  .event-content-choices-inline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 2.4rem;
+
+    .event-content-choice {
+      display: inline-grid;
+      padding: 0 !important;
+    }
+
+    // the row needs one rule above it, not one per choice
+    border-top: 0.1rem solid var(--event-choice-top-border-color);
+    padding-left: 1.4rem;
+    padding-right: 1.4rem;
+
+    button {
+      width: auto;
+      border-top: none !important;
+      padding: 1.4rem 0 0.4rem 0;
+    }
+  }
+
+  /*
+   * CHOICE_PRESENTATION.MODAL — the current event's choices over the stream.
+   *
+   * `position: absolute` against the runtime rather than `fixed`, so it covers the
+   * reading column and not the composer's own chrome around it: this engine renders
+   * inside a dock panel in the editor as well as full-window in an exported PWA, and
+   * a fixed overlay in the composer would sit over the storyworld outline.
+   */
+  .event-content-choices-modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    background: hsla(0, 0%, 0%, 0.6);
+    display: grid;
+    align-items: end;
+    justify-items: center;
+  }
+
+  .event-content-choices-modal {
+    width: 100%;
+    max-width: 67.6rem;
+    max-height: 100%;
+    overflow-y: auto;
+    background: var(--event-content-background-color, hsl(0, 0%, 4%));
+    border: 0.1rem solid var(--event-choice-top-border-color);
+    border-bottom: none;
+    border-radius: 0.4rem 0.4rem 0 0;
+    box-shadow: 0 0 3rem hsla(0, 0%, 0%, 0.8);
+
+    // the choices inside carry their own top padding
+    .event-content-choices {
+      padding-top: 0;
+    }
+  }
+
+  .event-content-choices-modal-close {
+    padding: 0 1.4rem 1.4rem 1.4rem;
+
+    button {
+      width: 100%;
+      background: none;
+      border: none !important;
+      padding: 1.4rem 0 0 0;
+      font-size: 1.6rem;
+      text-align: left;
+      color: var(--event-past-choice-text-color);
+
+      &:hover {
+        color: var(--primary-color-brighter);
+      }
+    }
+  }
+
   .event-content-choice button:disabled,
   .event-content-loopback button:disabled {
     cursor: not-allowed;

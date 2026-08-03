@@ -11,7 +11,7 @@ import {
   EventContentLeaf
 } from '../types/eventContentTypes'
 
-import { ElementId } from '../types'
+import { CHOICE_PRESENTATION, ElementId } from '../types'
 
 export const AUTO_ENGINE_BOOKMARK_KEY = '___auto___'
 export const INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY = '___initial___'
@@ -123,6 +123,29 @@ export const getCharactersIdsFromEventContent = (children: Descendant[]) =>
         element.character_id !== undefined
     )
     .map(({ character_id }) => character_id as string)
+
+/**
+ * How this event's choices are offered: the event's own setting, else the
+ * storyworld's, else a list.
+ *
+ * **LIST is the fallback rather than a stored default**, so a storyworld written
+ * before either field existed presents exactly as it always did, and clearing both
+ * settings returns it there. Neither field is ever written as LIST by the editor for
+ * the same reason — "unset" and "list" mean the same thing to a reader and one of
+ * them is smaller in every export.
+ *
+ * **`CHOICE_PRESENTATION.INLINE` is not the inline choices feature**, which is the
+ * likeliest confusion in this area. That one is per *choice* and lives in the
+ * prose, as a node the author placed inside a sentence. This is per *event* and
+ * says how the whole set beneath the prose is laid out — a wrapping row rather than
+ * a stack. An enum could not express the other thing: which words in which
+ * sentence a choice attaches to is not derivable from a setting.
+ */
+export const resolveChoicePresentation = (
+  eventPresentation?: CHOICE_PRESENTATION,
+  worldPresentation?: CHOICE_PRESENTATION
+): CHOICE_PRESENTATION =>
+  eventPresentation ?? worldPresentation ?? CHOICE_PRESENTATION.LIST
 
 export const getChoiceIdsFromEventContentNodes = (children: Descendant[]) =>
   flattenEventContent(children)

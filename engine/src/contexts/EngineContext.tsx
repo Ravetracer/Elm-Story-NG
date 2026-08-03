@@ -2,7 +2,13 @@ import { cloneDeep } from 'lodash'
 
 import React, { createContext, useMemo, useReducer } from 'react'
 
-import { ElementId, EngineLiveEventData, WorldId, StudioId } from '../types'
+import {
+  CHOICE_PRESENTATION,
+  ElementId,
+  EngineLiveEventData,
+  WorldId,
+  StudioId
+} from '../types'
 import type { InterfaceTextOverrides } from '../lib/interfaceText'
 
 interface EngineState {
@@ -32,6 +38,14 @@ interface EngineState {
      * or it arrives undefined and every world silently speaks English.
      */
     interfaceText?: InterfaceTextOverrides
+    /**
+     * The storyworld's default for how a set of choices is offered. `EventChoices`
+     * resolves it against the event's own override, so it is needed wherever a
+     * choice is drawn — which is the same argument as `interfaceText` above, and it
+     * has the same failure mode: absent from `Installer`'s `pick` list, every world
+     * silently falls back to LIST and the setting appears to do nothing.
+     */
+    choicePresentation?: CHOICE_PRESENTATION
     studioId: StudioId
     studioTitle: string
     title: string
