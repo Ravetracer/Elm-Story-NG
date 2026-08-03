@@ -806,6 +806,50 @@
       border-left: 0.1rem solid currentColor;
     }
 
+    // A choice offered inside the sentence. It is a real `<button>`, so everything
+    // a button brings with it has to be taken back off: the reading column's font,
+    // size and leading are what make it part of the prose rather than a control
+    // sitting in it.
+    //
+    // **The underline is not decoration.** WCAG 1.4.1 — the accent colour cannot be
+    // the only thing that says "this is takeable", and this text sits mid-paragraph
+    // where a reader has no second example to compare it against. Same reason the
+    // narration and the inspection differ by more than their grey.
+    button.event-content-inline-choice {
+      display: inline;
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: none;
+      font: inherit;
+      line-height: inherit;
+      text-align: left;
+      color: var(--primary-color);
+      text-decoration: underline;
+      text-underline-offset: 0.3rem;
+      cursor: pointer;
+
+      &:hover {
+        text-decoration-thickness: 0.2rem;
+      }
+
+      // the frameless window has no other focus ring, and this is the only control
+      // that can be reached by tab from the middle of a paragraph
+      &:focus-visible {
+        outline: 0.2rem solid var(--primary-color);
+        outline-offset: 0.2rem;
+      }
+    }
+
+    // Shut, or already taken. Reads as the prose it is embedded in — a dead link
+    // would ask the player to try something that cannot happen, and the sentence
+    // still has to make sense without it.
+    .event-content-inline-choice-closed {
+      color: inherit;
+      text-decoration: none;
+      cursor: default;
+    }
+
     .expression {
       border-bottom: 0.1rem dashed var(--primary-color);
     }

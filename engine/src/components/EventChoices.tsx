@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState
 } from 'react'
@@ -16,7 +17,8 @@ import {
   ENGINE_LIVE_EVENT_LOOPBACK_RESULT_VALUE,
   ENGINE_EVENT_PASSTHROUGH_RESULT_VALUE,
   ENGINE_LIVE_EVENT_STORY_OVER_RESULT_VALUE,
-  INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY
+  INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY,
+  getChoiceIdsFromEventContent
 } from '../lib'
 import {
   ElementId,
@@ -359,12 +361,29 @@ const EventChoices: React.FC<{
 
   const { studioId, id: worldId } = engine.worldInfo ?? {}
 
+  /*
+   * The choices this event's prose already offers, which the list must not offer a
+   * second time — inlining a choice moves it into the sentence rather than adding a
+   * second way to take it.
+   *
+   * Read from the content itself rather than from a field on the event, because
+   * there is no field: an inline choice is a node in the document, which is what
+   * makes the whole feature cost no schema. `getChoiceIdsFromEventContent` reads
+   * both shapes that document takes — see it for why there are two.
+   */
+  const inlinedChoiceIds = useMemo(
+    () => getChoiceIdsFromEventContent(event.content),
+    [event.content]
+  )
+
   const choices = useLiveQuery(async () => {
     if (!studioId) return undefined
 
-    const foundChoices = await new LibraryDatabase(studioId).choices
-      .where({ eventId: event.id })
-      .toArray()
+    const foundChoices = (
+      await new LibraryDatabase(studioId).choices
+        .where({ eventId: event.id })
+        .toArray()
+    ).filter((choice) => !inlinedChoiceIds.includes(choice.id))
 
     try {
       if (foundChoices) {
@@ -396,7 +415,51 @@ const EventChoices: React.FC<{
     } catch (error) {
       throw error
     }
-  }, [studioId, event, liveEvent, engine.devTools.blockedChoicesVisible])
+  }, [
+    studioId,
+    event,
+    liveEvent,
+    engine.devTools.blockedChoicesVisible,
+    inlinedChoiceIds
+  ])
+
+  /*
+   * How many of the prose's choices the player can still take.
+   *
+   * Only the dead-end fallback below needs this, and it needs it badly: that block
+   * offers the Return button when an event has no choices and no passthrough, and
+   * an event whose choices have all moved into its sentences looks exactly like a
+   * dead end from the list's point of view. A blocked inline choice is *not*
+   * counted, because `EventInlineChoice` renders one as plain prose — if the only
+   * way on is shut, the event really is a dead end and Return is the right offer.
+   */
+  const openInlineChoiceCount = useLiveQuery(
+    async () => {
+      if (!studioId || inlinedChoiceIds.length === 0) return 0
+
+      const inlinedChoices = (
+        await new LibraryDatabase(studioId).choices.bulkGet(inlinedChoiceIds)
+      ).filter((choice): choice is EngineChoiceData => choice !== undefined)
+
+      const { filteredChoices } = await getChoicesFromEventWithOpenPath(
+        studioId,
+        inlinedChoices,
+        liveEvent.state,
+        engine.devTools.blockedChoicesVisible ? true : false,
+        worldId ? { worldId, liveEvent } : undefined
+      )
+
+      return filteredChoices.length
+    },
+    [
+      studioId,
+      worldId,
+      inlinedChoiceIds,
+      liveEvent,
+      engine.devTools.blockedChoicesVisible
+    ],
+    0
+  )
 
   const pathPassthroughs = useLiveQuery(async () => {
     if (!studioId) return undefined
@@ -464,7 +527,9 @@ const EventChoices: React.FC<{
             </>
           )}
 
-          {choices.length === 0 && pathPassthroughs.length === 0 && (
+          {choices.length === 0 &&
+            pathPassthroughs.length === 0 &&
+            openInlineChoiceCount === 0 && (
             <div className="event-content-choice">
               <div>
                 {engine.currentLiveEvent !==

@@ -13,8 +13,10 @@ import {
   StudioId,
   WorldId,
   ElementId,
-  EngineCharacterData
+  EngineCharacterData,
+  EngineLiveEventData
 } from '../types'
+import { PathProcessor } from './Event'
 import { processTemplateBlock } from '../lib/state'
 
 import { EngineContext } from '../contexts/EngineContext'
@@ -28,6 +30,7 @@ import {
   EventContentNode
 } from '../types/eventContentTypes'
 import EventLinkElement from './EventLinkElement'
+import EventInlineChoice from './EventInlineChoice'
 
 const decorate = (
   template: string,
@@ -83,7 +86,15 @@ const EventContent: React.FC<{
   content: string
   persona?: EventCharacterPersona
   state: EngineLiveEventStateCollection
-}> = React.memo(({ studioId, worldId, eventId, content, persona, state }) => {
+  /*
+   * Both only so an inline choice can be taken from inside the prose. They are
+   * threaded down rather than looked up here because the click has to reach the
+   * same `processPath` the choice list calls: two routes into the stream would be
+   * two chances to disagree about what taking a path does.
+   */
+  liveEvent: EngineLiveEventData
+  onSubmitPath?: PathProcessor
+}> = React.memo(({ studioId, worldId, eventId, content, persona, state, liveEvent, onSubmitPath }) => {
   const { engine } = useContext(EngineContext)
 
   let parsedContentAsJSON: EventContentNode[] | undefined,
@@ -181,6 +192,22 @@ const EventContent: React.FC<{
                       />
                     )
                   }
+
+                  if (node.attribs['data-type'] === 'choice') {
+                    return (
+                      <EventInlineChoice
+                        studioId={studioId}
+                        choiceId={
+                          node.attribs['data-choice-id'] === 'undefined'
+                            ? undefined
+                            : node.attribs['data-choice-id']
+                        }
+                        liveEvent={liveEvent}
+                        liveEventResult={liveEvent.result}
+                        onSubmitPath={onSubmitPath}
+                      />
+                    )
+                  }
                 }
 
                 return node
@@ -196,7 +223,44 @@ const EventContent: React.FC<{
           parseToHTML(
             decorate(content, state, engine.devTools.highlightExpressions).join(
               ''
-            )
+            ),
+            /*
+             * An exported world's content is the HTML baked at export time, so
+             * nothing here needed replacing until now: a character reference had
+             * already become its name and an image its own element.
+             *
+             * An inline choice cannot be baked — whether its path is open depends
+             * on the state the player arrived with — so `eventContentToHTML` leaves
+             * the same placeholder span the composer emits, and this is where the
+             * exported PWA turns it back into something clickable. Without this the
+             * feature works in the preview and is an invisible empty span in every
+             * export, which is the failure this whole branch is prone to.
+             */
+            {
+              replace: (node) => {
+                if (
+                  node instanceof Element &&
+                  node.attribs &&
+                  node.attribs['data-type'] === 'choice'
+                ) {
+                  return (
+                    <EventInlineChoice
+                      studioId={studioId}
+                      choiceId={
+                        node.attribs['data-choice-id'] === 'undefined'
+                          ? undefined
+                          : node.attribs['data-choice-id']
+                      }
+                      liveEvent={liveEvent}
+                      liveEventResult={liveEvent.result}
+                      onSubmitPath={onSubmitPath}
+                    />
+                  )
+                }
+
+                return node
+              }
+            }
             // TODO: only if we are lazy loading images, better to show empty space
             // {
             //   replace: (node) => {
@@ -219,7 +283,19 @@ const EventContent: React.FC<{
     }
 
     serializeAndParseContent()
-  }, [content, characters, engine.devTools])
+    /*
+     * `liveEvent` and `onSubmitPath` are dependencies because the parsed content is
+     * held in state: the `EventInlineChoice` elements built above capture whatever
+     * these were when the effect last ran, and a captured live event is a stale
+     * one — its `result` decides whether the choice is still clickable and its
+     * `state` decides whether the path is open at all. This is the same staleness
+     * that made the passthrough arrow fire a pre-take closure; see
+     * `gotoNextLiveEvent`, which reads the stored record for the other half of it.
+     *
+     * The cost is re-parsing this one event's content when its own live event row
+     * changes, which is exactly when what the prose offers can have changed.
+     */
+  }, [content, characters, engine.devTools, liveEvent, onSubmitPath])
 
   return (
     <div>

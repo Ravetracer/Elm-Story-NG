@@ -282,6 +282,23 @@ export const withCharacters = (editor: EditorType) => {
   return editor
 }
 
+/**
+ * An inline choice is an inline void, exactly as a character reference is: it sits
+ * inside a sentence and holds a reference rather than text of its own, so the
+ * caret must step over it in one move rather than into it.
+ */
+export const withChoices = (editor: EditorType) => {
+  const { isInline, isVoid } = editor
+
+  editor.isInline = (element) =>
+    element.type === ELEMENT_FORMATS.CHOICE ? true : isInline(element)
+
+  editor.isVoid = (element) =>
+    element.type === ELEMENT_FORMATS.CHOICE ? true : isVoid(element)
+
+  return editor
+}
+
 export const withLinks = (editor: EditorType) => {
   const { isInline, insertText, insertData } = editor
 

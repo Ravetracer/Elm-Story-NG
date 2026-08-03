@@ -17,13 +17,20 @@ const useChoices = (
   return choices
 }
 
+// the id is optional, as every other hook here takes it: a component cannot call
+// this one conditionally, so an absent id has to be an answer of `undefined` rather
+// than a reason not to ask. An inline choice element is the first caller that can
+// legitimately have none.
 const useChoice = (
   studioId: StudioId,
-  choiceId: ElementId,
+  choiceId?: ElementId,
   deps?: any[]
 ): Choice | undefined => {
   const choice = useLiveQuery(
-    () => new LibraryDatabase(studioId).choices.where({ id: choiceId }).first(),
+    () =>
+      choiceId
+        ? new LibraryDatabase(studioId).choices.where({ id: choiceId }).first()
+        : undefined,
     deps || [],
     undefined
   )

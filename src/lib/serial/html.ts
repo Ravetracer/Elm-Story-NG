@@ -120,6 +120,25 @@ const serializeDescendantToText = async (
 
       // prettier-ignore
       return `<span style="font-weight:${displayFormat.styles?.fontWeight || ''}; font-style:${displayFormat.styles?.fontStyle || ''}; text-decoration:${displayFormat.styles?.textDecoration};">${displayFormat.text}</span>`
+    case ELEMENT_FORMATS.CHOICE:
+      if (!node.choice_id) return ''
+
+      /*
+       * The one node this serializer must **not** resolve.
+       *
+       * Everything else here is baked: a character reference becomes its name
+       * above, because by export time the name is final. A choice is not final at
+       * export time and never can be — its title is one half of it and whether its
+       * path is open at all is the other, and that depends on the state the player
+       * arrives with. So it survives as the same empty placeholder the composer
+       * emits, and `EventContent` replaces it with `EventInlineChoice` at runtime
+       * in the exported PWA exactly as it does in the preview.
+       *
+       * `getChoiceIdsFromEventContent` reads the id back out of this attribute,
+       * which is what keeps an inlined choice out of the list beneath the prose in
+       * a world where the content is no longer a Slate document.
+       */
+      return `<span data-type="choice" data-choice-id="${node.choice_id}"></span>`
     case ELEMENT_FORMATS.OL:
     case ELEMENT_FORMATS.UL:
       return node.children

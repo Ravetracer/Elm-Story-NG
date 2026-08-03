@@ -5,6 +5,7 @@ import { getSvgUrl } from '.'
 import { ImageSelectPlaceholder } from '../components/ElementEditor/EventContent/Tools/ImageElementSelect'
 
 import { StudioId, WorldId } from '../../engine/src/types'
+import { Choice } from '../data/types'
 import { ELEMENT_FORMATS, EventContentNode } from '../data/eventContentTypes'
 import {
   getCharacterAliasOrTitle,
@@ -76,6 +77,33 @@ const serializeDescendantToText = async (
             ).text
           }</span>`
         : `<span data-type="missing-character" data-character-id="${node.character_id}"></span>`
+    case ELEMENT_FORMATS.CHOICE:
+      // A scene map node preview is read, never clicked, so an inline choice is
+      // resolved to its title here — the same treatment the character reference
+      // above gets, and for the same reason: this is the only one of the three
+      // serializers whose output nothing interactive is built from.
+      /*
+       * `getChoice` throws when the row is gone, and a node can outlive the choice
+       * it names: deleting a choice from the scene map does not reach into the
+       * document, deliberately. Rewriting the content from outside would be
+       * overwritten by an open content editor's next debounced save — the same
+       * reason the asset manager refuses to clear an event image reference — so a
+       * dangling node renders as nothing here and offers nothing to click in the
+       * engine, rather than being repaired behind the author's back.
+       */
+      let choice: Choice | undefined
+
+      try {
+        choice = node.choice_id
+          ? await api().choices.getChoice(studioId, node.choice_id)
+          : undefined
+      } catch (error) {
+        choice = undefined
+      }
+
+      return choice
+        ? `<span class="event-content-preview-choice" title="Inline choice: ${choice.title}">${choice.title}</span>`
+        : ''
     case ELEMENT_FORMATS.OL:
     case ELEMENT_FORMATS.UL:
       return node.children

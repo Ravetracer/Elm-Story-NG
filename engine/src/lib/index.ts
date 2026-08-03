@@ -4,11 +4,14 @@ import {
   CharacterElement,
   CharacterElementStyleTypes,
   CharacterElementTransformType,
+  ChoiceElement,
   Descendant,
   ELEMENT_FORMATS,
   EventContentElement,
   EventContentLeaf
 } from '../types/eventContentTypes'
+
+import { ElementId } from '../types'
 
 export const AUTO_ENGINE_BOOKMARK_KEY = '___auto___'
 export const INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY = '___initial___'
@@ -120,6 +123,48 @@ export const getCharactersIdsFromEventContent = (children: Descendant[]) =>
         element.character_id !== undefined
     )
     .map(({ character_id }) => character_id as string)
+
+export const getChoiceIdsFromEventContentNodes = (children: Descendant[]) =>
+  flattenEventContent(children)
+    .filter(
+      (element): element is ChoiceElement =>
+        // @ts-ignore
+        element.type === ELEMENT_FORMATS.CHOICE &&
+        // @ts-ignore
+        element.choice_id !== undefined
+    )
+    .map(({ choice_id }) => choice_id as string)
+
+/**
+ * Which of an event's choices its prose offers, and so which the list beneath the
+ * prose must not offer a second time.
+ *
+ * **`Event.content` is one field holding two formats, and this is the only thing
+ * that has to read both.** In the composer it is the Slate document as written;
+ * in an exported world it is the HTML `eventContentToHTML` baked at export time,
+ * where a character reference has already become its name. A choice cannot be
+ * baked — it has to still be clickable when the player gets there — so it survives
+ * export as an empty placeholder span, and the id has to be read back out of
+ * whichever of the two shapes arrived.
+ *
+ * Returns unique ids: the same choice mentioned twice in one event is one choice.
+ */
+export const getChoiceIdsFromEventContent = (content?: string): ElementId[] => {
+  if (!content) return []
+
+  let ids: ElementId[]
+
+  try {
+    ids = getChoiceIdsFromEventContentNodes(JSON.parse(content))
+  } catch (error) {
+    // not a Slate document, so it is the baked HTML an export ships
+    ids = [...content.matchAll(/data-choice-id="([^"]*)"/g)]
+      .map(([, id]) => id)
+      .filter((id) => id && id !== 'undefined')
+  }
+
+  return [...new Set(ids)]
+}
 
 export const formatNumberFromString = (value: string) => {
   if (value === '-') return '-'

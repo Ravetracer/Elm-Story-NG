@@ -8,7 +8,12 @@ import { StudioId, WorldId } from '../../../data/types'
 
 import { ComposerContext } from '../../../contexts/ComposerContext'
 
-import Icon from '@ant-design/icons'
+import Icon, { BranchesOutlined } from '@ant-design/icons'
+import { Typography } from 'antd'
+
+import { useChoice } from '../../../hooks'
+
+import api from '../../../api'
 
 import { Draggable } from 'react-beautiful-dnd'
 import { Transforms, Editor } from 'slate'
@@ -17,6 +22,7 @@ import { ReactEditor, useSelected, useSlate } from 'slate-react'
 import {
   ALIGN_TYPE,
   CharacterElement as CharacterElementType,
+  ChoiceElement as ChoiceElementType,
   ELEMENT_FORMATS,
   EmbedElement as EmbedElementType,
   EventContentElement,
@@ -73,6 +79,74 @@ const CharacterElement: React.FC<{
         }
         onCharacterSelect={onCharacterSelect}
       />
+
+      {children}
+    </span>
+  )
+}
+
+/**
+ * An inline choice, as the author sees it.
+ *
+ * The chip shows the choice's title and renames it in place, because the title *is*
+ * the words the player reads — sending the author to the scene map to name what
+ * they are in the middle of writing would make the sentence unwriteable in one
+ * pass. It is the same `Typography.Text editable` the scene map's own choice row
+ * uses, saving through the same `saveChoice`, so the two cannot disagree.
+ *
+ * The node is a void: Slate owns none of this text, and every character of it
+ * belongs to the `choices` table.
+ */
+const ChoiceElement: React.FC<{
+  studioId: StudioId
+  element: ChoiceElementType
+  attributes: {}
+}> = ({ studioId, element, attributes, children }) => {
+  const selected = useSelected()
+
+  const choice = useChoice(studioId, element.choice_id, [element.choice_id])
+
+  const [renaming, setRenaming] = useState(false)
+
+  return (
+    <span
+      {...attributes}
+      className={`${styles.choice} ${selected ? styles.selected : ''}`}
+      // a choice that has been deleted from the scene map leaves this node behind;
+      // it says so rather than rendering an empty chip, and the engine offers
+      // nothing to click. See lib/serialization.ts for why it is not repaired here.
+      title={
+        choice
+          ? 'Inline choice — click the title to rename it. Draw its path on the scene map.'
+          : 'This choice no longer exists. Delete this to tidy the sentence.'
+      }
+      data-slate-editor
+    >
+      <BranchesOutlined className={styles.choiceIcon} />
+
+      {choice ? (
+        <Typography.Text
+          className={styles.choiceTitle}
+          editable={{
+            editing: renaming,
+            onStart: () => setRenaming(true),
+            onChange: async (newTitle) => {
+              setRenaming(false)
+
+              if (!newTitle || newTitle === choice.title) return
+
+              await api().choices.saveChoice(studioId, {
+                ...choice,
+                title: newTitle
+              })
+            }
+          }}
+        >
+          {choice.title}
+        </Typography.Text>
+      ) : (
+        <span className={styles.choiceMissing}>Choice not found</span>
+      )}
 
       {children}
     </span>
@@ -369,6 +443,19 @@ export const Element: React.FC<{
         </CharacterElement>
       )
       break
+    case ELEMENT_FORMATS.CHOICE:
+      if (!studioId) throw 'Unable to render inline choice element.'
+
+      content = (
+        <ChoiceElement
+          studioId={studioId}
+          element={element}
+          attributes={attributes}
+        >
+          {children}
+        </ChoiceElement>
+      )
+      break
     case ELEMENT_FORMATS.EMBED:
       content = (
         <EmbedElement element={element} attributes={attributes}>
@@ -399,6 +486,8 @@ export const Element: React.FC<{
 
   return element.type === ELEMENT_FORMATS.LI ||
     element.type === ELEMENT_FORMATS.CHARACTER ||
+    // an inline void has no block of its own to drag, the same as the two above it
+    element.type === ELEMENT_FORMATS.CHOICE ||
     element.type === ELEMENT_FORMATS.LINK ? (
     content
   ) : (

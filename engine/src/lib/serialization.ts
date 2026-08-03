@@ -96,6 +96,16 @@ const serializeDescendantToText = async (
 
       // replaced with EventCharacterElement
       return `<span data-type="character" data-character-id="${node.character_id}" data-character-alias-id="${node.alias_id}" data-character-ref-transform="${node.transform}" data-character-ref-styles="${node.styles}"></span>`
+    case ELEMENT_FORMATS.CHOICE:
+      // A choice the author has not picked yet says nothing rather than leaving a
+      // gap in the sentence — the same as an unassigned character reference above.
+      if (!node.choice_id) return ''
+
+      // replaced with EventInlineChoice. Unlike a character, this cannot be
+      // resolved to text at any point before the player reads it: its title is one
+      // half of it and its open path — which depends on the state the player
+      // arrived with — is the other.
+      return `<span data-type="choice" data-choice-id="${node.choice_id}"></span>`
     case ELEMENT_FORMATS.OL:
     case ELEMENT_FORMATS.UL:
       return node.children

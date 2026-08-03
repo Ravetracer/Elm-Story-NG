@@ -83,6 +83,7 @@ import {
   withAlignReset,
   withElementReset,
   withCharacters,
+  withChoices,
   withLinks
 } from '../../../lib/contentEditor/plugins'
 
@@ -128,16 +129,18 @@ const EventContent: React.FC<{
   // https://github.com/ianstormtaylor/slate/commit/1b0e7c6b928865cb4fd656b6f922e30fbe72d77a
   const [editor] = useState<ReactEditor>(() =>
     withCharacters(
-      withImages(
-        // withEmbeds(
-        withLinks(
-          withElementReset(
-            withAlignReset(
-              withCorrectVoidBehavior(withReact(withHistory(createEditor())))
+      withChoices(
+        withImages(
+          // withEmbeds(
+          withLinks(
+            withElementReset(
+              withAlignReset(
+                withCorrectVoidBehavior(withReact(withHistory(createEditor())))
+              )
             )
           )
+          // )
         )
-        // )
       )
     )
   )
@@ -446,6 +449,61 @@ const EventContent: React.FC<{
           return
         }
 
+        if (item === ELEMENT_FORMATS.CHOICE) {
+          /*
+           * Inserting an inline choice creates the choice, which is why this one is
+           * the only entry in this menu that writes to the database: the node is a
+           * reference and a reference to nothing is a hole in the sentence.
+           *
+           * The two writes are the pair `EventNode`'s add-choice button already
+           * makes — the ref on the event and the row itself — because the choice
+           * this creates is an ordinary choice in every other respect. It is drawn
+           * on the scene map, a path is dropped from its handle, and deleting the
+           * node here simply returns it to the list beneath the prose.
+           *
+           * The node is inserted after both writes rather than optimistically: an
+           * id in the document naming a row that failed to save is the one state
+           * with no way back, since nothing else records that the author meant to
+           * create it.
+           */
+          if (!event?.id || !event.choices) return
+
+          const choiceId = uuid()
+
+          const insertChoiceElement = async () => {
+            try {
+              await api().events.saveChoiceRefsToEvent(studioId, event.id!, [
+                ...event.choices,
+                choiceId
+              ])
+
+              await api().choices.saveChoice(studioId, {
+                id: choiceId,
+                worldId: event.worldId,
+                eventId: event.id!,
+                title: `Choice ${event.choices.length + 1}`,
+                tags: []
+              })
+
+              Transforms.insertNodes(editor, {
+                type: ELEMENT_FORMATS.CHOICE,
+                choice_id: choiceId,
+                children: [{ text: '' }]
+              })
+
+              logger.info(
+                `add inline choice '${choiceId}' to event '${event.id}'`
+              )
+            } catch (error) {
+              throw error
+            }
+          }
+
+          insertChoiceElement()
+
+          return
+        }
+
         if (item === ELEMENT_FORMATS.IMG) {
           const {
             element: previousElement,
@@ -484,7 +542,10 @@ const EventContent: React.FC<{
         )
       }
     },
-    [editor, commandMenuProps.target]
+    // `event` is here for the inline choice branch, which reads `event.choices` to
+    // append to it: a stale copy would drop every ref added since this callback was
+    // built, and `Event.choices` is replaced wholesale by the write
+    [editor, commandMenuProps.target, studioId, event]
   )
 
   const processHotkey = useCallback(

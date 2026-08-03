@@ -59,6 +59,11 @@ const ELEMENT_MENU_ITEMS: MenuItem[] = [
     type: ELEMENT_FORMATS.CHARACTER,
     title: 'Character Reference',
     additionalMatches: ['reference']
+  },
+  {
+    type: ELEMENT_FORMATS.CHOICE,
+    title: 'Inline Choice',
+    additionalMatches: ['choice', 'link', 'path']
   }
 ]
 

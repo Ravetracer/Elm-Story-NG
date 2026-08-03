@@ -113,6 +113,22 @@ export type ImageElement = {
   children: EmptyText[]
 }
 
+/**
+ * A choice offered inside the prose rather than in the list beneath it.
+ *
+ * An inline void carrying nothing but a reference, exactly as `CharacterElement`
+ * carries a `character_id`: the choice itself stays a row in the `choices` table
+ * where the paths already point at it, so this costs no schema and no migration.
+ * The text the player clicks is the choice's own `title`, which is what keeps the
+ * sentence, the choice list and the scene map from ever disagreeing about what a
+ * choice says.
+ */
+export type ChoiceElement = {
+  type: ELEMENT_FORMATS.CHOICE
+  choice_id?: ElementId
+  children: EmptyText[]
+}
+
 export type EmbedElement = {
   type: ELEMENT_FORMATS.EMBED
   url?: string
@@ -138,6 +154,7 @@ export type EventContentElement =
   | ListItemElement
   | CharacterElement
   | ImageElement
+  | ChoiceElement
   | EmbedElement
   | LinkElement
 
@@ -179,6 +196,7 @@ export enum ELEMENT_FORMATS {
   P = 'p',
   EMBED = 'embed',
   CHARACTER = 'character',
+  CHOICE = 'choice',
   LINK = 'link'
 }
 
@@ -205,6 +223,7 @@ export const SUPPORTED_ELEMENT_TYPES = [
   ELEMENT_FORMATS.IMG,
   ELEMENT_FORMATS.EMBED,
   ELEMENT_FORMATS.CHARACTER,
+  ELEMENT_FORMATS.CHOICE,
   ELEMENT_FORMATS.LINK
 ]
 

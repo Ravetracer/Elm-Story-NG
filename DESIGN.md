@@ -543,6 +543,15 @@ minimally — the goal is to reserve the slot, not to design section 7.
   orphaned choice is worse than an orphaned asset, because a path still points at
   it.
 
+  **Built in section 7, and this last paragraph turned out to be wrong.** Deleting
+  the node un-inlines the choice rather than deleting it, so the row stays in
+  `choices`, its id stays in `Event.choices`, the list beneath the prose offers it
+  again and its paths still lead somewhere: there is no orphan, and so nothing to
+  diff. The real cost was on the export path, which this section did not
+  anticipate — a choice cannot be baked to text the way a character reference is,
+  because whether its path is open depends on the state the player arrives with.
+  See `CLAUDE.md`, "Inline choices".
+
 ---
 
 ## Three scenarios, on paper

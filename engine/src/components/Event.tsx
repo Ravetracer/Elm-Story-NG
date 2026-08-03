@@ -300,6 +300,10 @@ export const Event: React.FC<{
                 content={event.content}
                 persona={event.persona}
                 state={liveEvent.state}
+                liveEvent={liveEvent}
+                // the same processor the choice list is given, so an inline choice
+                // and a listed one take a path by exactly one route
+                onSubmitPath={processPath}
               />
             </div>
 

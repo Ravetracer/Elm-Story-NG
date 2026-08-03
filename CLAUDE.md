@@ -545,6 +545,73 @@ identifier branch (`value || 'undefined'`), it has been true of event prose sinc
 0.7.0, and changing it means changing `templates.ts` in both projects and every
 storyworld's prose along with it.
 
+## Inline choices
+
+A choice offered inside the prose instead of in the list beneath it — `/` →
+**Inline Choice** in the event content editor. The second item of section 7, and
+`DESIGN.md` §12 was right that it costs no schema: the node is a void
+`ELEMENT_FORMATS.CHOICE` carrying a `choice_id`, exactly as the image node carries
+an `asset_id`, and the choice stays a row in `choices` where the paths already
+point at it.
+
+- **The prose owns nothing, which is why the bookkeeping §12 called for was not
+  needed.** Both `DESIGN.md` §12 and `TODO.md` §7 said `lib/contentEditor` would
+  have to diff choice nodes against `Event.choices` the way it diffs images
+  against `Event.images`, "or a deleted node leaves an orphaned choice". Deleting
+  the node **un-inlines** instead: the row stays in `choices`, its id stays in
+  `Event.choices`, the list beneath the prose offers it again and its paths still
+  lead somewhere. An orphan is a choice nothing points at, and nothing here stops
+  pointing at it. `src/__tests__/inlineChoices.test.ts` records that reasoning.
+- **The clickable text is the choice's own `title`.** One source of truth, so the
+  sentence, the choice list and the scene map cannot disagree; the chip in the
+  editor renames it in place through the same `saveChoice` the scene map's choice
+  row uses, because sending an author to the map to name what they are in the
+  middle of writing makes the sentence unwriteable in one pass.
+- **Inserting is the one `/` entry that writes to the database.** A reference to
+  nothing is a hole in the sentence, so it makes the same two writes
+  `EventNode`'s add-choice button does — the ref on the event, then the row — and
+  inserts the node only after both. An id in the document naming a row that failed
+  to save is the one state with no way back.
+- **`getChoiceIdsFromEventContent` reads two formats, and that is the whole trap.**
+  `Event.content` is the Slate document in the composer and the HTML
+  `eventContentToHTML` baked at export time in a shipped world. A character
+  reference is resolved to its name by that bake; **a choice must not be**, because
+  whether its path is open depends on the state the player arrives with — so it
+  survives as the same placeholder span and `EventContent` makes it clickable at
+  runtime. Miss the second format and every export offers an inlined choice twice,
+  once in the sentence and once in the list.
+- **The engine's player branch of `EventContent` had no `replace` map at all** until
+  this, because nothing before needed one: the baked HTML was already final. It has
+  one now, and it is the half of the feature that fails only when someone actually
+  exports.
+- **Filtering the list needed a guard against looking like a dead end.**
+  `EventChoices` renders a **Return** button when an event has no choices and no
+  passthrough, and an event whose choices have all moved into its sentences looks
+  exactly like that from the list's side. `openInlineChoiceCount` is why it does
+  not — and it counts only *open* ones, because a shut inline choice renders as
+  plain prose and the event really is a dead end.
+- **Three states, one of them clickable.** Open is a real `<button>`, so it takes
+  focus and answers the keyboard; closed and already-taken are a `<span>` reading
+  as the prose around them, since a dead link asks the player to try something that
+  cannot happen. The underline on the open state is not decoration — WCAG 1.4.1,
+  and this text sits mid-paragraph with no second example to compare against.
+- **`EventContent` holds its parsed content in state, so `liveEvent` and
+  `onSubmitPath` are dependencies of the effect that builds it.** The
+  `EventInlineChoice` elements capture whatever those were when it last ran, and a
+  captured live event is a stale one: its `result` decides whether the choice is
+  still clickable and its `state` whether the path is open. Same staleness that
+  made the passthrough arrow fire a pre-take closure.
+- **A node can outlive its choice, and is not repaired.** Deleting a choice from
+  the scene map does not reach into the document that mentions it: rewriting
+  content from outside would be overwritten by an open content editor's next
+  debounced save, which is the same reason the asset manager refuses to clear an
+  event image reference. The chip says the choice is gone, the engine offers
+  nothing to click, and the author deletes the node.
+- **Known and not fixed: the scene map node preview keeps the old title until the
+  content changes.** `EventSnippet` serializes the choice's title into the snippet,
+  and a rename writes to `choices` rather than to `Event.content`, so nothing
+  invalidates it. The chip and the node's own choice row both update immediately.
+
 ## Interface text
 
 Every word the storyteller says that an author did not write — 43 of them, from the

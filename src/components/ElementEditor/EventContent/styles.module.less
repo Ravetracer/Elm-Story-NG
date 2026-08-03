@@ -287,6 +287,38 @@
         }
       }
 
+      // An inline choice, as a chip in the writing column. It reads as part of the
+      // sentence — same size and leading as the prose around it — with only the
+      // branch icon and the background saying that it is a reference rather than
+      // words the author typed.
+      .choice {
+        display: inline-block;
+        background: hsl(0, 0%, 15%);
+        padding: 0 4px;
+        border-radius: 2px;
+
+        &.selected {
+          background: var(--content-selection);
+        }
+
+        .choiceIcon {
+          color: var(--highlight-color);
+          margin-right: 4px;
+        }
+
+        // antd's editable Text renders its own pencil beside the copy; both inherit
+        // the prose size rather than antd's default so the line does not grow a
+        // taller row where a choice sits in it.
+        .choiceTitle {
+          font-size: inherit;
+          color: inherit;
+        }
+
+        .choiceMissing {
+          color: var(--warning-message-color);
+        }
+      }
+
       .link {
         text-decoration: underline;
         text-decoration-color: var(--highlight-color);

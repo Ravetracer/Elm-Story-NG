@@ -505,12 +505,18 @@ migration rather than three.
       only in `engine-editor.less`, so a player in an exported PWA has never seen
       it, and turning a debug affordance into an authoring surface would have meant
       building the player-facing half from nothing.)*
-- [ ] Inline choices
-      *(costs no schema at all — a void Slate node carrying a `choice_id`, decided
-      in section 2 and recorded in `DESIGN.md` §12. The cost is bookkeeping:
-      `lib/contentEditor` must diff those nodes against `Event.choices` the way it
-      diffs images against `Event.images`, and an orphaned choice is worse than an
-      orphaned asset because a path still points at it.)*
+- [x] Inline choices — `/` → **Inline Choice** in the event content editor puts a
+      choice inside the prose instead of in the list beneath it. See `CLAUDE.md`,
+      "Inline choices".
+      *(Costs no schema, as section 2 decided. **The bookkeeping it predicted was
+      not needed**: deleting the node un-inlines the choice rather than deleting
+      it, so the row stays in `choices`, its id stays in `Event.choices`, the list
+      offers it again and its paths still lead somewhere — there is no orphan to
+      diff for. What it needed instead was the export path: a choice cannot be
+      baked to text the way a character reference is, since whether its path is
+      open depends on the state the player arrives with, so it survives export as
+      a placeholder span and the engine's player branch of `EventContent` gained
+      the `replace` map it had never needed before.)*
 
 ## 8. Documentation site
 
