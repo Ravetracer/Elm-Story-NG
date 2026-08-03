@@ -447,12 +447,30 @@ section 3.
   PWA has never seen it, and the player-facing half would have been built from
   nothing. Reusing `EngineLiveEventData.messages` instead cost no engine state, no
   theme token and no dismissal rule.
-- **`NARRATION`, not a message type of its own.**
+- **`TRANSITION` is a message type of its own, and the reason is position, not
+  provenance.** It first shipped as `NARRATION` on the argument that
   `ENGINE_LIVE_EVENT_MESSAGE_TYPE` draws a *reading* distinction rather than
-  recording where a line came from, and a notification is read as what NARRATION
-  already describes: a beat of the story. A member per source multiplies the
-  styling and tells the reader nothing. `Event` renders both between the prose and
-  the choices.
+  recording where a line came from — which was right, and then decided the
+  question the other way once the reading was tried on a real storyworld. A
+  transition is read **above** the arriving event's prose, where every other
+  message is read below it, and `Event` cannot tell one from the other by
+  position in `messages` alone once an object beat has been appended.
+  - **Below the prose reported the journey from the far end of it.** The line is
+    stored on the *destination* live event, so rendered after that event's prose
+    an author who wanted "the butler says follow me" and then "the door closes
+    behind you" had to hang the line on the path **arriving at** the butler's
+    event — one path earlier than the transition it describes, which is where it
+    reads wrong to write and wrong to find again later. Above the prose, the line
+    belongs to the path *leaving* the event it follows, which is the same path the
+    author is thinking about.
+  - **It is styled exactly like a narration** — same italic, same opacity,
+    `event-content-transition` only so the DOM says which it is. Its distinction
+    is where it sits, which is a matter for the markup and not for a look of its
+    own, so it costs no theme token and nothing in `engine-editor.less`.
+  - **A live event saved before the member existed stores its notification as
+    `NARRATION`** and goes on reading below the prose. Nothing migrates it: it is
+    runtime state, not authored data, so this is visible only inside a
+    playthrough already in progress and only for lines already in its history.
 - **The text is resolved when the path is crossed and stored resolved.** Template
   expressions work, against the state the crossing *arrived* with — after the
   path's effects and the scene-scope reset, which is why `getPathNotification`

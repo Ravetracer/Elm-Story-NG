@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import { processTemplateToText } from '../../engine/src/lib/state'
+import {
+  partitionLiveEventMessages,
+  processTemplateToText
+} from '../../engine/src/lib/state'
 
 import {
+  EngineLiveEventMessageData,
   EngineLiveEventStateCollection,
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE,
   VARIABLE_TYPE
 } from '../../engine/src/types'
+
+const { TRANSITION, NARRATION, INSPECTION } = ENGINE_LIVE_EVENT_MESSAGE_TYPE
 
 /**
  * A path notification is one authored string resolved against the state the
@@ -102,5 +109,98 @@ describe('a path notification resolves against the state it was crossed with', (
     // `getPathNotification` drops a blank result rather than writing an empty
     // paragraph into the reading column
     expect(resolve('   ', {}).trim()).toBe('')
+  })
+})
+
+/**
+ * Where the line is *read*, which is the half of this feature that was decided
+ * twice. A notification is stored on the destination live event, so rendered below
+ * that event's prose it reported the transition from the far end of it — and an
+ * author who wanted a line after "Follow me!" had to hang it on the path arriving
+ * at that event rather than the one leaving it, one step earlier than the
+ * transition it describes.
+ *
+ * `partitionLiveEventMessages` is that decision, and it is a function so it can be
+ * held to it: the same array also carries object beats, which are read below the
+ * prose as they always were.
+ */
+describe('a transition is read before the prose and an object beat after it', () => {
+  const message = (
+    text: string,
+    type: ENGINE_LIVE_EVENT_MESSAGE_TYPE
+  ): EngineLiveEventMessageData => ({ text, type })
+
+  it('reads a path notification above the prose it arrives at', () => {
+    const { beforeProse, afterProse } = partitionLiveEventMessages([
+      message('The door closes behind you.', TRANSITION)
+    ])
+
+    expect(beforeProse.map(({ message }) => message.text)).toEqual([
+      'The door closes behind you.'
+    ])
+    expect(afterProse).toEqual([])
+  })
+
+  it('leaves object beats below the prose, where they already were', () => {
+    const { beforeProse, afterProse } = partitionLiveEventMessages([
+      message('Taken.', NARRATION),
+      message('A brass key, worn smooth.', INSPECTION)
+    ])
+
+    expect(beforeProse).toEqual([])
+    expect(afterProse.map(({ message }) => message.text)).toEqual([
+      'Taken.',
+      'A brass key, worn smooth.'
+    ])
+  })
+
+  it('splits a mixed event without reordering either side', () => {
+    const { beforeProse, afterProse } = partitionLiveEventMessages([
+      message('The door closes behind you.', TRANSITION),
+      message('Taken.', NARRATION),
+      message('A brass key, worn smooth.', INSPECTION)
+    ])
+
+    expect(beforeProse.map(({ message }) => message.text)).toEqual([
+      'The door closes behind you.'
+    ])
+    expect(afterProse.map(({ message }) => message.text)).toEqual([
+      'Taken.',
+      'A brass key, worn smooth.'
+    ])
+  })
+
+  it('keeps each message its index in the original array', () => {
+    // the two groups are rendered as separate lists, so a key built from a
+    // group-local index would collide across them
+    const { beforeProse, afterProse } = partitionLiveEventMessages([
+      message('Taken.', NARRATION),
+      message('The door closes behind you.', TRANSITION),
+      message('A brass key, worn smooth.', INSPECTION)
+    ])
+
+    expect(beforeProse.map(({ index }) => index)).toEqual([1])
+    expect(afterProse.map(({ index }) => index)).toEqual([0, 2])
+  })
+
+  it('treats an absent message list as an event with nothing to say', () => {
+    // `messages` is optional and absent on every live event saved before it
+    // existed
+    expect(partitionLiveEventMessages()).toEqual({
+      beforeProse: [],
+      afterProse: []
+    })
+  })
+
+  it('reads a notification stored before TRANSITION existed below the prose', () => {
+    // an in-progress playthrough holds its past notifications as NARRATION; they
+    // keep the placement they were read with rather than being migrated, since
+    // this is runtime state and not authored data
+    const { beforeProse, afterProse } = partitionLiveEventMessages([
+      message('The door closes behind you.', NARRATION)
+    ])
+
+    expect(beforeProse).toEqual([])
+    expect(afterProse).toHaveLength(1)
   })
 })

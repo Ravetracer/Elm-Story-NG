@@ -6,11 +6,14 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { findDestinationEvent, getLiveEventInitial, getEvent } from '../lib/api'
 import { LibraryDatabase } from '../lib/db'
 
+import { partitionLiveEventMessages } from '../lib/state'
+
 import {
   ElementId,
   ELEMENT_TYPE,
   EVENT_TYPE,
   EngineLiveEventData,
+  EngineLiveEventMessageData,
   EngineLiveEventStateCollection,
   EngineEventData,
   EnginePathData,
@@ -202,6 +205,45 @@ export const Event: React.FC<{
 
   if (!studioId || !worldId) return null
 
+  // which side of the prose each message is read on; see
+  // `partitionLiveEventMessages`
+  const { beforeProse, afterProse } = partitionLiveEventMessages(
+    liveEvent.messages
+  )
+
+  /**
+   * One message, wherever it is read.
+   *
+   * Takes the index it had in `liveEvent.messages` rather than its position in
+   * whichever group it was rendered with, so the two groups cannot collide on a
+   * key.
+   */
+  const renderMessage = (
+    message: EngineLiveEventMessageData,
+    index: number
+  ) => {
+    const inspection =
+      message.type === ENGINE_LIVE_EVENT_MESSAGE_TYPE.INSPECTION
+
+    return (
+      <p
+        className={
+          inspection
+            ? 'event-content-object-inspection'
+            : message.type === ENGINE_LIVE_EVENT_MESSAGE_TYPE.TRANSITION
+            ? 'event-content-transition'
+            : 'event-content-object-message'
+        }
+        key={`${liveEvent.id}-message-${index}`}
+        // an inspection is ancillary to the story rather than part of it, which
+        // `note` says and `<cite>` — the title of a work — would not
+        role={inspection ? 'note' : undefined}
+      >
+        {message.text}
+      </p>
+    )
+  }
+
   return (
     <AcceleratedDiv style={{ ...styles, transform: 'translate3d(0,0,0)' }}>
       <div
@@ -216,6 +258,29 @@ export const Event: React.FC<{
       >
         {event?.id && (
           <>
+            {/*
+              TRANSITION
+
+              What the path said as it was crossed, read **before** the prose of
+              the event it arrived at, because that is when it happened: the
+              player left somewhere, the line sounded on the way, and this is
+              where they came to. Read after the prose it would report the
+              journey from the far end of it — "the butler says follow me" and
+              only then "the door closes behind you", with the author forced to
+              hang the line off the *incoming* path of the event before it to get
+              the order right.
+
+              This is the one thing about the message column that is not "between
+              the prose and the choices", and the reason it earns
+              `ENGINE_LIVE_EVENT_MESSAGE_TYPE.TRANSITION`: a live event saved
+              before that member existed stores its notification as NARRATION and
+              goes on reading below the prose, which is the old order and only
+              ever visible in a playthrough already in progress.
+            */}
+            {beforeProse.map(({ message, index }) =>
+              renderMessage(message, index)
+            )}
+
             <div
               style={{
                 display: event.persona ? 'grid' : 'unset',
@@ -246,36 +311,16 @@ export const Event: React.FC<{
               an object beat is a line on this event rather than a live event of
               its own.
 
-              Two sources, one column: the objects, and the notification on the
-              path that was crossed to get here — which is written when this event
-              is created and so is always the first of them. See
-              `getPathNotification`.
+              Everything the player did once they were here, which is everything
+              except the transition that brought them — that is rendered above.
 
               The two kinds are styled apart because they are read differently: a
               narration is a beat of the story, an inspection is the player turning
               something over in their hands.
             */}
-            {liveEvent.messages?.map((message, index) => {
-              const inspection =
-                message.type === ENGINE_LIVE_EVENT_MESSAGE_TYPE.INSPECTION
-
-              return (
-                <p
-                  className={
-                    inspection
-                      ? 'event-content-object-inspection'
-                      : 'event-content-object-message'
-                  }
-                  key={`${liveEvent.id}-message-${index}`}
-                  // an inspection is ancillary to the story rather than part of
-                  // it, which `note` says and `<cite>` — the title of a work —
-                  // would not
-                  role={inspection ? 'note' : undefined}
-                >
-                  {message.text}
-                </p>
-              )
-            })}
+            {afterProse.map(({ message, index }) =>
+              renderMessage(message, index)
+            )}
 
             {event.type === EVENT_TYPE.CHOICE && (
               <EventChoices

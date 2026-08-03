@@ -683,7 +683,17 @@ export type EngineLiveEventResult = {
  */
 export enum ENGINE_LIVE_EVENT_MESSAGE_TYPE {
   NARRATION = 'NARRATION',
-  INSPECTION = 'INSPECTION'
+  INSPECTION = 'INSPECTION',
+  /**
+   * A path's notification — the one line the author gave a transition.
+   *
+   * A member of its own not because of where it came from but because of where it
+   * is *read*: above the arriving event's prose rather than below it, which is
+   * the whole distinction this enum draws. A transition happened on the way in,
+   * so a reader meets it before the place it brought them to; the two members
+   * above are things that happen once the player is already there.
+   */
+  TRANSITION = 'TRANSITION'
 }
 
 export interface EngineLiveEventMessageData {

@@ -811,7 +811,7 @@ export const getPathNotification = async (
     // the reading column is worse than silence
     if (!text.trim()) return undefined
 
-    return { text, type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.NARRATION }
+    return { text, type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.TRANSITION }
   } catch (error) {
     throw error
   }

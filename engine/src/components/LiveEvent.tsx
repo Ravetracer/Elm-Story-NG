@@ -172,11 +172,15 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
         /*
          * What the path says as it is crossed, if the author gave it a line.
          *
-         * On the **destination** event rather than the one being left, and first in
-         * its `messages`, so it is read on arrival and before anything the player
-         * then does with an object there. A restart reaches this with no `pathId`
-         * at all — `restartWorld` submits a result and no path — so it cannot
-         * inherit a notification from the choice that ended the story.
+         * On the **destination** event rather than the one being left, and typed
+         * TRANSITION, which is what puts it above that event's prose rather than
+         * below it: the line sounded on the way here, so it is read before the
+         * place it brought the player to and before anything they then do with an
+         * object there. That is also what makes the authoring read straight — the
+         * line belongs to the path *leaving* the event it follows, rather than to
+         * the path arriving at it one step earlier. A restart reaches this with no
+         * `pathId` at all — `restartWorld` submits a result and no path — so it
+         * cannot inherit a notification from the choice that ended the story.
          */
         const notification = pathId
           ? await getPathNotification(studioId, pathId, nextState)

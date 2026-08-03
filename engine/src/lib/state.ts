@@ -2,8 +2,10 @@ import { cloneDeep } from 'lodash'
 
 import {
   COMPARE_OPERATOR_TYPE,
+  EngineLiveEventMessageData,
   EngineLiveEventStateCollection,
   EngineVariableData,
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE,
   SET_OPERATOR_TYPE,
   VARIABLE_SCOPE,
   VARIABLE_TYPE,
@@ -287,4 +289,38 @@ export const processTemplateToText = (
   return processed.replace(/{([^}]+)}/g, (_, value: string) =>
     value === 'esg-error' ? 'ERROR' : value
   )
+}
+
+/**
+ * Which side of the event's prose each of its messages is read on.
+ *
+ * A TRANSITION happened on the way in, so it is read before the place it brought
+ * the player to; everything else happened once they were already there and is read
+ * after it. That is the whole rule, and it is here rather than inline in `Event`
+ * because it is the one thing about the message column that a reader would not
+ * predict — and because `partitionLiveEventMessages` can be held to it by a test
+ * where JSX cannot.
+ *
+ * Each message keeps the index it had in `messages`, so a key built from it stays
+ * unique across the two groups, and the order within each group is the order the
+ * lines were said.
+ */
+export const partitionLiveEventMessages = (
+  messages?: EngineLiveEventMessageData[]
+): {
+  beforeProse: { message: EngineLiveEventMessageData; index: number }[]
+  afterProse: { message: EngineLiveEventMessageData; index: number }[]
+} => {
+  const beforeProse: { message: EngineLiveEventMessageData; index: number }[] =
+      [],
+    afterProse: { message: EngineLiveEventMessageData; index: number }[] = []
+
+  messages?.forEach((message, index) =>
+    (message.type === ENGINE_LIVE_EVENT_MESSAGE_TYPE.TRANSITION
+      ? beforeProse
+      : afterProse
+    ).push({ message, index })
+  )
+
+  return { beforeProse, afterProse }
 }

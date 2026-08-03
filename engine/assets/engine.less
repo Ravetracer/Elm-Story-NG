@@ -770,13 +770,19 @@
     // `:last-child` above zeroes its bottom margin, and a message following it as a
     // sibling would otherwise sit flush against it. Adjacent messages collapse
     // these against each other, so a run of them keeps the single line rhythm.
+    // A transition reads like a narration and is styled like one — its
+    // distinction is *where* it sits, above the prose rather than below it, which
+    // is a matter for the markup and not for a look of its own. It keeps a class
+    // of its own anyway so the DOM says which of the two a paragraph is.
     .event-content-object-message,
+    .event-content-transition,
     .event-content-object-inspection {
       margin-top: 1.4rem;
       font-style: italic;
     }
 
-    .event-content-object-message {
+    .event-content-object-message,
+    .event-content-transition {
       opacity: 0.85;
     }
 
