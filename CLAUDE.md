@@ -315,6 +315,38 @@ usage counts, a description field, and a deletion that states its consequences.
   (#166, #307). The manager adds a usage line under each row rather than another
   column, because the row's column widths are shared with the condition and
   effect rows in `ElementProperties/PathProperties`.
+- **A variable is named before it exists.** `AddVariableModal` is the prompt
+  behind both the manager's **Add Variable** and the `+` on the Variables panel
+  — which no longer creates anything itself, it opens the manager with
+  `addOpen`. A generated name is only useful to an author who has none, and it
+  is the hardest thing to find again in a list, so it is the field's starting
+  point rather than the result of the click. The prompt applies
+  `sanitizeVariableTitle` — the same strip of digits and non-word characters
+  `saveVariableTitle` performs — and says what it stored, and it warns about a
+  duplicate title rather than refusing one, since `getDuplicateVariableTitles`
+  treats that as a condition to report.
+- **The new row is scrolled to, focused and briefly marked**, because that was
+  the actual complaint: the row existed and could not be found. Two things
+  about the reveal, both measured live rather than reasoned about:
+  - **The row arrives in two steps and neither re-renders the manager.** The
+    manager's live query hands back the variable, and then `VariableRow`'s own
+    live query resolves and renders the fields — until it does, the block's
+    only input is the description, which is what a plain `querySelector('input')`
+    focused. Hence a handful of timed attempts rather than an effect dependency,
+    and the title addressed as `.${variableStyles.titleCol} input`.
+  - **Two dialogs opening together fight over the focus.** rc-dialog focuses a
+    dialog when its transition ends, so the Variables modal takes the focus back
+    at ~300ms from a prompt opened in the same click; the prompt selects its
+    field at 120ms *and* 450ms. `focusTriggerAfterClose={false}` is the other
+    half — on close rc-dialog would otherwise hand the focus back to the trigger,
+    later than the new row's own `focus()`.
+- **Each row is an accordion, and the warning is not inside it.** Title, type
+  and initial value are the header; the description, the scope and the usage
+  summary open under a caret in a 22px column that the header row mirrors with
+  an empty span so the labels stay over their fields. A duplicate-title chip is
+  shown whether or not the row is open — it is a warning, not detail, and it is
+  silent everywhere else. Expansion is per mount and deliberately not persisted:
+  `VariablesModal` sets `destroyOnClose`, so every open starts collapsed.
 
 **An antd `Modal` must not be a child of an rc-dock `DividerBox`.** DividerBox
 divides its space between its React children and counts the modal as one, even

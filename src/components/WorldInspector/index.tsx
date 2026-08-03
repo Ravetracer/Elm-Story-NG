@@ -22,7 +22,6 @@ import {
 } from '@ant-design/icons'
 
 import { VariablesModal } from '../Modal'
-import addVariable from '../VariableManager/addVariable'
 import WorldOutline from '../WorldOutline'
 import WorldCharacters from '../WorldCharacters'
 import WorldVariables from '../WorldVariables'
@@ -46,14 +45,17 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
 
   // Read by the Variables tab title below, which is captured in defaultLayout on
   // the first render. A setter's identity is stable, so the closure stays valid.
-  // `help` opens the manager onto its reference rather than onto the list.
+  // `help` opens the manager onto its reference rather than onto the list;
+  // `add` opens it onto the add prompt, so a new variable is named before it
+  // exists rather than found again afterwards
   const [variablesModal, setVariablesModal] = useState({
     visible: false,
-    help: false
+    help: false,
+    add: false
   })
 
-  const openVariablesModal = (help = false) =>
-    setVariablesModal({ visible: true, help })
+  const openVariablesModal = (help = false, add = false) =>
+    setVariablesModal({ visible: true, help, add })
 
   const [defaultLayout] = useState<LayoutData>({
     dockbox: {
@@ -152,15 +154,13 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
                       {world.id && (
                         <span
                           className={styles.tabAddComponentButton}
-                          onClick={async () => {
+                          onClick={() => {
                             // TODO: Fire only when tab is active #92
                             if (!world.id) return
 
-                            await addVariable(studioId, world.id)
-
                             // the panel is an index now, so a new variable is
-                            // only nameable in the manager
-                            openVariablesModal()
+                            // named and nameable in the manager
+                            openVariablesModal(false, true)
                           }}
                         >
                           <svg
@@ -248,7 +248,10 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
         world={world}
         visible={variablesModal.visible}
         helpOpen={variablesModal.help}
-        onCancel={() => setVariablesModal({ visible: false, help: false })}
+        addOpen={variablesModal.add}
+        onCancel={() =>
+          setVariablesModal({ visible: false, help: false, add: false })
+        }
       />
 
       <DividerBox className={styles.WorldInspector} mode="vertical">

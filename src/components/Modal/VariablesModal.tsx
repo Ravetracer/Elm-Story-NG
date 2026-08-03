@@ -16,6 +16,8 @@ interface VariablesModalProps extends ModalProps {
   // open onto the reference rather than the list; destroyOnClose means the
   // manager remounts on every open, so this is read fresh each time
   helpOpen?: boolean
+  // open onto the add prompt, for the + on the Variables panel
+  addOpen?: boolean
 }
 
 const VariablesModal: React.FC<VariablesModalProps> = ({
@@ -23,6 +25,7 @@ const VariablesModal: React.FC<VariablesModalProps> = ({
   world,
   visible,
   helpOpen,
+  addOpen,
   onCancel
 }) => (
   <Modal
@@ -44,6 +47,7 @@ const VariablesModal: React.FC<VariablesModalProps> = ({
         studioId={studioId}
         worldId={world.id as WorldId}
         helpOpen={helpOpen}
+        addOpen={addOpen}
       />
     )}
   </Modal>
