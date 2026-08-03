@@ -29,6 +29,7 @@ import {
   ELEMENT_FORMATS,
   EventContentElement,
   EventContentLeaf,
+  ChoiceElement,
   ImageElement,
   LEAF_FORMATS,
   LinkElement,
@@ -525,6 +526,26 @@ export const getImageIdsFromEventContent = (editor: EditorType) =>
         element.asset_id !== undefined
     )
     .map(({ asset_id }) => asset_id as string)
+
+/**
+ * The choices this document already offers inline.
+ *
+ * The picker subtracts these from the event's choices, so a choice cannot be put
+ * into the prose twice — which would leave the player two ways to take one path and
+ * the author no way to tell the two mentions apart.
+ *
+ * Reads the live document rather than the saved `Event.content`, because the author
+ * is mid-edit and the debounced save is up to a second behind.
+ */
+export const getInlinedChoiceIdsFromEventContent = (editor: EditorType) =>
+  flattenEventContent(editor.children, true)
+    .filter(
+      (element): element is ChoiceElement =>
+        Element.isElement(element) &&
+        element.type === ELEMENT_FORMATS.CHOICE &&
+        element.choice_id !== undefined
+    )
+    .map(({ choice_id }) => choice_id as string)
 
 export const syncImagesFromEventContentToEventData = async (
   studioId: StudioId,

@@ -567,11 +567,29 @@ point at it.
   editor renames it in place through the same `saveChoice` the scene map's choice
   row uses, because sending an author to the map to name what they are in the
   middle of writing makes the sentence unwriteable in one pass.
-- **Inserting is the one `/` entry that writes to the database.** A reference to
-  nothing is a hole in the sentence, so it makes the same two writes
-  `EventNode`'s add-choice button does — the ref on the event, then the row — and
-  inserts the node only after both. An id in the document naming a row that failed
-  to save is the one state with no way back.
+- **Inserting writes nothing; the picker does.** `/` → Inline Choice drops an
+  *unassigned* node, exactly as a character reference is inserted, and
+  `Tools/ChoiceElementSelect` then points it at a choice. That ordering is what the
+  common case needs: an inline choice is most often an **existing** choice being
+  moved out of the list and into the sentence for the reading flow, and creating one
+  on insert would leave a stray behind every time. Creating is the menu's last
+  entry, and it makes the same two writes `EventNode`'s add-choice button does — the
+  ref on the event, then the row — setting the node only after both, since an id in
+  the document naming a row that failed to save is the one state with no way back.
+- **The picker offers only choices not already in the prose**, excluding the one the
+  node itself holds. A choice mentioned twice would give the player two ways to take
+  one path and the author no way to tell the mentions apart.
+  `getInlinedChoiceIdsFromEventContent` reads the **live document** rather than the
+  saved `Event.content`, which is up to a debounce behind while the author types.
+- **Re-pointing is how a choice moves back to the list.** Pointing the node at
+  another choice un-inlines the previous one, which then reappears beneath the prose
+  with its paths intact — verified by reading the database and the preview after the
+  swap, not by reasoning about it. "Remove from the text" does the same and leaves
+  the node's choice alone.
+- **The picker's overlay is a `Menu`**, because an antd `Dropdown` whose overlay is
+  not one does not dismiss when an entry is clicked (bug class 3), and
+  `.choiceSelectMenu` is declared at the **top level** of the stylesheet because the
+  overlay portals to `document.body`.
 - **`getChoiceIdsFromEventContent` reads two formats, and that is the whole trap.**
   `Event.content` is the Slate document in the composer and the HTML
   `eventContentToHTML` baked at export time in a shipped world. A character

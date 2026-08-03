@@ -43,6 +43,7 @@ import {
   ELEMENT_FORMATS,
   SUPPORTED_ELEMENT_TYPES,
   CharacterElement,
+  ChoiceElement,
   ImageElement,
   DEFAULT_EVENT_CONTENT
 } from '../../../data/eventContentTypes'
@@ -180,6 +181,87 @@ const EventContent: React.FC<{
         <EventContentElement
           studioId={studioId}
           worldId={scene.worldId}
+          eventId={eventId}
+          /*
+           * Pointing an inline choice node at a choice — an existing one, or one
+           * created on the spot.
+           *
+           * The writes live here rather than in the picker for the reason the
+           * character and image handlers do: the component in `Tools` reports what
+           * the author chose and this owns the document and the database. Creating
+           * makes the pair `EventNode`'s add-choice button makes — the ref on the
+           * event, then the row — and sets the node only after both, because an id
+           * in the document naming a row that failed to save is the one state with
+           * no way back.
+           */
+          onChoiceSelect={
+            props.element.type === ELEMENT_FORMATS.CHOICE
+              ? async (selection) => {
+                  const choiceElementPath = ReactEditor.findPath(
+                    editor,
+                    props.element
+                  )
+
+                  if (selection.type === 'REMOVE') {
+                    // the choice itself survives: removing the node un-inlines it,
+                    // and the list beneath the prose offers it again
+                    Transforms.removeNodes(editor, { at: choiceElementPath })
+
+                    logger.info(`remove inline choice from event '${eventId}'`)
+
+                    ReactEditor.focus(editor)
+
+                    return
+                  }
+
+                  let choiceId: ElementId | undefined
+
+                  if (selection.type === 'EXISTING') {
+                    choiceId = selection.choiceId
+                  }
+
+                  if (selection.type === 'NEW') {
+                    if (!event?.id || !event.choices) return
+
+                    const newChoiceId = uuid()
+
+                    try {
+                      await api().events.saveChoiceRefsToEvent(
+                        studioId,
+                        event.id,
+                        [...event.choices, newChoiceId]
+                      )
+
+                      await api().choices.saveChoice(studioId, {
+                        id: newChoiceId,
+                        worldId: event.worldId,
+                        eventId: event.id,
+                        title: `Choice ${event.choices.length + 1}`,
+                        tags: []
+                      })
+
+                      choiceId = newChoiceId
+                    } catch (error) {
+                      throw error
+                    }
+                  }
+
+                  if (!choiceId) return
+
+                  Transforms.setNodes<ChoiceElement>(
+                    editor,
+                    { choice_id: choiceId },
+                    { at: choiceElementPath }
+                  )
+
+                  logger.info(
+                    `point inline choice at '${choiceId}' in event '${eventId}'`
+                  )
+
+                  ReactEditor.focus(editor)
+                }
+              : undefined
+          }
           onCharacterSelect={
             props.element.type === ELEMENT_FORMATS.CHARACTER
               ? (character, remove) => {
@@ -451,55 +533,19 @@ const EventContent: React.FC<{
 
         if (item === ELEMENT_FORMATS.CHOICE) {
           /*
-           * Inserting an inline choice creates the choice, which is why this one is
-           * the only entry in this menu that writes to the database: the node is a
-           * reference and a reference to nothing is a hole in the sentence.
-           *
-           * The two writes are the pair `EventNode`'s add-choice button already
-           * makes — the ref on the event and the row itself — because the choice
-           * this creates is an ordinary choice in every other respect. It is drawn
-           * on the scene map, a path is dropped from its handle, and deleting the
-           * node here simply returns it to the list beneath the prose.
-           *
-           * The node is inserted after both writes rather than optimistically: an
-           * id in the document naming a row that failed to save is the one state
-           * with no way back, since nothing else records that the author meant to
-           * create it.
+           * Inserted **unassigned**, and nothing is written until the author picks
+           * from the chip's menu — which is the same shape the character reference
+           * has, and here it is what makes the common case possible at all: an
+           * inline choice is most often an *existing* choice being moved out of the
+           * list and into the sentence for the reading flow. Creating one on insert
+           * would mean every such move left a stray choice behind.
            */
-          if (!event?.id || !event.choices) return
+          Transforms.insertNodes(editor, {
+            type: ELEMENT_FORMATS.CHOICE,
+            children: [{ text: '' }]
+          })
 
-          const choiceId = uuid()
-
-          const insertChoiceElement = async () => {
-            try {
-              await api().events.saveChoiceRefsToEvent(studioId, event.id!, [
-                ...event.choices,
-                choiceId
-              ])
-
-              await api().choices.saveChoice(studioId, {
-                id: choiceId,
-                worldId: event.worldId,
-                eventId: event.id!,
-                title: `Choice ${event.choices.length + 1}`,
-                tags: []
-              })
-
-              Transforms.insertNodes(editor, {
-                type: ELEMENT_FORMATS.CHOICE,
-                choice_id: choiceId,
-                children: [{ text: '' }]
-              })
-
-              logger.info(
-                `add inline choice '${choiceId}' to event '${event.id}'`
-              )
-            } catch (error) {
-              throw error
-            }
-          }
-
-          insertChoiceElement()
+          Transforms.deselect(editor)
 
           return
         }

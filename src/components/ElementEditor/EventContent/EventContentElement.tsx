@@ -4,7 +4,7 @@ import { isElementEmptyAndSelected } from '../../../lib/contentEditor'
 
 import React, { useContext, useState } from 'react'
 
-import { StudioId, WorldId } from '../../../data/types'
+import { ElementId, StudioId, WorldId } from '../../../data/types'
 
 import { ComposerContext } from '../../../contexts/ComposerContext'
 
@@ -37,6 +37,9 @@ import ImageElementSelect, {
   OnImageAssetSelect,
   OnImageSelect
 } from './Tools/ImageElementSelect'
+import ChoiceElementSelect, {
+  OnChoiceSelect
+} from './Tools/ChoiceElementSelect'
 
 import styles from './styles.module.less'
 import LinkElementEditor from './Tools/LinkElementEditor'
@@ -99,32 +102,66 @@ const CharacterElement: React.FC<{
  */
 const ChoiceElement: React.FC<{
   studioId: StudioId
+  eventId: ElementId
   element: ChoiceElementType
   attributes: {}
-}> = ({ studioId, element, attributes, children }) => {
+  onChoiceSelect: OnChoiceSelect
+}> = ({
+  studioId,
+  eventId,
+  element,
+  attributes,
+  onChoiceSelect,
+  children
+}) => {
   const selected = useSelected()
 
   const choice = useChoice(studioId, element.choice_id, [element.choice_id])
 
   const [renaming, setRenaming] = useState(false)
 
+  /*
+   * Three things this chip can be showing, and they are not the same problem:
+   *
+   * - **unassigned** (`choice_id` absent) — a node waiting to be pointed at a
+   *   choice, which is how one is inserted: nothing is created until the author
+   *   picks, so cancelling leaves no stray choice in the list.
+   * - **assigned** — the choice's title, renameable in place.
+   * - **assigned but gone** — the choice was deleted from the scene map, which does
+   *   not reach into the document that mentions it. It says so rather than rendering
+   *   an empty chip; see lib/serialization.ts for why it is not repaired.
+   */
+  const unassigned = element.choice_id === undefined
+
   return (
     <span
       {...attributes}
-      className={`${styles.choice} ${selected ? styles.selected : ''}`}
-      // a choice that has been deleted from the scene map leaves this node behind;
-      // it says so rather than rendering an empty chip, and the engine offers
-      // nothing to click. See lib/serialization.ts for why it is not repaired here.
+      className={`${styles.choice} ${selected ? styles.selected : ''} ${
+        unassigned ? styles.choiceUnassigned : ''
+      }`}
       title={
-        choice
-          ? 'Inline choice — click the title to rename it. Draw its path on the scene map.'
-          : 'This choice no longer exists. Delete this to tidy the sentence.'
+        unassigned
+          ? 'Pick a choice for the text, or create one.'
+          : choice
+          ? 'Inline choice — click the title to rename it, or the icon to point it at another choice. Draw its path on the scene map.'
+          : 'This choice no longer exists. Remove it from the text.'
       }
       data-slate-editor
     >
-      <BranchesOutlined className={styles.choiceIcon} />
+      <ChoiceElementSelect
+        studioId={studioId}
+        eventId={eventId}
+        element={element}
+        onChoiceSelect={onChoiceSelect}
+      >
+        <BranchesOutlined className={styles.choiceIcon} />
+      </ChoiceElementSelect>
 
-      {choice ? (
+      {unassigned && (
+        <span className={styles.choiceUnassignedLabel}>Choose a choice…</span>
+      )}
+
+      {!unassigned && choice && (
         <Typography.Text
           className={styles.choiceTitle}
           editable={{
@@ -144,7 +181,9 @@ const ChoiceElement: React.FC<{
         >
           {choice.title}
         </Typography.Text>
-      ) : (
+      )}
+
+      {!unassigned && !choice && (
         <span className={styles.choiceMissing}>Choice not found</span>
       )}
 
@@ -311,17 +350,21 @@ const DraggableWrapper: React.FC<{ element: EventContentElement }> = ({
 export const Element: React.FC<{
   studioId?: StudioId
   worldId?: WorldId
+  eventId?: ElementId
   onCharacterSelect?: OnCharacterSelect
   onImageSelect?: OnImageSelect
   onImageAssetSelect?: OnImageAssetSelect
+  onChoiceSelect?: OnChoiceSelect
   element: EventContentElement
   attributes: {}
 }> = ({
   studioId,
   worldId,
+  eventId,
   onCharacterSelect,
   onImageSelect,
   onImageAssetSelect,
+  onChoiceSelect,
   element,
   attributes,
   children
@@ -444,13 +487,16 @@ export const Element: React.FC<{
       )
       break
     case ELEMENT_FORMATS.CHOICE:
-      if (!studioId) throw 'Unable to render inline choice element.'
+      if (!studioId || !eventId || !onChoiceSelect)
+        throw 'Unable to render inline choice element.'
 
       content = (
         <ChoiceElement
           studioId={studioId}
+          eventId={eventId}
           element={element}
           attributes={attributes}
+          onChoiceSelect={onChoiceSelect}
         >
           {children}
         </ChoiceElement>

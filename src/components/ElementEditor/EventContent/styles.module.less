@@ -1,4 +1,22 @@
 // mixin
+// Declared at the top level rather than inside `.EventContent`, because antd
+// portals a Dropdown's overlay to `document.body`: CSS modules hash the class name
+// but do not rewrite the selector's structure, so a nested rule would never match.
+// Same reason `.uiScaleMenu` sits at the top of TitleBar's stylesheet.
+//
+// An event can carry more choices than fit on screen, and a choice title is a
+// phrase rather than a label, so the menu scrolls and wraps rather than growing to
+// whatever the longest one is.
+.choiceSelectMenu {
+  max-height: 320px;
+  max-width: 320px;
+  overflow-y: auto;
+
+  .ant-dropdown-menu-title-content {
+    white-space: normal;
+  }
+}
+
 .emptyPlaceholderStyles {
   color: hsl(0, 0%, 40%);
   position: absolute;
@@ -316,6 +334,21 @@
 
         .choiceMissing {
           color: var(--warning-message-color);
+        }
+
+        // the branch icon is the picker's trigger, so it has to look like one
+        .choiceSelectTrigger {
+          cursor: pointer;
+        }
+
+        // Waiting to be pointed at a choice. Nothing has been written yet, so this
+        // is the state an author cancels out of by deleting the chip.
+        &.choiceUnassigned {
+          border: 1px dashed var(--highlight-color);
+
+          .choiceUnassignedLabel {
+            color: hsl(0, 0%, 55%);
+          }
         }
       }
 
