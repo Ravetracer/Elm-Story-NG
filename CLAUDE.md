@@ -495,6 +495,30 @@ section 3.
   is the one that fails loudly — `additionalProperties: false` there turns an
   unnamed exported field into a file the app refuses to import.
 
+- **The scene map says which paths speak.** A path's edge label grew a third cell
+  — green, with a dot — that exists *only* when the path carries a notification,
+  and the whole label carries the line as an SVG `<title>` so hovering it reads
+  the text without opening the path. Three things about it:
+  - **A marker present on every edge marks nothing**, which is why this cell is
+    absent rather than reading `-` like the two counts beside it. It is an
+    overview marker, not a count, and there is only ever one notification per
+    path — hence a dot, and a *shape* rather than a fourth colour to tell apart.
+  - **`notification` rides on `PathEdgeData`** instead of a per-edge live query
+    like `usePathConditionsCountByPathRef`. The elements effect already depends
+    on `paths`, so a saved notification rebuilds the edges either way; a third
+    live query per edge would only add to what that rebuild costs.
+  - **Each label's `clipPath` now has an id derived from the path id**, and that
+    was a latent bug rather than tidiness: an SVG id is document-global, all 28
+    labels declared `id="round-corner"`, and every one of them was clipped by
+    whichever def the document resolved first. Invisible while the labels were
+    all the same width, and *not* invisible the moment one is 11px wider — the
+    new cell would have been clipped off on some maps and not others.
+  Whitespace-only text does not mark the edge, because
+  `getPathNotification` drops a notification whose resolved text is blank. Read
+  live on the imported world's 27-node scene: 28 unique clip ids, one dot, one
+  title, `30.97` against `19.97` label widths, and the dot appearing and
+  disappearing as the field was typed into and cleared.
+
 `src/__tests__/pathNotification.test.ts` covers the resolution, including that a
 NUMBER holding `0` survives (the falsy-substitution trap) and that `esg-error`
 never reaches the reader. It also records, rather than fixes, that an empty STRING

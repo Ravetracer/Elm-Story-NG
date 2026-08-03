@@ -37,6 +37,11 @@ export interface PathEdgeData {
   studioId: StudioId
   pathId: ElementId
   conditionsType: PATH_CONDITIONS_TYPE
+  // carried on the edge rather than fetched per label like the two counts above
+  // it: the SceneMap's element effect already depends on `paths`, so a saved
+  // notification rebuilds the edges either way and a third live query per edge
+  // would only add to what that rebuild costs
+  notification?: string
 }
 
 export function getBezierPath({
@@ -129,9 +134,11 @@ export default memo(
         <PathEdgeLabel
           x={centerX}
           y={centerY}
+          pathId={data?.pathId}
           totalConditions={conditionsCount || 0}
           totalEffects={effectsCount || 0}
           conditionsType={data?.conditionsType || PATH_CONDITIONS_TYPE.ALL}
+          notification={data?.notification}
         />
       </>
     )

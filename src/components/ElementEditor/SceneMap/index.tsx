@@ -1639,7 +1639,8 @@ const SceneMap: React.FC<{
             type: ELEMENT_TYPE.PATH,
             studioId,
             pathId: path.id,
-            conditionsType: path.conditionsType
+            conditionsType: path.conditionsType,
+            notification: path.notification
           }
         }
       })
