@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, WorldId, Path, StudioId } from '../data/types'
@@ -9,7 +9,7 @@ const usePaths = (
   deps?: any[]
 ): Path[] | undefined => {
   const routes = useLiveQuery(
-    () => new LibraryDatabase(studioId).paths.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).paths.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -23,7 +23,7 @@ const usePath = (
   deps?: any[]
 ): Path | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).paths.where({ id: pathId }).first(),
+    () => getLibraryDatabase(studioId).paths.where({ id: pathId }).first(),
     deps || [],
     undefined
   )
@@ -34,7 +34,7 @@ const usePathsBySceneRef = (
   deps?: any[]
 ): Path[] | undefined => {
   const routes = useLiveQuery(
-    () => new LibraryDatabase(studioId).paths.where({ sceneId }).toArray(),
+    () => getLibraryDatabase(studioId).paths.where({ sceneId }).toArray(),
     deps || [],
     undefined
   )
@@ -49,7 +49,7 @@ const usePathsByEventRef = (
 ): Path[] | undefined => {
   const routes = useLiveQuery(
     () =>
-      new LibraryDatabase(studioId).paths
+      getLibraryDatabase(studioId).paths
         .where({ destinationId: eventId })
         .toArray(),
     deps || [],
@@ -66,7 +66,7 @@ const usePathPassthroughsByEventRef = (
 ): Path[] | undefined => {
   const routes = useLiveQuery(
     async () => {
-      const foundRoutes = await new LibraryDatabase(studioId).paths
+      const foundRoutes = await getLibraryDatabase(studioId).paths
         .where({ originId: eventId })
         .toArray()
 
@@ -87,7 +87,7 @@ const usePathsByChoiceRef = (
   deps?: any[]
 ): Path[] | undefined => {
   const routes = useLiveQuery(
-    () => new LibraryDatabase(studioId).paths.where({ choiceId }).toArray(),
+    () => getLibraryDatabase(studioId).paths.where({ choiceId }).toArray(),
     deps || [],
     undefined
   )
@@ -101,7 +101,7 @@ const usePathsByInputRef = (
   deps?: any[]
 ): Path[] | undefined => {
   const routes = useLiveQuery(
-    () => new LibraryDatabase(studioId).paths.where({ inputId }).toArray(),
+    () => getLibraryDatabase(studioId).paths.where({ inputId }).toArray(),
     deps || [],
     undefined
   )

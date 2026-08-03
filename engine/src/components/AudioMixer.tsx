@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useQuery } from 'react-query'
 import { AudioMixerProfiles, useAudioMixer } from '../lib/hooks/useAudioMixer'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import { AudioProfile } from '../types'
 
@@ -38,7 +38,7 @@ const AudioMixer: React.FC = React.memo(() => {
     async () => {
       if (!studioId) return undefined
 
-      const currentLiveEventData = await new LibraryDatabase(
+      const currentLiveEventData = await getLibraryDatabase(
         studioId
       ).live_events.get(engine.currentLiveEvent || '')
 

@@ -1,11 +1,11 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import { ElementId, WorldId, StudioId, Recipe } from '../data/types'
 
 export async function getRecipe(studioId: StudioId, recipeId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getRecipe(recipeId)
+    return await getLibraryDatabase(studioId).getRecipe(recipeId)
   } catch (error) {
     throw error
   }
@@ -16,7 +16,7 @@ export async function getRecipesByWorldRef(
   worldId: WorldId
 ): Promise<Recipe[]> {
   try {
-    return await new LibraryDatabase(studioId).getRecipesByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getRecipesByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -37,7 +37,7 @@ export async function getRecipesByObjectRef(
   objectId: ElementId
 ): Promise<Recipe[]> {
   try {
-    const recipes = await new LibraryDatabase(studioId).getRecipesByWorldRef(
+    const recipes = await getLibraryDatabase(studioId).getRecipesByWorldRef(
       worldId
     )
 
@@ -58,7 +58,7 @@ export async function saveRecipe(
   if (!recipe.id) recipe.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveRecipe(recipe)
+    return await getLibraryDatabase(studioId).saveRecipe(recipe)
   } catch (error) {
     throw error
   }
@@ -66,7 +66,7 @@ export async function saveRecipe(
 
 export async function removeRecipe(studioId: StudioId, recipeId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removeRecipe(recipeId)
+    await getLibraryDatabase(studioId).removeRecipe(recipeId)
   } catch (error) {
     throw error
   }
@@ -78,7 +78,7 @@ export async function saveRecipeTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       recipeId,
       LIBRARY_TABLE.RECIPES,
       title

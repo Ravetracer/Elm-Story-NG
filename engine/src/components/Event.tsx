@@ -4,7 +4,7 @@ import { useSpring } from 'react-spring'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { findDestinationEvent, getLiveEventInitial, getEvent } from '../lib/api'
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import { partitionLiveEventMessages } from '../lib/state'
 
@@ -108,7 +108,7 @@ export const Event: React.FC<{
     async () => {
       if (!studioId) return undefined
 
-      const foundEvent = await new LibraryDatabase(studioId).events.get(eventId)
+      const foundEvent = await getLibraryDatabase(studioId).events.get(eventId)
 
       return foundEvent || null
     },

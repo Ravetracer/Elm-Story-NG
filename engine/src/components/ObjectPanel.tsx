@@ -9,7 +9,7 @@ import React, {
 } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import {
   ElementId,
@@ -179,7 +179,7 @@ const ObjectPanel: React.FC = () => {
   const liveEvent = useLiveQuery(async () => {
     if (!studioId || !engine.currentLiveEvent) return undefined
 
-    return await new LibraryDatabase(studioId).live_events.get(
+    return await getLibraryDatabase(studioId).live_events.get(
       engine.currentLiveEvent
     )
   }, [studioId, engine.currentLiveEvent])
@@ -188,7 +188,7 @@ const ObjectPanel: React.FC = () => {
     async () => {
       if (!studioId || !worldId) return undefined
 
-      return await new LibraryDatabase(studioId).objects
+      return await getLibraryDatabase(studioId).objects
         .where({ worldId })
         .toArray()
     },
@@ -199,14 +199,14 @@ const ObjectPanel: React.FC = () => {
   const world = useLiveQuery(async () => {
     if (!studioId || !worldId) return undefined
 
-    return await new LibraryDatabase(studioId).worlds.get(worldId)
+    return await getLibraryDatabase(studioId).worlds.get(worldId)
   }, [studioId, worldId])
 
   // the scene the player is in, which is the scene of the event they are on
   const destinationEvent = useLiveQuery(async () => {
     if (!studioId || !liveEvent?.destination) return undefined
 
-    return await new LibraryDatabase(studioId).events.get(liveEvent.destination)
+    return await getLibraryDatabase(studioId).events.get(liveEvent.destination)
   }, [studioId, liveEvent?.destination])
 
   const { takeObject, combineObjects, inspectObject } = useObjectActions(

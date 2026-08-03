@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -16,7 +16,7 @@ export async function getWorld(
   worldId: WorldId
 ): Promise<World> {
   try {
-    return await new LibraryDatabase(studioId).getWorld(worldId)
+    return await getLibraryDatabase(studioId).getWorld(worldId)
   } catch (error) {
     throw error
   }
@@ -26,7 +26,7 @@ export async function getWorlds(
   studioId: StudioId,
   worldRefs: WorldId[]
 ): Promise<(World | undefined)[]> {
-  return await new LibraryDatabase(studioId).worlds.bulkGet(worldRefs)
+  return await getLibraryDatabase(studioId).worlds.bulkGet(worldRefs)
 }
 
 export async function saveWorld(
@@ -38,7 +38,7 @@ export async function saveWorld(
   try {
     await api().studios.saveWorldRef(studioId, world.id)
 
-    return await new LibraryDatabase(studioId).saveWorld(world)
+    return await getLibraryDatabase(studioId).saveWorld(world)
   } catch (error) {
     throw error
   }
@@ -50,7 +50,7 @@ export async function saveChildRefsToWorld(
   children: WorldChildRefs
 ) {
   try {
-    await new LibraryDatabase(studioId).saveChildRefsToWorld(worldId, children)
+    await getLibraryDatabase(studioId).saveChildRefsToWorld(worldId, children)
   } catch (error) {
     throw error
   }
@@ -62,7 +62,7 @@ export async function saveJumpRefToWorld(
   jumpId: ElementId | null
 ) {
   try {
-    await new LibraryDatabase(studioId).saveJumpRefToWorld(worldId, jumpId)
+    await getLibraryDatabase(studioId).saveJumpRefToWorld(worldId, jumpId)
   } catch (error) {
     throw error
   }
@@ -72,7 +72,7 @@ export async function removeWorld(studioId: StudioId, worldId: WorldId) {
   try {
     await api().studios.removeWorldRef(studioId, worldId)
 
-    await new LibraryDatabase(studioId).removeWorld(studioId, worldId)
+    await getLibraryDatabase(studioId).removeWorld(studioId, worldId)
   } catch (error) {
     throw error
   }

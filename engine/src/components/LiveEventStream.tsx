@@ -11,7 +11,7 @@ import {
   saveLiveEventDestination,
   saveLiveEventState
 } from '../lib/api'
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import {
   EngineLiveEventStateCollection,
@@ -89,7 +89,7 @@ const LiveEventStream: React.FC = React.memo(() => {
   const liveEventsArr = useLiveQuery(async () => {
     if (!studioId || !worldId) return undefined
 
-    return await new LibraryDatabase(studioId).live_events
+    return await getLibraryDatabase(studioId).live_events
       .where({ worldId })
       .toArray()
   }, [studioId, worldId])
@@ -97,7 +97,7 @@ const LiveEventStream: React.FC = React.memo(() => {
   const variablesArr = useLiveQuery(async () => {
     if (!studioId || !worldId) return undefined
 
-    return await new LibraryDatabase(studioId).variables
+    return await getLibraryDatabase(studioId).variables
       .where({ worldId })
       .toArray()
   }, [studioId, worldId])
@@ -201,14 +201,14 @@ const LiveEventStream: React.FC = React.memo(() => {
   const world = useLiveQuery(async () => {
     if (!studioId || !worldId) return undefined
 
-    return await new LibraryDatabase(studioId).worlds.get(worldId)
+    return await getLibraryDatabase(studioId).worlds.get(worldId)
   }, [studioId, worldId])
 
   // TODO: get specific jump based on type or title
   const worldJumps = useLiveQuery(async () => {
     if (!studioId || !worldId) return undefined
 
-    return await new LibraryDatabase(studioId).jumps
+    return await getLibraryDatabase(studioId).jumps
       .where({ worldId })
       .toArray()
   }, [studioId, worldId])
@@ -223,7 +223,7 @@ const LiveEventStream: React.FC = React.memo(() => {
         )
 
         if (foundOnWorldStartJump) {
-          const initialLiveEvent = await new LibraryDatabase(
+          const initialLiveEvent = await getLibraryDatabase(
             studioId
           ).live_events.get(`${INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY}${worldId}`)
 
@@ -252,7 +252,7 @@ const LiveEventStream: React.FC = React.memo(() => {
               !foundOnWorldStartJump.path[1] &&
               foundOnWorldStartJump.path[0]
             ) {
-              const foundScene = await new LibraryDatabase(studioId).scenes.get(
+              const foundScene = await getLibraryDatabase(studioId).scenes.get(
                 foundOnWorldStartJump.path[0]
               )
 

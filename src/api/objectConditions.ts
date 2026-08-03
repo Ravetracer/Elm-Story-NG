@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import { ElementId, WorldId, StudioId, ObjectCondition } from '../data/types'
@@ -8,7 +8,7 @@ export async function getObjectCondition(
   conditionId: ElementId
 ) {
   try {
-    return await new LibraryDatabase(studioId).getObjectCondition(conditionId)
+    return await getLibraryDatabase(studioId).getObjectCondition(conditionId)
   } catch (error) {
     throw error
   }
@@ -19,7 +19,7 @@ export async function getObjectConditionsByWorldRef(
   worldId: WorldId
 ): Promise<ObjectCondition[]> {
   try {
-    return await new LibraryDatabase(studioId).getObjectConditionsByWorldRef(
+    return await getLibraryDatabase(studioId).getObjectConditionsByWorldRef(
       worldId
     )
   } catch (error) {
@@ -32,7 +32,7 @@ export async function getObjectConditionsByPathRef(
   pathId: ElementId
 ): Promise<ObjectCondition[]> {
   try {
-    return await new LibraryDatabase(studioId).getObjectConditionsByPathRef(
+    return await getLibraryDatabase(studioId).getObjectConditionsByPathRef(
       pathId
     )
   } catch (error) {
@@ -47,7 +47,7 @@ export async function saveObjectCondition(
   if (!condition.id) condition.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveObjectCondition(condition)
+    return await getLibraryDatabase(studioId).saveObjectCondition(condition)
   } catch (error) {
     throw error
   }
@@ -58,7 +58,7 @@ export async function removeObjectCondition(
   conditionId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).removeObjectCondition(conditionId)
+    await getLibraryDatabase(studioId).removeObjectCondition(conditionId)
   } catch (error) {
     throw error
   }

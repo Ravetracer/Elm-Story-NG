@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, StudioId, ObjectCondition } from '../data/types'
@@ -18,7 +18,7 @@ const useObjectConditionsByPathRef = (
 ): ObjectCondition[] | undefined =>
   useLiveQuery(
     () =>
-      new LibraryDatabase(studioId).objectConditions
+      getLibraryDatabase(studioId).objectConditions
         .where({ pathId: pathId || '' })
         .toArray(),
     deps || [],

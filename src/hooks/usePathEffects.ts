@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, Effect, WorldId, StudioId } from '../data/types'
@@ -9,7 +9,7 @@ const usePathEffects = (
   deps?: any[]
 ): Effect[] | undefined => {
   const effects = useLiveQuery(
-    () => new LibraryDatabase(studioId).effects.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).effects.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -23,7 +23,7 @@ const usePathEffect = (
   deps?: any[]
 ): Effect | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).effects.where({ id: effectId }).first(),
+    () => getLibraryDatabase(studioId).effects.where({ id: effectId }).first(),
     deps || [],
     undefined
   )
@@ -34,7 +34,7 @@ const usePathEffectsByPathRef = (
   deps?: any[]
 ): Effect[] | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).effects.where({ pathId }).toArray(),
+    () => getLibraryDatabase(studioId).effects.where({ pathId }).toArray(),
     deps || [],
     undefined
   )
@@ -50,7 +50,7 @@ const usePathEffectsCountByPathRef = (
     async () => {
       if (!studioId || !pathId) return undefined
 
-      return await new LibraryDatabase(studioId).effects
+      return await getLibraryDatabase(studioId).effects
         .where({ pathId })
         .count()
     },

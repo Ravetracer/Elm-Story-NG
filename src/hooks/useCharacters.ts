@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { WorldId, StudioId, Character, ElementId, Event } from '../data/types'
@@ -9,7 +9,7 @@ const useCharacters = (
   deps?: any[]
 ): Character[] | undefined => {
   const characters = useLiveQuery(
-    () => new LibraryDatabase(studioId).characters.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).characters.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -26,7 +26,7 @@ const useCharacter = (
 ): Character | undefined | null =>
   useLiveQuery(
     async () =>
-      (await new LibraryDatabase(studioId).characters.get(characterId || '')) ||
+      (await getLibraryDatabase(studioId).characters.get(characterId || '')) ||
       null,
     deps || [],
     undefined
@@ -39,12 +39,12 @@ const useCharacterEvents = (
 ): Event[] | undefined =>
   useLiveQuery(
     async () => {
-      const personaEvents = await new LibraryDatabase(studioId).events
+      const personaEvents = await getLibraryDatabase(studioId).events
         .where('persona')
         .equals(characterId || '')
         .toArray()
 
-      const referenceEvents = await new LibraryDatabase(studioId).events
+      const referenceEvents = await getLibraryDatabase(studioId).events
         .where('characters')
         .equals(characterId || '')
         .toArray()

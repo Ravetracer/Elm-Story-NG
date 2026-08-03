@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 import { findStartingDestinationLiveEvent } from '../lib/api'
 
 import { WorldId, StudioId } from '../types'
@@ -32,7 +32,7 @@ const StartingDestinationGate: React.FC<{
       setHasStartingDestination(foundStartingDestination ? true : false)
 
       if (!foundStartingDestination) {
-        await new LibraryDatabase(studioId).live_events
+        await getLibraryDatabase(studioId).live_events
           .where({ worldId })
           .delete()
       }

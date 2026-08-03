@@ -2910,3 +2910,52 @@ export class LibraryDatabase extends Dexie {
     }
   }
 }
+
+/**
+ * One database instance per database, because a Dexie instance *is* a
+ * connection.
+ *
+ * Every call site used to write `new LibraryDatabase(studioId)` — 242 of them
+ * in this project and 77 in the engine — and each call opened another
+ * IndexedDB connection, pushed itself onto Dexie's module-global
+ * `connections` array (which only `close()` pops), registered its own window
+ * listeners and, through the live queries created from it, retained the React
+ * tree that had built it. Nothing ever released one, so the count only went
+ * up, every write fanned out to all of them, and unmounted components stayed
+ * in memory with their DOM.
+ *
+ * Measured in the running app before this: 130 connections just from opening a
+ * storyworld, ~50 more per variable edit, ~100 per choice taken in the
+ * preview, 1315 after fifteen minutes of ordinary authoring — with the heap at
+ * 442MB and an outline click that costs 50ms on a fresh window costing 459ms.
+ * Closing every editor tab released none of it.
+ *
+ * Reuse is safe because a `Dexie` instance is not per-transaction state: it is
+ * the schema and the connection, and Dexie serialises transactions on it.
+ */
+const libraryDatabases = new Map<StudioId, LibraryDatabase>()
+
+export const getLibraryDatabase = (studioId: StudioId): LibraryDatabase => {
+  const existing = libraryDatabases.get(studioId)
+
+  if (existing) return existing
+
+  const database = new LibraryDatabase(studioId)
+
+  libraryDatabases.set(studioId, database)
+
+  return database
+}
+
+/**
+ * Drops a studio's cached instance. Only deleting the database needs this —
+ * the instance is left holding a database that no longer exists, and the next
+ * caller should build a fresh one.
+ */
+export const forgetLibraryDatabase = (studioId: StudioId) =>
+  libraryDatabases.delete(studioId)
+
+let appDatabase: AppDatabase | undefined
+
+export const getAppDatabase = (): AppDatabase =>
+  (appDatabase = appDatabase || new AppDatabase())

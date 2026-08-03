@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { ipcRenderer } from 'electron'
 import { v4 as uuid } from 'uuid'
 import { getRandomElementName } from '../lib'
@@ -23,7 +23,7 @@ import api from '.'
 
 export async function getEvent(studioId: StudioId, eventId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getEvent(eventId)
+    return await getLibraryDatabase(studioId).getEvent(eventId)
   } catch (error) {
     throw error
   }
@@ -36,7 +36,7 @@ export async function saveEvent(
   if (!event.id) event.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveEvent(event)
+    return await getLibraryDatabase(studioId).saveEvent(event)
   } catch (error) {
     throw error
   }
@@ -51,7 +51,7 @@ export async function removeEvent(
   keepAssets: boolean = false
 ) {
   try {
-    await new LibraryDatabase(studioId).removeEvent(
+    await getLibraryDatabase(studioId).removeEvent(
       eventId,
       skipOriginPaths,
       skipDestinationPaths,
@@ -67,7 +67,7 @@ export async function getEventsByWorldRef(
   worldId: WorldId
 ): Promise<Event[]> {
   try {
-    return await new LibraryDatabase(studioId).getEventsByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getEventsByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -79,7 +79,7 @@ export async function saveEventTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       eventId,
       LIBRARY_TABLE.EVENTS,
       title
@@ -95,7 +95,7 @@ export async function saveEventType(
   type: EVENT_TYPE
 ) {
   try {
-    await new LibraryDatabase(studioId).saveEventType(eventId, type)
+    await getLibraryDatabase(studioId).saveEventType(eventId, type)
   } catch (error) {
     throw error
   }
@@ -107,7 +107,7 @@ export async function saveEventInput(
   inputId?: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).saveEventInput(eventId, inputId)
+    await getLibraryDatabase(studioId).saveEventInput(eventId, inputId)
   } catch (error) {
     throw error
   }
@@ -119,7 +119,7 @@ export async function saveEventContent(
   contentObject: Descendant[]
 ) {
   try {
-    await new LibraryDatabase(studioId).saveEventContent(
+    await getLibraryDatabase(studioId).saveEventContent(
       eventId,
       JSON.stringify(contentObject)
     )
@@ -134,7 +134,7 @@ export async function saveSceneRefToEvent(
   eventId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).saveSceneRefToEvent(sceneId, eventId)
+    await getLibraryDatabase(studioId).saveSceneRefToEvent(sceneId, eventId)
   } catch (error) {
     throw error
   }
@@ -146,7 +146,7 @@ export async function saveChoiceRefsToEvent(
   choices: ElementId[]
 ) {
   try {
-    await new LibraryDatabase(studioId).saveChoiceRefsToEvent(eventId, choices)
+    await getLibraryDatabase(studioId).saveChoiceRefsToEvent(eventId, choices)
   } catch (error) {
     throw error
   }
@@ -282,7 +282,7 @@ export async function setEventEnding(
   ending: boolean
 ) {
   try {
-    await new LibraryDatabase(studioId).setEventEnding(eventId, ending)
+    await getLibraryDatabase(studioId).setEventEnding(eventId, ending)
   } catch (error) {
     throw error
   }
@@ -294,7 +294,7 @@ export async function removeDeadPersonaRefsFromEvent(
   characterId: ElementId,
   newRefs: CharacterRefs
 ) {
-  const db = new LibraryDatabase(studioId)
+  const db = getLibraryDatabase(studioId)
 
   try {
     const events = await db.events
@@ -338,7 +338,7 @@ export async function removeDeadPersonas(
   studioId: StudioId,
   characterId: ElementId
 ) {
-  const db = new LibraryDatabase(studioId)
+  const db = getLibraryDatabase(studioId)
 
   try {
     const events = await db.events
@@ -371,7 +371,7 @@ export async function removeDeadCharacterRefs(
   studioId: StudioId,
   characterId: ElementId
 ) {
-  const db = new LibraryDatabase(studioId)
+  const db = getLibraryDatabase(studioId)
 
   try {
     const referenceEvents = await db.events
@@ -402,7 +402,7 @@ export async function resetPersonaMaskFromEvent(
   characterId: ElementId,
   newMasks: CharacterMask[]
 ) {
-  const db = new LibraryDatabase(studioId)
+  const db = getLibraryDatabase(studioId)
 
   try {
     const events = await db.events
@@ -447,7 +447,7 @@ export async function resetPersonaMaskFromEvent(
 
 export async function getEventsByImageId(studioId: StudioId, imageId: string) {
   try {
-    return await new LibraryDatabase(studioId).events
+    return await getLibraryDatabase(studioId).events
       .where('images')
       .equals(imageId || '')
       .toArray()

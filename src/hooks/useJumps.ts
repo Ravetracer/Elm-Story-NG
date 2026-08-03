@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, WorldId, StudioId, Jump } from '../data/types'
@@ -9,7 +9,7 @@ const useJumps = (
   deps?: any[]
 ): Jump[] | undefined => {
   const jumps = useLiveQuery(
-    () => new LibraryDatabase(studioId).jumps.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).jumps.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -28,7 +28,7 @@ const useJump = (
     async () => {
       if (!studioId || !jumpId) return undefined
 
-      return await new LibraryDatabase(studioId).jumps
+      return await getLibraryDatabase(studioId).jumps
         .where({ id: jumpId })
         .first()
     },
@@ -42,7 +42,7 @@ const useJumpsBySceneRef = (
   deps?: any[]
 ): Jump[] | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).jumps.where({ sceneId }).toArray(),
+    () => getLibraryDatabase(studioId).jumps.where({ sceneId }).toArray(),
     deps || [],
     undefined
   )

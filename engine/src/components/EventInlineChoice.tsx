@@ -9,7 +9,7 @@ import {
   StudioId
 } from '../types'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 import { getChoicesFromEventWithOpenPath } from '../lib/api'
 
 import { EngineContext } from '../contexts/EngineContext'
@@ -70,7 +70,7 @@ const EventInlineChoice: React.FC<{
   const choiceWithOpenPath = useLiveQuery(async () => {
     if (!choiceId) return undefined
 
-    const choice = await new LibraryDatabase(studioId).choices.get(choiceId)
+    const choice = await getLibraryDatabase(studioId).choices.get(choiceId)
 
     if (!choice) return null
 

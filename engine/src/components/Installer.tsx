@@ -5,7 +5,7 @@ import React, { useContext, useEffect, useRef } from 'react'
 import { useQuery } from 'react-query'
 import { useLiveQuery } from 'dexie-react-hooks'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import {
   getWorldInfo,
@@ -95,7 +95,7 @@ const Installer: React.FC<{
       try {
         if (!engine.installed) {
           if (!isComposer && data) {
-            const database = new LibraryDatabase(studioId)
+            const database = getLibraryDatabase(studioId)
 
             // feedback#95
             database.on('ready', async () => {

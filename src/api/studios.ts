@@ -1,6 +1,6 @@
 import logger from '../lib/logger'
 
-import { AppDatabase, LibraryDatabase } from '../db'
+import { forgetLibraryDatabase, getAppDatabase, getLibraryDatabase } from '../db'
 import { WorldId, Studio, StudioId } from '../data/types'
 import { v4 as uuid } from 'uuid'
 
@@ -8,7 +8,7 @@ export async function getStudio(
   studioId: StudioId
 ): Promise<Studio | undefined> {
   try {
-    return new AppDatabase().getStudio(studioId)
+    return getAppDatabase().getStudio(studioId)
   } catch (error) {
     throw error
   }
@@ -27,7 +27,7 @@ export async function getGameRefs(studioId: StudioId): Promise<WorldId[]> {
 export async function saveStudio(studio: Studio): Promise<StudioId> {
   if (!studio.id) studio.id = uuid()
 
-  return await new AppDatabase().saveStudio(studio)
+  return await getAppDatabase().saveStudio(studio)
 }
 
 /**
@@ -36,9 +36,12 @@ export async function saveStudio(studio: Studio): Promise<StudioId> {
  */
 export async function removeStudio(studioId: StudioId) {
   try {
-    await new LibraryDatabase(studioId).delete()
+    await getLibraryDatabase(studioId).delete()
 
-    await new AppDatabase().removeStudio(studioId)
+    // the cached instance now names a database that no longer exists
+    forgetLibraryDatabase(studioId)
+
+    await getAppDatabase().removeStudio(studioId)
   } catch (error) {
     throw error
   }

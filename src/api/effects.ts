@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -11,7 +11,7 @@ import {
 
 export async function getEffect(studioId: StudioId, effectId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getEffect(effectId)
+    return await getLibraryDatabase(studioId).getEffect(effectId)
   } catch (error) {
     throw error
   }
@@ -22,7 +22,7 @@ export async function getEffectsByWorldRef(
   worldId: WorldId
 ): Promise<Effect[]> {
   try {
-    return await new LibraryDatabase(studioId).getEffectsByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getEffectsByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -34,7 +34,7 @@ export async function getEffectsByPathRef(
   countOnly?: boolean
 ): Promise<number | Effect[]> {
   try {
-    return await new LibraryDatabase(studioId).getEffectsByPathRef(
+    return await getLibraryDatabase(studioId).getEffectsByPathRef(
       pathId,
       countOnly || false
     )
@@ -48,7 +48,7 @@ export async function getEffectsByVariableRef(
   variableId: ElementId
 ): Promise<Effect[]> {
   try {
-    return await new LibraryDatabase(studioId).getEffectsByVariableRef(
+    return await getLibraryDatabase(studioId).getEffectsByVariableRef(
       variableId
     )
   } catch (error) {
@@ -63,7 +63,7 @@ export async function saveEffect(
   if (!effect.id) effect.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveEffect(effect)
+    return await getLibraryDatabase(studioId).saveEffect(effect)
   } catch (error) {
     throw error
   }
@@ -75,7 +75,7 @@ export async function saveEffectSetOperatorType(
   newSetOperatorType: SET_OPERATOR_TYPE
 ) {
   try {
-    await new LibraryDatabase(studioId).saveEffectSetOperatorType(
+    await getLibraryDatabase(studioId).saveEffectSetOperatorType(
       effectId,
       newSetOperatorType
     )
@@ -90,7 +90,7 @@ export async function saveEffectValue(
   newValue: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveEffectValue(effectId, newValue)
+    await getLibraryDatabase(studioId).saveEffectValue(effectId, newValue)
   } catch (error) {
     throw error
   }
@@ -98,7 +98,7 @@ export async function saveEffectValue(
 
 export async function removeEffect(studioId: StudioId, effectId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removeEffect(effectId)
+    await getLibraryDatabase(studioId).removeEffect(effectId)
   } catch (error) {
     throw error
   }

@@ -514,3 +514,40 @@ export class LibraryDatabase extends Dexie {
     }
   }
 }
+
+/**
+ * One database instance per studio, because a Dexie instance *is* a
+ * connection.
+ *
+ * Every call site used to write `new LibraryDatabase(studioId)`, and each call
+ * opened another IndexedDB connection, pushed itself onto Dexie's
+ * module-global `connections` array (which only `close()` pops), registered
+ * its own window listeners and, through the live queries created from it,
+ * retained the React tree that had built it. Nothing released one, so the
+ * count only went up and every write fanned out to all of them. Measured in
+ * the composer's preview before this: about a hundred more connections per
+ * choice the player takes.
+ *
+ * Reuse is safe because a `Dexie` instance is not per-transaction state: it is
+ * the schema and the connection, and Dexie serialises transactions on it.
+ */
+const libraryDatabases = new Map<StudioId, LibraryDatabase>()
+
+export const getLibraryDatabase = (studioId: StudioId): LibraryDatabase => {
+  const existing = libraryDatabases.get(studioId)
+
+  if (existing) return existing
+
+  const database = new LibraryDatabase(studioId)
+
+  libraryDatabases.set(studioId, database)
+
+  return database
+}
+
+/**
+ * Drops a studio's cached instance, for the one case that invalidates it:
+ * deleting the database itself.
+ */
+export const forgetLibraryDatabase = (studioId: StudioId) =>
+  libraryDatabases.delete(studioId)

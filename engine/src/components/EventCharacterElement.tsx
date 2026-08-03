@@ -2,7 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import React, { useEffect, useState } from 'react'
 import { getCharacterRefDisplayFormat } from '../lib'
 import { getCharacterReference } from '../lib/api'
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import { ElementId, StudioId } from '../types'
 import {
@@ -37,7 +37,7 @@ const EventCharacterElement: React.FC<{
     async () => {
       if (!characterId) return undefined
 
-      const _character = await new LibraryDatabase(studioId).characters.get(
+      const _character = await getLibraryDatabase(studioId).characters.get(
         characterId
       )
 

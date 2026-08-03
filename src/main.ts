@@ -272,6 +272,14 @@ if (isDebugBuild) {
 }
 
 const installExtensions = async () => {
+  // React DevTools' global hook retains every fiber tree the renderer has
+  // mounted, which makes any memory measurement of this app meaningless while
+  // it is loaded. Set NO_DEVTOOLS_EXTENSION=true to profile without it.
+  if (process.env.NO_DEVTOOLS_EXTENSION === 'true') {
+    logger.info(`Skipping dev tools install (NO_DEVTOOLS_EXTENSION)`)
+    return
+  }
+
   logger.info(`Installing dev tools...`)
 
   try {

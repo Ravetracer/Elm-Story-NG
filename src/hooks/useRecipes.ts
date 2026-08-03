@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, WorldId, StudioId, Recipe } from '../data/types'
@@ -9,7 +9,7 @@ const useRecipes = (
   deps?: any[]
 ): Recipe[] | undefined => {
   const recipes = useLiveQuery(
-    () => new LibraryDatabase(studioId).recipes.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).recipes.where({ worldId }).toArray(),
     deps || [],
     undefined
   )

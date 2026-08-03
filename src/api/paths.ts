@@ -1,11 +1,11 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import { ElementId, WorldId, Path, StudioId } from '../data/types'
 
 export async function getPath(studioId: StudioId, pathId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getPath(pathId)
+    return await getLibraryDatabase(studioId).getPath(pathId)
   } catch (error) {
     throw error
   }
@@ -16,7 +16,7 @@ export async function getPathsByWorldRef(
   worldId: WorldId
 ): Promise<Path[]> {
   try {
-    return await new LibraryDatabase(studioId).getPathsByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getPathsByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -27,7 +27,7 @@ export async function getPassthroughPathsByEventRef(
   eventId: ElementId
 ) {
   try {
-    const foundPaths = await new LibraryDatabase(studioId).paths
+    const foundPaths = await getLibraryDatabase(studioId).paths
       .where({ originId: eventId })
       .toArray()
 
@@ -42,7 +42,7 @@ export async function getPathsByDestinationRef(
   destinationId: ElementId
 ) {
   try {
-    return await new LibraryDatabase(studioId).paths
+    return await getLibraryDatabase(studioId).paths
       .where({ destinationId })
       .toArray()
   } catch (error) {
@@ -57,7 +57,7 @@ export async function savePath(
   if (!path.id) path.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).savePath(path)
+    return await getLibraryDatabase(studioId).savePath(path)
   } catch (error) {
     throw error
   }
@@ -69,7 +69,7 @@ export async function savePathNotification(
   notification: string | undefined
 ) {
   try {
-    return await new LibraryDatabase(studioId).savePathNotification(
+    return await getLibraryDatabase(studioId).savePathNotification(
       pathId,
       notification
     )
@@ -80,7 +80,7 @@ export async function savePathNotification(
 
 export async function removePath(studioId: StudioId, pathId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removePath(pathId)
+    await getLibraryDatabase(studioId).removePath(pathId)
   } catch (error) {
     throw error
   }
@@ -91,7 +91,7 @@ export async function removePathsByEventRef(
   eventId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).removePathsByEventRef(eventId)
+    await getLibraryDatabase(studioId).removePathsByEventRef(eventId)
   } catch (error) {
     throw error
   }
@@ -102,7 +102,7 @@ export async function removePathsByJumpRef(
   eventId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).removePathsByJumpRef(eventId)
+    await getLibraryDatabase(studioId).removePathsByJumpRef(eventId)
   } catch (error) {
     throw error
   }
@@ -113,7 +113,7 @@ export async function removePathsByChoiceRef(
   choiceId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).removePathsByChoiceRef(choiceId)
+    await getLibraryDatabase(studioId).removePathsByChoiceRef(choiceId)
   } catch (error) {
     throw error
   }

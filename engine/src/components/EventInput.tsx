@@ -11,7 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useSpring } from 'react-spring'
 
 import { findOpenPath, getPathsFromInput } from '../lib/api'
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import {
   VARIABLE_TYPE,
@@ -53,7 +53,7 @@ const EventInput: React.FC<{
     async () => {
       if (!studioId) return undefined
 
-      const input = new LibraryDatabase(studioId).inputs
+      const input = getLibraryDatabase(studioId).inputs
         .where({ eventId: event.id })
         .first()
 
@@ -73,7 +73,7 @@ const EventInput: React.FC<{
 
       if (input?.variableId) {
         variable =
-          (await new LibraryDatabase(studioId).variables.get(
+          (await getLibraryDatabase(studioId).variables.get(
             input.variableId
           )) || null
 

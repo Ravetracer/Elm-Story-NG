@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -13,7 +13,7 @@ export async function getCharacterRelationship(
   relationshipId: ElementId
 ) {
   try {
-    return await new LibraryDatabase(studioId).getCharacterRelationship(
+    return await getLibraryDatabase(studioId).getCharacterRelationship(
       relationshipId
     )
   } catch (error) {
@@ -26,7 +26,7 @@ export async function getCharacterRelationshipsByWorldRef(
   worldId: WorldId
 ): Promise<CharacterRelationship[]> {
   try {
-    return await new LibraryDatabase(
+    return await getLibraryDatabase(
       studioId
     ).getCharacterRelationshipsByWorldRef(worldId)
   } catch (error) {
@@ -39,7 +39,7 @@ export async function getCharacterRelationshipsByCharacterRef(
   characterId: ElementId
 ): Promise<CharacterRelationship[]> {
   try {
-    return await new LibraryDatabase(
+    return await getLibraryDatabase(
       studioId
     ).getCharacterRelationshipsByCharacterRef(characterId)
   } catch (error) {
@@ -54,7 +54,7 @@ export async function saveCharacterRelationship(
   if (!relationship.id) relationship.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveCharacterRelationship(
+    return await getLibraryDatabase(studioId).saveCharacterRelationship(
       relationship
     )
   } catch (error) {
@@ -67,7 +67,7 @@ export async function removeCharacterRelationship(
   relationshipId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).removeCharacterRelationship(
+    await getLibraryDatabase(studioId).removeCharacterRelationship(
       relationshipId
     )
   } catch (error) {
@@ -81,7 +81,7 @@ export async function saveCharacterRelationshipTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       relationshipId,
       LIBRARY_TABLE.CHARACTER_RELATIONSHIPS,
       title

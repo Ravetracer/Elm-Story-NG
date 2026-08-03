@@ -1059,6 +1059,53 @@ downgrade (`electron-builder` to 22, `react-query` to 3.10, `copyfiles` to 1.0).
 The 19 reported vulnerabilities are 3 distinct advisories fanned out
 transitively.
 
+## A Dexie instance is a connection, not a handle
+
+**Never write `new LibraryDatabase(studioId)`.** `getLibraryDatabase(studioId)`
+in `src/db/index.ts` and `engine/src/lib/db/index.ts` returns the one instance
+per studio; `getAppDatabase()` does the same for the app database. This was the
+cause of the app getting slower the longer an author worked in it, until it had
+to be restarted.
+
+- **Every `new` opened another IndexedDB connection.** Dexie pushes each
+  instance onto a module-global `connections` array that only `close()` pops,
+  registers window listeners per instance, and — because a live query is
+  created *from* an instance — keeps the React tree that built it. Nothing ever
+  closed one, so the count only went up, every write fanned out to all of them,
+  and unmounted components stayed in memory with their DOM.
+- **The numbers, read off the running app** with the imported 14-scene world:
+  130 connections just from opening a storyworld, ~50 more per variable edit,
+  ~100 per choice taken in the preview, 1315 after fifteen minutes of ordinary
+  authoring. Heap 442MB, and an outline click that costs ~50ms on a fresh
+  window costing 459ms. Opening and closing one 1-event scene tab leaked
+  11.6MB, 348 DOM nodes and 330 listeners **per cycle**, and closing every tab
+  released none of it. After the fix that cycle leaks 0 nodes and ~0.3MB, and
+  the connection count stays at 3.
+- **It was 242 call sites in the editor and 77 in the engine**, all of the form
+  `await new LibraryDatabase(studioId).someMethod()`, which is why the mistake
+  is so easy to copy: every neighbouring line does it. The `api/` modules and
+  the `hooks/` are the two places that matter most, since a hook re-runs.
+- **The one case that must evict is deleting the database.**
+  `api/studios.ts`'s `removeStudio` calls `forgetLibraryDatabase` after
+  `delete()`, because the cached instance then names a database that no longer
+  exists.
+- **Reuse is safe**: a Dexie instance is the schema and the connection, not
+  per-transaction state, and Dexie serialises transactions on it.
+
+**What is left is a cost rather than a leak, and it is worth knowing.** rc-dock
+keeps every opened scene tab mounted (`cached: true`), so each open tab
+re-renders on every selection: with 18 panes open one outline click blocks the
+main thread for ~1330ms against ~340ms with the tabs closed. Closing tabs now
+recovers both the memory and the speed, which it did not before. Anything that
+makes inactive tabs cheap — unmounting them, or letting a hidden `SceneMap`
+bail out — is the next real win here.
+
+**`NO_DEVTOOLS_EXTENSION=true`** skips the React DevTools install in
+`src/main.ts`. Its global hook retains every fiber tree the renderer has
+mounted, which puts a second leak on top of whatever is being measured — the
+first heap snapshot taken here blamed it, and the app's own leak turned out to
+be identical without it.
+
 ## Debug by reading the DOM, not by inferring
 
 `npm run dev:debug` exposes the DevTools protocol on port 9222.

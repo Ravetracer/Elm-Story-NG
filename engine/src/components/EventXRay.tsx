@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import {
   ElementId,
@@ -28,7 +28,7 @@ const EventXRay: React.FC<{
     async () => {
       if (!studioId || !worldId) return []
 
-      return await new LibraryDatabase(studioId).variables
+      return await getLibraryDatabase(studioId).variables
         .where({ worldId })
         .toArray()
     },

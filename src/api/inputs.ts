@@ -1,10 +1,10 @@
 import { Input, ElementId, WorldId, StudioId } from '../data/types'
 import { v4 as uuid } from 'uuid'
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 
 export async function getInput(studioId: StudioId, inputId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getInput(inputId)
+    return await getLibraryDatabase(studioId).getInput(inputId)
   } catch (error) {
     throw error
   }
@@ -15,7 +15,7 @@ export async function getInputsByWorldRef(
   worldId: WorldId
 ): Promise<Input[]> {
   try {
-    return await new LibraryDatabase(studioId).getInputsByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getInputsByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -25,7 +25,7 @@ export async function saveInput(studioId: StudioId, input: Input) {
   if (!input.id) input.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveInput(input)
+    return await getLibraryDatabase(studioId).saveInput(input)
   } catch (error) {
     throw error
   }
@@ -37,7 +37,7 @@ export async function saveVariableRefToInput(
   variableId?: ElementId
 ) {
   try {
-    return await new LibraryDatabase(studioId).saveVariableRefToInput(
+    return await getLibraryDatabase(studioId).saveVariableRefToInput(
       inputId,
       variableId
     )
@@ -48,7 +48,7 @@ export async function saveVariableRefToInput(
 
 export async function removeInput(studioId: StudioId, inputId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removeInput(inputId)
+    await getLibraryDatabase(studioId).removeInput(inputId)
   } catch (error) {
     throw error
   }

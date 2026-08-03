@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import {
@@ -15,7 +15,7 @@ const useCharacterRelationships = (
 ): CharacterRelationship[] | undefined => {
   const relationships = useLiveQuery(
     () =>
-      new LibraryDatabase(studioId).characterRelationships
+      getLibraryDatabase(studioId).characterRelationships
         .where({ worldId })
         .toArray(),
     deps || [],
@@ -46,7 +46,7 @@ const useCharacterRelationshipsByCharacter = (
     async () => {
       if (!characterId) return undefined
 
-      const database = new LibraryDatabase(studioId)
+      const database = getLibraryDatabase(studioId)
 
       const [from, to] = await Promise.all([
         database.characterRelationships.where({ from: characterId }).toArray(),

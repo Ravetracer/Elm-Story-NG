@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, Condition, WorldId, StudioId } from '../data/types'
@@ -9,7 +9,7 @@ const usePathConditions = (
   deps?: any[]
 ): Condition[] | undefined => {
   const conditions = useLiveQuery(
-    () => new LibraryDatabase(studioId).conditions.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).conditions.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -24,7 +24,7 @@ const usePathCondition = (
 ): Condition | undefined =>
   useLiveQuery(
     () =>
-      new LibraryDatabase(studioId).conditions
+      getLibraryDatabase(studioId).conditions
         .where({ id: conditionId })
         .first(),
     deps || [],
@@ -37,7 +37,7 @@ const usePathConditionsByPathRef = (
   deps?: any[]
 ): Condition[] | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).conditions.where({ pathId }).toArray(),
+    () => getLibraryDatabase(studioId).conditions.where({ pathId }).toArray(),
     deps || [],
     undefined
   )
@@ -49,7 +49,7 @@ const usePathConditionsByPathRefs = (
 ): Condition[] | undefined =>
   useLiveQuery(
     () =>
-      new LibraryDatabase(studioId).conditions
+      getLibraryDatabase(studioId).conditions
         .where('routeId')
         .anyOf(routeIds)
         .toArray(),
@@ -68,7 +68,7 @@ const usePathConditionsCountByPathRef = (
     async () => {
       if (!studioId || !pathId) return undefined
 
-      return await new LibraryDatabase(studioId).conditions
+      return await getLibraryDatabase(studioId).conditions
         .where({ pathId })
         .count()
     },

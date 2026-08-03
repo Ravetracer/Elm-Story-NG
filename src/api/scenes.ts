@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -12,7 +12,7 @@ import {
 
 export async function getScene(studioId: StudioId, sceneId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getScene(sceneId)
+    return await getLibraryDatabase(studioId).getScene(sceneId)
   } catch (error) {
     throw error
   }
@@ -25,7 +25,7 @@ export async function saveScene(
   if (!scene.id) scene.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveScene(scene)
+    return await getLibraryDatabase(studioId).saveScene(scene)
   } catch (error) {
     throw error
   }
@@ -33,7 +33,7 @@ export async function saveScene(
 
 export async function removeScene(studioId: StudioId, sceneId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removeScene(sceneId)
+    await getLibraryDatabase(studioId).removeScene(sceneId)
   } catch (error) {
     throw error
   }
@@ -44,7 +44,7 @@ export async function getScenesByWorldRef(
   worldId: WorldId
 ): Promise<Scene[]> {
   try {
-    return await new LibraryDatabase(studioId).getScenesByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getScenesByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -55,7 +55,7 @@ export async function getChildRefsBySceneRef(
   sceneId: ElementId
 ): Promise<SceneChildRefs> {
   try {
-    return await new LibraryDatabase(studioId).getChildRefsBySceneRef(sceneId)
+    return await getLibraryDatabase(studioId).getChildRefsBySceneRef(sceneId)
   } catch (error) {
     throw error
   }
@@ -67,7 +67,7 @@ export async function saveSceneTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       sceneId,
       LIBRARY_TABLE.SCENES,
       title
@@ -83,7 +83,7 @@ export async function saveSceneViewTransform(
   transform: { x: number; y: number; zoom: number }
 ) {
   try {
-    await new LibraryDatabase(studioId).saveSceneViewTransform(
+    await getLibraryDatabase(studioId).saveSceneViewTransform(
       sceneId,
       transform
     )
@@ -98,7 +98,7 @@ export async function saveParentRefToScene(
   sceneId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).saveParentRefToScene(parent, sceneId)
+    await getLibraryDatabase(studioId).saveParentRefToScene(parent, sceneId)
   } catch (error) {
     throw error
   }
@@ -110,7 +110,7 @@ export async function saveChildRefsToScene(
   children: SceneChildRefs
 ) {
   try {
-    await new LibraryDatabase(studioId).saveChildRefsToScene(sceneId, children)
+    await getLibraryDatabase(studioId).saveChildRefsToScene(sceneId, children)
   } catch (error) {
     throw error
   }

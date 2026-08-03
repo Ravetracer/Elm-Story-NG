@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { StudioId, Event, WorldId, ElementId } from '../data/types'
@@ -9,7 +9,7 @@ const useEvents = (
   deps?: any[]
 ): Event[] | undefined => {
   const events = useLiveQuery(
-    () => new LibraryDatabase(studioId).events.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).events.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -32,7 +32,7 @@ const useEventsBySceneRef = (
     async () => {
       if (!studioId || !sceneId) return undefined
 
-      return await new LibraryDatabase(studioId).events
+      return await getLibraryDatabase(studioId).events
         .where({ sceneId })
         .toArray()
     },
@@ -52,7 +52,7 @@ const useEvent = (
     async () => {
       if (!studioId) return undefined
 
-      return await new LibraryDatabase(studioId).events
+      return await getLibraryDatabase(studioId).events
         .where({ id: eventId || '' })
         .first()
     },

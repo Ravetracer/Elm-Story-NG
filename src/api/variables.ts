@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -12,7 +12,7 @@ import {
 
 export async function getVariable(studioId: StudioId, variableId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getVariable(variableId)
+    return await getLibraryDatabase(studioId).getVariable(variableId)
   } catch (error) {
     throw error
   }
@@ -23,7 +23,7 @@ export async function getVariablesByWorldRef(
   worldId: WorldId
 ): Promise<Variable[]> {
   try {
-    return await new LibraryDatabase(studioId).getVariablesByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getVariablesByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -36,7 +36,7 @@ export async function saveVariable(
   if (!variable.id) variable.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveVariable(variable)
+    return await getLibraryDatabase(studioId).saveVariable(variable)
   } catch (error) {
     throw error
   }
@@ -47,7 +47,7 @@ export async function removeVariable(
   variableId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).removeVariable(variableId)
+    await getLibraryDatabase(studioId).removeVariable(variableId)
   } catch (error) {
     throw error
   }
@@ -59,7 +59,7 @@ export async function saveVariableTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       variableId,
       LIBRARY_TABLE.VARIABLES,
       title
@@ -75,7 +75,7 @@ export async function saveVariableType(
   type: VARIABLE_TYPE
 ) {
   try {
-    return await new LibraryDatabase(studioId).saveVariableType(
+    return await getLibraryDatabase(studioId).saveVariableType(
       variableId,
       type
     )
@@ -91,7 +91,7 @@ export async function saveVariableScope(
   scopeId: ElementId | undefined
 ) {
   try {
-    return await new LibraryDatabase(studioId).saveVariableScope(
+    return await getLibraryDatabase(studioId).saveVariableScope(
       variableId,
       scope,
       scopeId
@@ -107,7 +107,7 @@ export async function saveVariableDescription(
   description: string | undefined
 ) {
   try {
-    return await new LibraryDatabase(studioId).saveVariableDescription(
+    return await getLibraryDatabase(studioId).saveVariableDescription(
       variableId,
       description
     )
@@ -122,7 +122,7 @@ export async function saveVariableInitialValue(
   initialValue: string
 ) {
   try {
-    return await new LibraryDatabase(studioId).saveVariableInitialValue(
+    return await getLibraryDatabase(studioId).saveVariableInitialValue(
       variableId,
       initialValue
     )

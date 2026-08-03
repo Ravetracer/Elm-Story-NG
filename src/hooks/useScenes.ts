@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { StudioId, Scene, WorldId, ElementId } from '../data/types'
@@ -14,7 +14,7 @@ const useScenes = (
     async () => {
       if (!studioId || !worldId) return undefined
 
-      return await new LibraryDatabase(studioId).scenes
+      return await getLibraryDatabase(studioId).scenes
         .where({ worldId })
         .toArray()
     },
@@ -38,7 +38,7 @@ const useScene = (
     async () => {
       if (!studioId) return undefined
 
-      return await new LibraryDatabase(studioId).scenes
+      return await getLibraryDatabase(studioId).scenes
         .where({ id: sceneId || '' })
         .first()
     },

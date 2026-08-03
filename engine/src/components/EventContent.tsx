@@ -1,7 +1,7 @@
 import { eventContentToEventStreamContent } from '../lib/serialization'
 import { flattenEventContent, getCharactersIdsFromEventContent } from '../lib'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import React, { useContext, useEffect, useState } from 'react'
 import reactStringReplace from 'react-string-replace'
@@ -64,7 +64,7 @@ const useCharacters = (studioId: StudioId, characterIds?: ElementId[]) => {
 
       const characters = await Promise.all(
         characterIds.map((id) =>
-          new LibraryDatabase(studioId).characters.get(id)
+          getLibraryDatabase(studioId).characters.get(id)
         )
       )
 

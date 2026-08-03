@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 import { getRandomElementName } from '../lib'
 
@@ -17,7 +17,7 @@ import api from '.'
 
 export async function getJump(studioId: StudioId, jumpId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getJump(jumpId)
+    return await getLibraryDatabase(studioId).getJump(jumpId)
   } catch (error) {
     throw error
   }
@@ -28,7 +28,7 @@ export async function getJumpsByWorldRef(
   worldId: WorldId
 ): Promise<Jump[]> {
   try {
-    return await new LibraryDatabase(studioId).getJumpsByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getJumpsByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -39,7 +39,7 @@ export async function getJumpsBySceneRef(
   sceneId: ElementId
 ): Promise<Jump[]> {
   try {
-    return await new LibraryDatabase(studioId).getJumpsBySceneRef(sceneId)
+    return await getLibraryDatabase(studioId).getJumpsBySceneRef(sceneId)
   } catch (error) {
     throw error
   }
@@ -50,7 +50,7 @@ export async function getJumpsByEventRef(
   eventId: ElementId
 ): Promise<Jump[]> {
   try {
-    return await new LibraryDatabase(studioId).getJumpsByEventRef(eventId)
+    return await getLibraryDatabase(studioId).getJumpsByEventRef(eventId)
   } catch (error) {
     throw error
   }
@@ -60,7 +60,7 @@ export async function saveJump(studioId: StudioId, jump: Jump): Promise<Jump> {
   if (!jump.id) jump.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveJump(jump)
+    return await getLibraryDatabase(studioId).saveJump(jump)
   } catch (error) {
     throw error
   }
@@ -72,7 +72,7 @@ export async function saveJumpTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       eventId,
       LIBRARY_TABLE.JUMPS,
       title
@@ -88,7 +88,7 @@ export async function saveJumpPath(
   jumpPath: JumpPath
 ): Promise<void> {
   try {
-    await new LibraryDatabase(studioId).saveJumpPath(jumpId, jumpPath)
+    await getLibraryDatabase(studioId).saveJumpPath(jumpId, jumpPath)
   } catch (error) {
     throw error
   }
@@ -100,7 +100,7 @@ export async function saveSceneRefToJump(
   eventId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).saveSceneRefToJump(sceneId, eventId)
+    await getLibraryDatabase(studioId).saveSceneRefToJump(sceneId, eventId)
   } catch (error) {
     throw error
   }
@@ -189,7 +189,7 @@ export async function removeJump(
   skipDestinationPaths: boolean = false
 ) {
   try {
-    await new LibraryDatabase(studioId).removeJump(jumpId, skipDestinationPaths)
+    await getLibraryDatabase(studioId).removeJump(jumpId, skipDestinationPaths)
   } catch (error) {
     throw error
   }

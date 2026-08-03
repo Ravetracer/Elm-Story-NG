@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -11,7 +11,7 @@ import {
 
 export async function getObject(studioId: StudioId, objectId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getObject(objectId)
+    return await getLibraryDatabase(studioId).getObject(objectId)
   } catch (error) {
     throw error
   }
@@ -22,7 +22,7 @@ export async function getObjectsByWorldRef(
   worldId: WorldId
 ): Promise<WorldObject[]> {
   try {
-    return await new LibraryDatabase(studioId).getObjectsByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getObjectsByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -35,7 +35,7 @@ export async function saveObject(
   if (!object.id) object.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveObject(object)
+    return await getLibraryDatabase(studioId).saveObject(object)
   } catch (error) {
     throw error
   }
@@ -48,7 +48,7 @@ export async function saveObject(
  */
 export async function removeObject(studioId: StudioId, objectId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removeObject(objectId)
+    await getLibraryDatabase(studioId).removeObject(objectId)
   } catch (error) {
     throw error
   }
@@ -60,7 +60,7 @@ export async function saveObjectTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       objectId,
       LIBRARY_TABLE.OBJECTS,
       title
@@ -82,7 +82,7 @@ export async function saveObjectPlacements(
   placements: ObjectPlacement[]
 ) {
   try {
-    const database = new LibraryDatabase(studioId),
+    const database = getLibraryDatabase(studioId),
       object = await database.getObject(objectId)
 
     return await database.saveObject({ ...object, placements })

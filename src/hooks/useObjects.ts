@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { ElementId, WorldId, StudioId, WorldObject } from '../data/types'
@@ -9,7 +9,7 @@ const useObjects = (
   deps?: any[]
 ): WorldObject[] | undefined => {
   const objects = useLiveQuery(
-    () => new LibraryDatabase(studioId).objects.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).objects.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -28,7 +28,7 @@ const useObject = (
 ): WorldObject | undefined =>
   useLiveQuery(
     () =>
-      new LibraryDatabase(studioId).objects
+      getLibraryDatabase(studioId).objects
         .where({ id: objectId || '' })
         .first(),
     deps || [],

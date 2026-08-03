@@ -1,4 +1,4 @@
-import { LibraryDatabase, LIBRARY_TABLE } from '../db'
+import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -12,7 +12,7 @@ import {
 
 export async function getFolder(studioId: StudioId, folderId: ElementId) {
   try {
-    return await new LibraryDatabase(studioId).getFolder(folderId)
+    return await getLibraryDatabase(studioId).getFolder(folderId)
   } catch (error) {
     throw error
   }
@@ -25,7 +25,7 @@ export async function saveFolder(
   if (!folder.id) folder.id = uuid()
 
   try {
-    return await new LibraryDatabase(studioId).saveFolder(folder)
+    return await getLibraryDatabase(studioId).saveFolder(folder)
   } catch (error) {
     throw error
   }
@@ -33,7 +33,7 @@ export async function saveFolder(
 
 export async function removeFolder(studioId: StudioId, folderId: ElementId) {
   try {
-    await new LibraryDatabase(studioId).removeFolder(folderId)
+    await getLibraryDatabase(studioId).removeFolder(folderId)
   } catch (error) {
     throw error
   }
@@ -44,7 +44,7 @@ export async function getFoldersByWorldRef(
   worldId: WorldId
 ): Promise<Folder[]> {
   try {
-    return await new LibraryDatabase(studioId).getFoldersByWorldRef(worldId)
+    return await getLibraryDatabase(studioId).getFoldersByWorldRef(worldId)
   } catch (error) {
     throw error
   }
@@ -55,7 +55,7 @@ export async function getChildRefsByFolderRef(
   folderId: ElementId
 ): Promise<FolderChildRefs> {
   try {
-    return await new LibraryDatabase(studioId).getChildRefsByFolderRef(folderId)
+    return await getLibraryDatabase(studioId).getChildRefsByFolderRef(folderId)
   } catch (error) {
     throw error
   }
@@ -67,7 +67,7 @@ export async function saveFolderTitle(
   title: string
 ) {
   try {
-    await new LibraryDatabase(studioId).saveElementTitle(
+    await getLibraryDatabase(studioId).saveElementTitle(
       folderId,
       LIBRARY_TABLE.FOLDERS,
       title
@@ -83,7 +83,7 @@ export async function saveParentRefToFolder(
   folderId: ElementId
 ) {
   try {
-    await new LibraryDatabase(studioId).saveParentRefToFolder(parent, folderId)
+    await getLibraryDatabase(studioId).saveParentRefToFolder(parent, folderId)
   } catch (error) {
     throw error
   }
@@ -95,7 +95,7 @@ export async function saveChildRefsToFolder(
   children: FolderChildRefs
 ) {
   try {
-    await new LibraryDatabase(studioId).saveChildRefsToFolder(
+    await getLibraryDatabase(studioId).saveChildRefsToFolder(
       folderId,
       children
     )

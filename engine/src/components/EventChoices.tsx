@@ -11,7 +11,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useQuery } from 'react-query'
 import { useSpring } from 'react-spring'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 import { findOpenPath, getChoicesFromEventWithOpenPath } from '../lib/api'
 
 import {
@@ -76,7 +76,7 @@ const EventPassthroughChoice: React.FC<{
     const conditions = useLiveQuery(async () => {
       if (!studioId || !worldId) return undefined
 
-      return await new LibraryDatabase(studioId).conditions
+      return await getLibraryDatabase(studioId).conditions
         .where({ worldId })
         .toArray()
     }, [studioId, worldId])
@@ -84,7 +84,7 @@ const EventPassthroughChoice: React.FC<{
     const variables = useLiveQuery(async () => {
       if (!studioId || !worldId) return undefined
 
-      return await new LibraryDatabase(studioId).variables
+      return await getLibraryDatabase(studioId).variables
         .where({ worldId })
         .toArray()
     }, [studioId, worldId])
@@ -385,7 +385,7 @@ const EventChoices: React.FC<{
     if (!studioId) return undefined
 
     const foundChoices = (
-      await new LibraryDatabase(studioId).choices
+      await getLibraryDatabase(studioId).choices
         .where({ eventId: event.id })
         .toArray()
     ).filter((choice) => !inlinedChoiceIds.includes(choice.id))
@@ -443,7 +443,7 @@ const EventChoices: React.FC<{
       if (!studioId || inlinedChoiceIds.length === 0) return 0
 
       const inlinedChoices = (
-        await new LibraryDatabase(studioId).choices.bulkGet(inlinedChoiceIds)
+        await getLibraryDatabase(studioId).choices.bulkGet(inlinedChoiceIds)
       ).filter((choice): choice is EngineChoiceData => choice !== undefined)
 
       const { filteredChoices } = await getChoicesFromEventWithOpenPath(
@@ -469,7 +469,7 @@ const EventChoices: React.FC<{
   const pathPassthroughs = useLiveQuery(async () => {
     if (!studioId) return undefined
 
-    const foundPaths = await new LibraryDatabase(studioId).paths
+    const foundPaths = await getLibraryDatabase(studioId).paths
       .where({ originId: event.id })
       .toArray()
 

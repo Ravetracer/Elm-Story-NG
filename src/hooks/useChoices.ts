@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { Choice, ElementId, WorldId, StudioId } from '../data/types'
@@ -9,7 +9,7 @@ const useChoices = (
   deps?: any[]
 ): Choice[] | undefined => {
   const choices = useLiveQuery(
-    () => new LibraryDatabase(studioId).choices.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).choices.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -29,7 +29,7 @@ const useChoice = (
   const choice = useLiveQuery(
     () =>
       choiceId
-        ? new LibraryDatabase(studioId).choices.where({ id: choiceId }).first()
+        ? getLibraryDatabase(studioId).choices.where({ id: choiceId }).first()
         : undefined,
     deps || [],
     undefined
@@ -44,7 +44,7 @@ const useChoicesByEventRef = (
   deps?: any[]
 ): Choice[] | undefined => {
   const choices = useLiveQuery(
-    () => new LibraryDatabase(studioId).choices.where({ eventId }).toArray(),
+    () => getLibraryDatabase(studioId).choices.where({ eventId }).toArray(),
     deps || [],
     undefined
   )

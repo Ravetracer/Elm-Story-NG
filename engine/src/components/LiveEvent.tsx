@@ -17,7 +17,7 @@ import {
   ENGINE_LIVE_EVENT_LOOPBACK_RESULT_VALUE
 } from '../lib'
 
-import { LibraryDatabase } from '../lib/db'
+import { getLibraryDatabase } from '../lib/db'
 
 import {
   getLiveEvent,
@@ -63,7 +63,7 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
   const liveEvent = useLiveQuery(async () => {
     if (!studioId) return undefined
 
-    return await new LibraryDatabase(studioId).live_events.get(data.id)
+    return await getLibraryDatabase(studioId).live_events.get(data.id)
   }, [studioId, data.id])
 
   const gotoNextLiveEvent: NextLiveEventProcessor = async ({

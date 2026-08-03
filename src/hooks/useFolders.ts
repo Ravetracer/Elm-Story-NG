@@ -1,4 +1,4 @@
-import { LibraryDatabase } from '../db'
+import { getLibraryDatabase } from '../db'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { StudioId, WorldId, ElementId, Folder } from '../data/types'
@@ -9,7 +9,7 @@ const useFolders = (
   deps?: any[]
 ): Folder[] | undefined => {
   const chapters = useLiveQuery(
-    () => new LibraryDatabase(studioId).folders.where({ worldId }).toArray(),
+    () => getLibraryDatabase(studioId).folders.where({ worldId }).toArray(),
     deps || [],
     undefined
   )
@@ -27,7 +27,7 @@ const useFolder = (
   deps?: any[]
 ): Folder | undefined =>
   useLiveQuery(
-    () => new LibraryDatabase(studioId).folders.where({ id: folderId }).first(),
+    () => getLibraryDatabase(studioId).folders.where({ id: folderId }).first(),
     deps || [],
     undefined
   )
