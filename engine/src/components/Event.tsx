@@ -239,11 +239,17 @@ export const Event: React.FC<{
             </div>
 
             {/*
-              What the objects said, in the order it was said, between the prose
-              and the choices — which is where the player is looking and is why
-              these are not in the object rail. The rail is chrome; this is the
-              story. See useObjectActions for why the beat is a line on this event
-              rather than a live event of its own.
+              What was said that the author did not write into the prose, in the
+              order it was said, between the prose and the choices — which is where
+              the player is looking and is why none of it is in the object rail.
+              The rail is chrome; this is the story. See useObjectActions for why
+              an object beat is a line on this event rather than a live event of
+              its own.
+
+              Two sources, one column: the objects, and the notification on the
+              path that was crossed to get here — which is written when this event
+              is created and so is always the first of them. See
+              `getPathNotification`.
 
               The two kinds are styled apart because they are read differently: a
               narration is a beat of the story, an inspection is the player turning

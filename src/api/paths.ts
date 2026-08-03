@@ -63,6 +63,21 @@ export async function savePath(
   }
 }
 
+export async function savePathNotification(
+  studioId: StudioId,
+  pathId: ElementId,
+  notification: string | undefined
+) {
+  try {
+    return await new LibraryDatabase(studioId).savePathNotification(
+      pathId,
+      notification
+    )
+  } catch (error) {
+    throw error
+  }
+}
+
 export async function removePath(studioId: StudioId, pathId: ElementId) {
   try {
     await new LibraryDatabase(studioId).removePath(pathId)

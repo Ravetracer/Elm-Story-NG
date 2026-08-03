@@ -34,7 +34,8 @@ import {
   ENGINE_SIZE,
   EngineObjectConditionData,
   EngineObjectDeltaCollection,
-  EngineLiveEventMessageData
+  EngineLiveEventMessageData,
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE
 } from '../types'
 import {
   AUTO_ENGINE_BOOKMARK_KEY,
@@ -43,6 +44,7 @@ import {
 } from '../lib'
 import {
   applyVariableSets,
+  processTemplateToText,
   resetSceneScopedVariables,
   variableCompareHolds
 } from './state'
@@ -770,6 +772,49 @@ export const processEffectsByRoute = async (
     state,
     effects.map((effect) => effect.set)
   )
+}
+
+/**
+ * The message a path says as it is crossed, or `undefined` for the silent case.
+ *
+ * `Path.notification` is the author's one line about a *transition* — the thing an
+ * event's prose cannot say, because several paths can lead into one event and each
+ * wants to say something different. It is the narrative twin of an effect: an
+ * effect changes state silently, this tells the player something changed.
+ *
+ * **Resolved here rather than at render, and that is the load-bearing part.** The
+ * text is stored already processed, against the state the path *arrived* with, so
+ * `{ health }` in a notification is the value at the moment it was said. Deferring
+ * to render would make a line in the player's history silently restate itself with
+ * whatever the variable holds now, which for a log of what happened is simply
+ * wrong. It is also why `state` is a parameter: the caller has already applied the
+ * path's effects and the scene-scope reset, and a notification announcing an effect
+ * has to see it.
+ *
+ * `NARRATION` rather than a message type of its own, because the type is a
+ * *reading* distinction and not a record of where the text came from — and a
+ * notification is read as exactly what `NARRATION` describes, a beat of the story.
+ */
+export const getPathNotification = async (
+  studioId: StudioId,
+  pathId: ElementId,
+  state: EngineLiveEventStateCollection
+): Promise<EngineLiveEventMessageData | undefined> => {
+  try {
+    const path = await new LibraryDatabase(studioId).paths.get(pathId)
+
+    if (!path?.notification) return undefined
+
+    const text = processTemplateToText(path.notification, state)
+
+    // a template that resolves to nothing is not a message; an empty paragraph in
+    // the reading column is worse than silence
+    if (!text.trim()) return undefined
+
+    return { text, type: ENGINE_LIVE_EVENT_MESSAGE_TYPE.NARRATION }
+  } catch (error) {
+    throw error
+  }
 }
 
 /**

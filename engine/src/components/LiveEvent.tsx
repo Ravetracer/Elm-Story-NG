@@ -22,6 +22,7 @@ import { LibraryDatabase } from '../lib/db'
 import {
   getLiveEvent,
   getLiveEventInitial,
+  getPathNotification,
   processEffectsByRoute,
   processSceneScopeOnEntry,
   saveBookmarkLiveEvent,
@@ -140,6 +141,47 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
           : undefined
 
       if (liveEventType && engine.worldInfo) {
+        /*
+         * Scene-scoped variables reset on the way in, *after* the path's own
+         * effects rather than before: an effect on the jump's path is the author
+         * saying "this is true as we arrive", and resetting afterwards would throw
+         * it away. The reset is a no-op unless the destination is a scene the
+         * author actually scoped something to.
+         *
+         * Hoisted out of the `saveLiveEvent` call below because the path's
+         * notification is resolved against this state and has to see the effects
+         * the crossing just applied.
+         */
+        const nextState = await processSceneScopeOnEntry(
+          studioId,
+          worldId,
+          data.destination,
+          destinationId,
+          initialLiveEventFromRestart?.state ||
+            (pathId &&
+              (await processEffectsByRoute(
+                studioId,
+                pathId,
+                state || storedLiveEvent?.state || data.state
+              ))) ||
+            state || // TODO: handles input loopback
+            storedLiveEvent?.state ||
+            data.state
+        )
+
+        /*
+         * What the path says as it is crossed, if the author gave it a line.
+         *
+         * On the **destination** event rather than the one being left, and first in
+         * its `messages`, so it is read on arrival and before anything the player
+         * then does with an object there. A restart reaches this with no `pathId`
+         * at all — `restartWorld` submits a result and no path — so it cannot
+         * inherit a notification from the choice that ended the story.
+         */
+        const notification = pathId
+          ? await getPathNotification(studioId, pathId, nextState)
+          : undefined
+
         await Promise.all([
           saveLiveEventNext(studioId, data.id, nextLiveEventId),
           saveLiveEvent(studioId, {
@@ -147,29 +189,8 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
             id: nextLiveEventId,
             destination: destinationId,
             origin: originId,
-            /*
-             * Scene-scoped variables reset on the way in, *after* the path's own
-             * effects rather than before: an effect on the jump's path is the
-             * author saying "this is true as we arrive", and resetting afterwards
-             * would throw it away. The reset is a no-op unless the destination is a
-             * scene the author actually scoped something to.
-             */
-            state: await processSceneScopeOnEntry(
-              studioId,
-              worldId,
-              data.destination,
-              destinationId,
-              initialLiveEventFromRestart?.state ||
-                (pathId &&
-                  (await processEffectsByRoute(
-                    studioId,
-                    pathId,
-                    state || storedLiveEvent?.state || data.state
-                  ))) ||
-                state || // TODO: handles input loopback
-                storedLiveEvent?.state ||
-                data.state
-            ),
+            state: nextState,
+            messages: notification ? [notification] : undefined,
             /*
              * Object deltas are carried forward the way variable state is, or the
              * inventory would empty itself on the next choice — every live event

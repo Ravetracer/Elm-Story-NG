@@ -8,7 +8,6 @@ import reactStringReplace from 'react-string-replace'
 import parseToHTML, { Element } from 'html-react-parser'
 
 import {
-  VARIABLE_TYPE,
   EngineLiveEventStateCollection,
   EventCharacterPersona,
   StudioId,
@@ -16,12 +15,7 @@ import {
   ElementId,
   EngineCharacterData
 } from '../types'
-import {
-  gameMethods,
-  getProcessedTemplate,
-  getTemplateExpressions,
-  parseTemplateExpressions
-} from '../lib/templates'
+import { processTemplateBlock } from '../lib/state'
 
 import { EngineContext } from '../contexts/EngineContext'
 
@@ -34,42 +28,6 @@ import {
   EventContentNode
 } from '../types/eventContentTypes'
 import EventLinkElement from './EventLinkElement'
-
-const processTemplateBlock = (
-  template: string,
-  state: EngineLiveEventStateCollection
-): [string, string[]] => {
-  const expressions = getTemplateExpressions(template),
-    variables: {
-      [variableId: string]: { value: string; type: VARIABLE_TYPE }
-    } = {}
-
-  Object.entries(state).map((variable) => {
-    const data = variable[1]
-
-    variables[data.title] = {
-      value: data.value,
-      type: data.type
-    }
-  })
-
-  const parsedExpressions = parseTemplateExpressions(
-    expressions,
-    variables,
-    gameMethods
-  )
-
-  return [
-    getProcessedTemplate(
-      template,
-      expressions,
-      parsedExpressions,
-      variables,
-      gameMethods
-    ),
-    expressions
-  ]
-}
 
 const decorate = (
   template: string,

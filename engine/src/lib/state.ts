@@ -12,6 +12,12 @@ import {
 } from '../types'
 
 import { formatNumberFromString } from '.'
+import {
+  gameMethods,
+  getProcessedTemplate,
+  getTemplateExpressions,
+  parseTemplateExpressions
+} from './templates'
 
 /**
  * Pure transformations over a live event's variable state.
@@ -207,4 +213,78 @@ export const resetSceneScopedVariables = (
   })
 
   return next
+}
+
+/**
+ * A template resolved against a live event's variable state.
+ *
+ * Returns the processed string and the expressions that were found in it, because
+ * `EventContent` needs the second to decorate each substitution and a path
+ * notification needs only the first.
+ *
+ * **The map is keyed on the variable's title, not its id**, which is what the
+ * expression language resolves by and therefore not a detail to tidy: renaming a
+ * variable breaks every expression naming the old title, and two variables sharing
+ * a title are ambiguous with whichever the map saw last winning.
+ *
+ * It lives here rather than in `templates.ts` because it is about *this engine's*
+ * live event state, and `templates.ts` exists twice — once here and once in the
+ * editor — so anything added to it has to be added to both or the two disagree.
+ * It was `EventContent`'s own local function until a second caller needed it.
+ */
+export const processTemplateBlock = (
+  template: string,
+  state: EngineLiveEventStateCollection
+): [string, string[]] => {
+  const expressions = getTemplateExpressions(template),
+    variables: {
+      [variableTitle: string]: { value: string; type: VARIABLE_TYPE }
+    } = {}
+
+  Object.values(state).forEach((variable) => {
+    variables[variable.title] = {
+      value: variable.value,
+      type: variable.type
+    }
+  })
+
+  const parsedExpressions = parseTemplateExpressions(
+    expressions,
+    variables,
+    gameMethods
+  )
+
+  return [
+    getProcessedTemplate(
+      template,
+      expressions,
+      parsedExpressions,
+      variables,
+      gameMethods
+    ),
+    expressions
+  ]
+}
+
+/**
+ * A template resolved to plain text, for the one consumer that has no DOM to put
+ * spans into: a path notification, which is stored as the string it resolved to.
+ *
+ * `getProcessedTemplate` re-wraps every substitution in braces — `{ health }` over
+ * a value of 40 comes back as `{40}` — so that `decorate` can find them with a
+ * regular expression and wrap each in its own span. This does what `decorate` does
+ * and stops before the markup, which is why it renders an unresolvable expression
+ * as the same **ERROR** the prose shows rather than leaking the internal
+ * `esg-error` token. The alternative — special-casing plain text — would let one
+ * expression mean two different things depending on where it was written.
+ */
+export const processTemplateToText = (
+  template: string,
+  state: EngineLiveEventStateCollection
+): string => {
+  const [processed] = processTemplateBlock(template, state)
+
+  return processed.replace(/{([^}]+)}/g, (_, value: string) =>
+    value === 'esg-error' ? 'ERROR' : value
+  )
 }

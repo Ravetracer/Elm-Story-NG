@@ -479,14 +479,38 @@ semantics.
 
 Depends on nothing above and benefits from there being more to present.
 
-- [ ] Transitions
-- [ ] Custom backgrounds and colors
-- [ ] Animated images
+**The six items are two groups, and the split decides the order.** Choice modals,
+notifications and inline choices already have everything they persist — the first
+two from section 3's migration, the third because section 2 established that an
+inline choice costs no schema at all — so each is interface work, exactly as all of
+section 6 was. Transitions, custom backgrounds and animated images have no fields
+anywhere, so each needs a design pass first and their fields should ride one
+migration rather than three.
+
+- [ ] Transitions *(no field yet — design first)*
+- [ ] Custom backgrounds and colors *(no field yet — design first)*
+- [ ] Animated images *(no field yet — design first)*
 - [ ] Choice modals
-- [ ] Storyworld notifications
+      *(`World.choicePresentation` and `Event.choicePresentation` are shipped,
+      compiled into `format.ts` and exported; nothing sets or reads them yet.)*
+- [x] Storyworld notifications — `Path.notification`, set from the Notification
+      panel at the bottom of a path's properties and said in the story stream when
+      the path is crossed. See `CLAUDE.md`, "Path notifications".
+      *(The presentation question `DESIGN.md` §12 left open — "a transient line" —
+      was decided as a line in the stream rather than a toast, so it reuses
+      `EngineLiveEventData.messages` and the `NARRATION` styling the object beats
+      already have. That is why it cost no new engine state, no theme token and no
+      dismissal rule. The engine's own `ErrorNotification` was **not** generalised
+      as `ROADMAP.md` proposed: it is gated behind `engine.isComposer` and styled
+      only in `engine-editor.less`, so a player in an exported PWA has never seen
+      it, and turning a debug affordance into an authoring surface would have meant
+      building the player-facing half from nothing.)*
 - [ ] Inline choices
-      *(no migration if an inline choice references an existing Choice element;
-      one if it replaces it. Decide in section 2.)*
+      *(costs no schema at all — a void Slate node carrying a `choice_id`, decided
+      in section 2 and recorded in `DESIGN.md` §12. The cost is bookkeeping:
+      `lib/contentEditor` must diff those nodes against `Event.choices` the way it
+      diffs images against `Event.images`, and an orphaned choice is worse than an
+      orphaned asset because a path still points at it.)*
 
 ## 8. Documentation site
 

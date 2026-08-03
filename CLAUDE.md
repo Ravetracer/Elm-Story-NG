@@ -425,6 +425,84 @@ interface work with no schema cost.
   goes through the optional `variableId`. They do ride the transport, so an
   export/import round trip keeps them.
 
+## Path notifications
+
+`Path.notification` — the author's one line about a **transition**, set from the
+Notification panel at the bottom of a path's properties and said in the story
+stream as the path is crossed. The first item of section 7, and interface work
+only: the field, its `format.ts` entry and its whole transport shipped unused in
+section 3.
+
+- **A notification hangs off a path because an event's prose cannot say it.**
+  Several paths can lead into one event and each wants to say something different,
+  which is the capability; typing it into the destination event would say it on
+  every way in. It is the narrative twin of an effect — an effect changes state
+  silently, a notification tells the player something changed — which is why the
+  panel sits *below* Effects.
+- **It is a line in the stream, not a toast, and that was a decision.**
+  `DESIGN.md` §12 said "a transient line" and left the presentation open;
+  `ROADMAP.md` proposed generalising the engine's `ErrorNotification`. That was
+  rejected on evidence: `ErrorNotification` is gated behind `engine.isComposer` in
+  `Renderer` and styled only in `engine-editor.less`, so a player in an exported
+  PWA has never seen it, and the player-facing half would have been built from
+  nothing. Reusing `EngineLiveEventData.messages` instead cost no engine state, no
+  theme token and no dismissal rule.
+- **`NARRATION`, not a message type of its own.**
+  `ENGINE_LIVE_EVENT_MESSAGE_TYPE` draws a *reading* distinction rather than
+  recording where a line came from, and a notification is read as what NARRATION
+  already describes: a beat of the story. A member per source multiplies the
+  styling and tells the reader nothing. `Event` renders both between the prose and
+  the choices.
+- **The text is resolved when the path is crossed and stored resolved.** Template
+  expressions work, against the state the crossing *arrived* with — after the
+  path's effects and the scene-scope reset, which is why `getPathNotification`
+  takes the state as a parameter and why `LiveEvent` hoists it out of the
+  `saveLiveEvent` call. Resolving at render instead would make a line already in
+  the player's history restate itself with whatever the variable holds now, which
+  for a log of what happened is simply wrong.
+- **`processTemplateToText` exists because there is no DOM to put spans into.**
+  `getProcessedTemplate` re-wraps every substitution in braces so `decorate` can
+  find them, so `{ health }` over 40 comes back as `{40}`; the helper finishes what
+  `decorate` does and stops before the markup, rendering an unresolvable expression
+  as the same **ERROR** the prose shows rather than leaking the internal
+  `esg-error`. `processTemplateBlock` moved from `EventContent` to
+  `engine/src/lib/state.ts` to be shared — **not** into `templates.ts`, which
+  exists twice, once per project, so anything added there has to be added twice.
+- **An uncontrolled field in this panel needs a key *and* a freshness test.** This
+  was wrong twice, both times caught by selecting a second edge and reading the
+  field back rather than by reasoning about it. The field must be uncontrolled or
+  each save re-renders it from the live query mid-typing and fights the caret — so
+  it takes its text at mount and ignores the prop forever after. `PathProperties`
+  is not remounted when the author selects another path, so unkeyed it showed path
+  A's line while the debounced save wrote to path B. Keying on the path id was
+  still not enough: `usePath` is a live query and hands back the *previous* path
+  for a render or two, so the remount captured stale text that nothing then
+  corrected. `path.id === pathId` is the test, and the field appears a beat after
+  the rest of the panel rather than lying for a beat. `VariableDescription` escapes
+  all of this only because the row that renders it is keyed on the variable and its
+  data arrives with it.
+- **`savePathNotification` is a targeted update, not `savePath` with a spread.**
+  A debounced text field means the `Path` a component rendered with can be several
+  keystrokes old, so the row is re-read inside the transaction — the same reason
+  `saveVariableDescription` is written that way. An emptied field is stored as
+  `undefined` rather than `''`, so clearing it reverts the path to silent *and*
+  stops it being exported; Dexie's `update` does delete the property, which was
+  verified against the database rather than assumed.
+- **Nothing about it needed a migration or a transport change**, which is worth
+  knowing before assuming the next presentation field will: section 3 already put
+  `notification` in `data/types.ts`, `format.ts`, `getWorldDataJSON`,
+  `importWorldData`, `transport/types/0.8.0.ts` and `schema/0.8.0.json`. The last
+  is the one that fails loudly — `additionalProperties: false` there turns an
+  unnamed exported field into a file the app refuses to import.
+
+`src/__tests__/pathNotification.test.ts` covers the resolution, including that a
+NUMBER holding `0` survives (the falsy-substitution trap) and that `esg-error`
+never reaches the reader. It also records, rather than fixes, that an empty STRING
+resolves to the literal word "undefined": that is `getProcessedTemplate`'s
+identifier branch (`value || 'undefined'`), it has been true of event prose since
+0.7.0, and changing it means changing `templates.ts` in both projects and every
+storyworld's prose along with it.
+
 ## Interface text
 
 Every word the storyteller says that an author did not write — 43 of them, from the

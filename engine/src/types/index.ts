@@ -669,11 +669,17 @@ export type EngineLiveEventResult = {
  * Why a line of object text is in the stream, which is the only thing that
  * distinguishes them once they are sitting in the same column as the prose.
  *
- * `NARRATION` is what an action *did* — a take message, a recipe's message, or the
- * refusal when nothing combines. `INSPECTION` is what an object *is*, printed when
- * the player selects it in the rail. They are styled apart because they are read
- * differently: narration is a beat of the story, an inspection is the player
- * turning something over in their hands.
+ * `NARRATION` is what an action *did* — a take message, a recipe's message, the
+ * refusal when nothing combines, or the notification on a path that was crossed.
+ * `INSPECTION` is what an object *is*, printed when the player selects it in the
+ * rail. They are styled apart because they are read differently: narration is a
+ * beat of the story, an inspection is the player turning something over in their
+ * hands.
+ *
+ * A path notification is deliberately **not** a third member. The distinction this
+ * enum draws is how a line is *read*, not where it came from, and a notification is
+ * read as exactly what NARRATION describes. A member per source would multiply the
+ * styling without telling the reader anything.
  */
 export enum ENGINE_LIVE_EVENT_MESSAGE_TYPE {
   NARRATION = 'NARRATION',

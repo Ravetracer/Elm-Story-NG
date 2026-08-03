@@ -27,6 +27,7 @@ import {
 import { Select } from 'antd'
 
 import ElementHelpButton from '../../ElementHelpButton'
+import PathNotification from './PathNotification'
 import PathObjectConditions from './PathObjectConditions'
 import { VariableRow, VARIABLE_ROW_TYPE } from '../../WorldVariables'
 
@@ -510,6 +511,59 @@ const PathDetails: React.FC<{
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/*
+              NOTIFICATION
+
+              Last, and after the effects on purpose: an effect changes state
+              silently and a notification is what the player is told about it, so
+              they read in the order they happen.
+            */}
+            <div className={styles.routeFeature}>
+              <div className={styles.featureHeader}>Notification</div>
+
+              <div className={styles.featureList}>
+                {/*
+                  Keyed on the path **and** withheld until the fetched path is the
+                  selected one. Both halves are load-bearing, and neither was
+                  obvious: this was wrong twice before it was right, each time
+                  caught by selecting a second edge and reading the field back
+                  rather than by reasoning about it.
+
+                  The field is uncontrolled — it has to be, or every save would
+                  re-render it from the live query mid-typing and fight the caret —
+                  so it takes its text at mount and ignores the prop forever after.
+                  This panel is not remounted when the author selects another path,
+                  so unkeyed it kept showing path A's line while `save` wrote to
+                  path B: editing what looked like A's notification rewrote B's.
+
+                  Keying alone still showed A's line, because `usePath` is a live
+                  query and hands back the *previous* path for a render or two after
+                  the selection changes — so the remount happened immediately and
+                  captured stale text, which nothing then corrected. `path.id ===
+                  pathId` is the freshness test, and it means the field appears a
+                  beat after the rest of the panel rather than lying for a beat.
+
+                  `VariableDescription` avoids all of this only because the row that
+                  renders it is keyed on the variable and its data arrives with it.
+                */}
+                {path.id === pathId && (
+                  <PathNotification
+                    key={pathId}
+                    studioId={studioId}
+                    pathId={pathId}
+                    notification={path.notification}
+                  />
+                )}
+
+                <div className={styles.notificationHint}>
+                  Said once, in the story, when this path is taken. Template
+                  expressions work here, so <code>{'{ name }'}</code> reads the
+                  variable — and is resolved as the path is crossed rather than
+                  when the line is read back.
+                </div>
               </div>
             </div>
           </div>

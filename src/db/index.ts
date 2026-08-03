@@ -1214,6 +1214,42 @@ export class LibraryDatabase extends Dexie {
     return path.id
   }
 
+  /**
+   * The line the storyteller says when this path is taken.
+   *
+   * A targeted update rather than `savePath` with a spread, for the reason
+   * `saveVariableDescription` is one: the field is edited by a debounced text
+   * input, so the `Path` a component rendered with can be several keystrokes old
+   * by the time the timer fires, and writing it back would undo whatever else
+   * changed on the path meanwhile. The row is re-read inside the transaction.
+   */
+  public async savePathNotification(
+    pathId: ElementId,
+    notification: string | undefined
+  ) {
+    await this.transaction('rw', this.paths, async () => {
+      if (pathId) {
+        const component = await this.getElement(LIBRARY_TABLE.PATHS, pathId)
+
+        if (component) {
+          await this.paths.update(pathId, {
+            ...component,
+            // an emptied field is dropped rather than stored as '', so a path
+            // that never had one and one that was cleared look alike — and an
+            // exported '' would otherwise reach the engine as a message with no
+            // text
+            notification: notification || undefined,
+            updated: Date.now()
+          })
+        } else {
+          throw new Error('Unable to save path notification. Path missing.')
+        }
+      } else {
+        throw new Error('Unable to save path notification. Missing path ID.')
+      }
+    })
+  }
+
   public async removePath(pathId: ElementId) {
     logger.info(`LibraryDatabase->removePath`)
 
