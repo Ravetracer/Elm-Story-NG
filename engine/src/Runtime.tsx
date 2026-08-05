@@ -13,6 +13,7 @@ import Renderer from './components/Renderer'
 
 import Settings from './components/Settings'
 import Presentation from './components/Presentation'
+import ThemeColors from './components/ThemeColors'
 
 import StartingDestinationGate from './components/StartingDestinationGate'
 import DevTools from './components/DevTools'
@@ -59,6 +60,7 @@ const Runtime: React.FC<{
                     data={engineData}
                     isComposer={isComposer}
                   >
+                    <ThemeColors />
                     <Renderer />
                   </Installer>
                 </StartingDestinationGate>
@@ -74,6 +76,7 @@ const Runtime: React.FC<{
               >
                 <SettingsProvider>
                   <Presentation>
+                    <ThemeColors />
                     <Settings />
 
                     <Renderer />
