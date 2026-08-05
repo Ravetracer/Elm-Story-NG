@@ -247,6 +247,26 @@ the character before deleting the row, and leaves the content nodes alone.
 - **Mask assets** are trashed only when nothing else names them, after the row is
   deleted (two masks may share an id), per the rule above.
 
+### Deleting a world is a bulk delete, on purpose
+
+`db/index.ts`'s `removeWorld` deletes the world's rows table by table with
+`.where({ worldId }).delete()` and trashes the whole asset directory through
+`REMOVE_ASSETS` type GAME — it does **not** drop the Dexie database (that is
+`removeStudio`, and the library database is per *studio*, so it may hold other
+worlds). The bulk delete is correct rather than a shortcut: the whole world is
+going, so the reference counting the individual `remove*` methods do has nothing
+left to count for, and one asset call beats file by file. The deletes are on
+distinct tables, so `Promise.all` is safe — no shared-array lost-update trap.
+
+**The world is named in exactly two places outside its own library database, and
+the api-layer `removeWorld` (`api/worlds.ts`) owns both**: the studio's `worlds`
+array in the app database (cleared via `removeWorldRef`, *before* the bulk delete
+so a failure leaves the world listed and re-deletable rather than orphaned and
+hidden) and the `localStorage[worldId]` meta the embedded engine writes when the
+composer previews a world (`saveWorldMeta`). The dashboard's `useWorlds` reads the
+`worlds` table directly rather than dereferencing the studio array, so a stale ref
+there cannot crash it.
+
 ## Template expressions
 
 `{ ... }` inside event content is parsed with acorn and evaluated by

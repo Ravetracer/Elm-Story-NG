@@ -70,9 +70,20 @@ export async function saveJumpRefToWorld(
 
 export async function removeWorld(studioId: StudioId, worldId: WorldId) {
   try {
+    // The studio's `worlds` array in the app database is the one place a world is
+    // named outside its own library database. Cleared first, so a failure in the
+    // larger delete below leaves the world still listed and re-deletable rather
+    // than orphaned and hidden.
     await api().studios.removeWorldRef(studioId, worldId)
 
     await getLibraryDatabase(studioId).removeWorld(studioId, worldId)
+
+    // The composer preview installs through the embedded engine, which writes a
+    // `worldId -> { worldId, studioId }` meta entry into the renderer's
+    // localStorage (engine `saveWorldMeta`). Nothing else clears it, so a world
+    // previewed and then deleted would leave the entry behind. A no-op if the
+    // world was never previewed.
+    window.localStorage.removeItem(worldId)
   } catch (error) {
     throw error
   }

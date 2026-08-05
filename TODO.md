@@ -635,10 +635,23 @@ Ranked. These are the reason this section is worth having.
         would be overwritten by an open content editor's next debounced save, the
         same reason the asset manager will not clear an event-image reference. The
         author removes the node. Written up in `CLAUDE.md`.
-- [ ] **`db/index.ts:464`, `removeWorld`: `// TODO: replace 'delete' method with
-      methods that handle children`.** Drops the whole Dexie database, so it
-      happens to be safe today; it stops being safe the moment anything outside
-      that database references a world.
+- [x] **`db/index.ts`, `removeWorld`: `// TODO: replace 'delete' method with
+      methods that handle children`.** Resolved, and the TODO's premise was
+      wrong: `removeWorld` does *not* drop the Dexie database (that is
+      `removeStudio`). It deletes the world's rows per table with
+      `.where({ worldId }).delete()` and trashes the whole asset directory via
+      `REMOVE_ASSETS` type GAME. The bulk delete is *correct* rather than a
+      shortcut — the whole world is going, so the ref-counting the individual
+      `remove*` methods do has nothing left to count for, and one asset call beats
+      file-by-file. Distinct tables, so `Promise.all` is safe (no shared-array
+      trap). Audited the out-of-database references, which is what the note was
+      really about: the studio's `worlds` array is already cleared by the
+      api-layer `removeWorld` (via `removeWorldRef`) and the dashboard reads the
+      `worlds` table directly rather than dereferencing it, so a stale ref cannot
+      crash it. The **one genuine orphan** was the composer preview's
+      `localStorage[worldId]` meta, written by the embedded engine and cleared by
+      nothing; the api-layer `removeWorld` now removes it. Both the reasoning and
+      the fix are in the code comments and `CLAUDE.md`.
 - [ ] **`db/index.ts:1176`, `:1401`, `:1560` — `// TODO: #70; async issue`.**
       Three near-identical notes on `removePath` and friends: parallel removes
       that would be correct done in order. This is the same lost-update trap

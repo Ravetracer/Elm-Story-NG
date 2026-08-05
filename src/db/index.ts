@@ -566,7 +566,18 @@ export class LibraryDatabase extends Dexie {
     try {
       logger.info(`Removing world with ID: ${worldId}`)
 
-      // TODO: replace 'delete' method with methods that handle children
+      /*
+       * A bulk per-table delete rather than the individual `remove*` methods,
+       * which is correct here rather than a shortcut: the whole world is going, so
+       * the ref-counting those methods do — a mask shared by two characters, an
+       * mp3 shared by two events — has no one left to count for, and
+       * `REMOVE_ASSETS` with type GAME trashes the world's entire asset directory
+       * in one call instead of file by file. The deletes are on distinct tables,
+       * so `Promise.all` is safe here (no shared-array lost-update trap, unlike a
+       * multi-element cut on one `Scene.children`). The one world reference that
+       * lives outside this database — the studio's `worlds` array — and the
+       * preview's localStorage meta are handled by the api-layer `removeWorld`.
+       */
       await Promise.all([
         ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSETS, {
           studioId,
