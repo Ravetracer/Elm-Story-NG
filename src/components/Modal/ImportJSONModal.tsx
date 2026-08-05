@@ -1,9 +1,7 @@
-import { ipcRenderer } from 'electron'
 import importWorldData from '../../lib/importWorldData'
 
 import React, { useContext, useEffect, useState } from 'react'
 
-import { WINDOW_EVENT_TYPE } from '../../lib/events'
 import { ValidationError } from '../../lib/transport/validate'
 
 import { ElementId, StudioId } from '../../data/types'
@@ -13,6 +11,8 @@ import { AppContext, APP_ACTION_TYPE } from '../../contexts/AppContext'
 
 import { Button, Modal, ModalProps } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons'
+
+import { HelpModal } from '../ElementHelp'
 
 import styles from './styles.module.less'
 
@@ -33,6 +33,8 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
   incomingError
 }) => {
   const { appDispatch } = useContext(AppContext)
+
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const [importingGameData, setImportingGameData] = useState(false),
     [worldData, setWorldData] = useState<WorldDataJSON | undefined>(undefined),
@@ -276,14 +278,16 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
             </div>
             <div
               className={styles.additionalHelp}
-              onClick={() =>
-                ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [
-                  'https://docs.elmstory.com/guides/production/dashboard/importing-worlds'
-                ])
-              }
+              onClick={() => setHelpOpen(true)}
             >
               Additional Help
             </div>
+
+            <HelpModal
+              topic="IMPORT"
+              open={helpOpen}
+              onClose={() => setHelpOpen(false)}
+            />
             <Button type="primary" onClick={onCancelImport}>
               Cancel
             </Button>

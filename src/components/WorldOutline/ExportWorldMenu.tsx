@@ -13,34 +13,17 @@ import { AppContext } from '../../contexts/AppContext'
 import { Dropdown, Menu } from 'antd'
 import { QuestionCircleFilled } from '@ant-design/icons'
 import { ExportWorldModal } from '../Modal'
+import { HelpModal } from '../ElementHelp'
+import { HelpTopic } from '../ElementHelp/content'
 
 import styles from './styles.module.less'
 
-const HelpButton: React.FC<{ type: WORLD_EXPORT_TYPE }> = ({ type }) => {
-  const openHelp = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    event.stopPropagation()
-
-    let helpUrl
-
-    switch (type) {
-      case WORLD_EXPORT_TYPE.JSON:
-        helpUrl = 'https://docs.elmstory.com/guides/data/json/overview/'
-        break
-      case WORLD_EXPORT_TYPE.PWA:
-        helpUrl = 'https://docs.elmstory.com/guides/data/pwa/overview/'
-        break
-      default:
-        helpUrl = 'https://docs.elmstory.com'
-    }
-
-    ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [helpUrl])
-  }
-
-  return (
-    <div className={styles.HelpButton} onClick={openHelp}>
-      <QuestionCircleFilled />
-    </div>
-  )
+// The export help used to open docs.elmstory.com, which no longer resolves; it
+// now opens the in-app help modal, keeping the menu's own icon styling. The modal
+// is rendered outside the Dropdown so closing the menu does not unmount it.
+const EXPORT_HELP_TOPIC: Record<WORLD_EXPORT_TYPE, HelpTopic> = {
+  [WORLD_EXPORT_TYPE.JSON]: 'EXPORT_JSON',
+  [WORLD_EXPORT_TYPE.PWA]: 'EXPORT_PWA'
 }
 
 const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
@@ -54,6 +37,8 @@ const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
     title: 'Gathering storyworld data...',
     visible: false
   })
+
+  const [helpTopic, setHelpTopic] = useState<HelpTopic | null>(null)
 
   async function exportWorld(type: WORLD_EXPORT_TYPE) {
     if (world.id) {
@@ -97,14 +82,42 @@ const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
         visible={exportWorldModal.visible}
       />
 
+      {helpTopic && (
+        <HelpModal
+          topic={helpTopic}
+          open={helpTopic !== null}
+          onClose={() => setHelpTopic(null)}
+        />
+      )}
+
       <Dropdown
         overlay={
           <Menu onClick={(event) => event.domEvent.stopPropagation()}>
             <Menu.Item onClick={() => exportWorld(WORLD_EXPORT_TYPE.JSON)}>
-              Export JSON <HelpButton type={WORLD_EXPORT_TYPE.JSON} />
+              Export JSON{' '}
+              <span
+                className={styles.HelpButton}
+                onClick={(event) => {
+                  event.stopPropagation()
+
+                  setHelpTopic(EXPORT_HELP_TOPIC[WORLD_EXPORT_TYPE.JSON])
+                }}
+              >
+                <QuestionCircleFilled />
+              </span>
             </Menu.Item>
             <Menu.Item onClick={() => exportWorld(WORLD_EXPORT_TYPE.PWA)}>
-              Export PWA <HelpButton type={WORLD_EXPORT_TYPE.PWA} />
+              Export PWA{' '}
+              <span
+                className={styles.HelpButton}
+                onClick={(event) => {
+                  event.stopPropagation()
+
+                  setHelpTopic(EXPORT_HELP_TOPIC[WORLD_EXPORT_TYPE.PWA])
+                }}
+              >
+                <QuestionCircleFilled />
+              </span>
             </Menu.Item>
           </Menu>
         }

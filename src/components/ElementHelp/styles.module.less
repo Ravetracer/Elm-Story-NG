@@ -1,0 +1,56 @@
+// The `?` button, when a caller does not supply its own icon class. Callers that
+// have an existing help-icon style (ElementHelpButton, ExportWorldMenu) pass it
+// through `className`, so their placement and hover are unchanged.
+.HelpButton {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: hsl(0, 0%, 45%);
+
+  &:hover {
+    color: var(--highlight-color);
+  }
+}
+
+// The modal body. Mirrors VariableManager's help so the two read as one voice.
+.helpBody {
+  font-size: 13px;
+  line-height: 1.6;
+  color: hsl(0, 0%, 70%);
+
+  h4 {
+    margin: 18px 0 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--highlight-color);
+  }
+
+  p {
+    margin: 0 0 8px;
+    color: hsl(0, 0%, 70%);
+  }
+
+  ul {
+    margin: 0 0 8px;
+    padding-left: 18px;
+
+    li {
+      margin-bottom: 5px;
+    }
+  }
+
+  strong {
+    color: hsl(0, 0%, 88%);
+  }
+
+  code {
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    background: hsl(0, 0%, 10%);
+    border: 1px solid hsl(0, 0%, 16%);
+    border-radius: 2px;
+    padding: 0 4px;
+    color: hsl(0, 0%, 88%);
+    white-space: nowrap;
+  }
+}
