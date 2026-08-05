@@ -221,6 +221,32 @@ it**: the count is read back out of the database, so an element still holding th
 id counts as a reference. `removeEvent` is the exception and passes
 `filterOutEventIds`, because it cannot save an event it is deleting.
 
+### Deleting a character cascades, and stops at the Slate document
+
+`removeCharacter` mirrors `removeVariable`: it clears every id-referenced owner of
+the character before deleting the row, and leaves the content nodes alone.
+
+- **Its relationships** are edges, so both ends going means the edge is gone
+  (0.8.0). Removed first, since they are read by character id.
+- **`Event.persona` and `Event.characters`** are fields on the event — the speaker
+  tuple and the bookkeeping array — cleared on every event in the world that named
+  the character. They are **targeted `events.update` calls, not `saveEvent`**, so a
+  content editor open on one of those events cannot have its in-flight `content`
+  clobbered; and `persona` is set to `undefined`, which Dexie's `update` stores as
+  a deleted property (the same trick as `savePathNotification`). Distinct event
+  rows, so no shared-array lost-update trap — unlike a multi-element cut on one
+  `Scene.children`.
+- **The character-reference nodes in `Event.content` are deliberately not
+  rewritten**, which is the same choice every other content reference already
+  follows. A missing character is **benign, not the dangling-child-ref crash**:
+  the editor's `serialization` returns a `missing-character` span and the engine's
+  `useCharacters` filters the absent record out, so nothing dereferences it into a
+  throw. Rewriting the document from outside would be overwritten by an open
+  editor's next debounced save — the asset-manager and inline-choice reasoning —
+  so the node outlives the character and the author removes it.
+- **Mask assets** are trashed only when nothing else names them, after the row is
+  deleted (two masks may share an id), per the rule above.
+
 ## Template expressions
 
 `{ ... }` inside event content is parsed with acorn and evaluated by

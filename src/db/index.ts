@@ -30,6 +30,7 @@ import {
   ELEMENT_TYPE,
   FolderParentRef,
   EVENT_TYPE,
+  EventPersona,
   Input,
   Character,
   CharacterRelationship,
@@ -364,23 +365,23 @@ export class LibraryDatabase extends Dexie {
   public async removeCharacter(studioId: StudioId, characterId: ElementId) {
     logger.info(`LibraryDatabase->removeCharacter`)
 
-    // TODO: consider dependencies e.g. passages
-
     try {
-      /*
-       * Collected inside the transaction and trashed after it. Two things were
-       * wrong with doing it inline: `Promise.all` was given an array *of arrays*
-       * and so resolved without awaiting anything inside them, making the
-       * removals fire-and-forget; and the mask images were removed outright,
-       * without counting, when two masks are allowed to name one image.
-       */
-      let deadMaskAssets: { assetId: string; worldId: WorldId }[] = []
+      const character = await this.characters.get(characterId)
+
+      if (!character) {
+        logger.error(
+          `LibraryDatabase->removeCharacter->Unable to remove character with ID: '${characterId}'. Does not exist.`
+        )
+
+        return
+      }
+
+      const { worldId } = character
 
       /*
        * 0.8.0: a relationship is an edge, so losing either end makes it
        * meaningless. Removed before the character, since it is read by character
-       * id. The pre-existing gap noted in `TODO.md` — content character-reference
-       * nodes and `CharacterRefs` are still not cascaded — is untouched here.
+       * id.
        */
       const relationships = await this.getCharacterRelationshipsByCharacterRef(
         characterId
@@ -391,27 +392,65 @@ export class LibraryDatabase extends Dexie {
           (await this.removeCharacterRelationship(relationship.id))
       }
 
+      /*
+       * The event-side references. Two live on the event as fields — the
+       * `characters` bookkeeping array and the `persona` speaker tuple — and are
+       * cleared here so nothing offers a character that no longer exists.
+       *
+       * The character-reference *nodes* in `Event.content` are deliberately left
+       * alone, which is the shape every other content reference already follows.
+       * A missing character renders as a placeholder rather than a crash — the
+       * editor's `serialization` returns a `missing-character` span and the
+       * engine filters the absent record out — so a dangling node is benign;
+       * and rewriting the Slate document from outside would be overwritten by an
+       * open content editor's next debounced save, the same reason the asset
+       * manager will not clear an event-image reference and a deleted choice's
+       * node outlives it. The author removes the node; the chip shows it is gone.
+       *
+       * Targeted field updates rather than a full `saveEvent`, so a racing
+       * content save is not clobbered. Distinct event records, so each is its own
+       * read-modify-write — no shared-array lost-update trap.
+       */
+      const events = await this.getEventsByWorldRef(worldId)
+
+      for (const event of events) {
+        if (!event.id) continue
+
+        const changes: { characters?: ElementId[]; persona?: EventPersona } = {}
+
+        if (event.characters.includes(characterId))
+          changes.characters = event.characters.filter(
+            (id) => id !== characterId
+          )
+
+        // `undefined` deletes the property through Dexie's `update`, reverting
+        // the event to no speaker.
+        if (event.persona?.[0] === characterId) changes.persona = undefined
+
+        if (Object.keys(changes).length)
+          await this.events.update(event.id, {
+            ...changes,
+            updated: Date.now()
+          })
+      }
+
+      /*
+       * Collected before the delete and trashed after it, each only when nothing
+       * else names it — two masks are allowed to share one image.
+       */
+      const deadMaskAssets = character.masks
+        .filter((mask) => mask.assetId)
+        .map((mask) => ({
+          assetId: mask.assetId as string,
+          worldId
+        }))
+
       await this.transaction('rw', this.characters, async () => {
-        const character = await this.characters.get(characterId)
+        logger.info(
+          `LibraryDatabase->removeCharacter->Removing character with ID: ${characterId}`
+        )
 
-        if (character) {
-          logger.info(
-            `LibraryDatabase->removeCharacter->Removing character with ID: ${characterId}`
-          )
-
-          deadMaskAssets = character.masks
-            .filter((mask) => mask.assetId)
-            .map((mask) => ({
-              assetId: mask.assetId as string,
-              worldId: character.worldId
-            }))
-
-          await this.characters.delete(characterId)
-        } else {
-          logger.error(
-            `LibraryDatabase->removeCharacter->Unable to remove character with ID: '${characterId}'. Does not exist.`
-          )
-        }
+        await this.characters.delete(characterId)
       })
 
       // sequentially, so each count sees what the one before it trashed

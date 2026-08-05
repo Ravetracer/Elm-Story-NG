@@ -616,17 +616,25 @@ grep -rnE 'TODO|FIXME|HACK|XXX' --include='*.ts' --include='*.tsx' --include='*.
 
 Ranked. These are the reason this section is worth having.
 
-- [ ] **`db/index.ts:330`, `removeCharacter`: `// TODO: consider dependencies
-      e.g. passages`.** Deleting a character does *not* cascade, unlike
-      `removeVariable`. A character is referenced by `Character.masks[].assetId`
-      (asset manager), by `CharacterRefs`, and by character-reference nodes in
-      event content — so a deletion can leave content pointing at a character
-      that no longer exists. This is the same shape as the dangling-child-ref
-      class documented in `CLAUDE.md` and the highest-value item in this section.
-      **Partly addressed**: the mask *assets* are now trashed only when nothing
-      else names them, and outside the Dexie transaction rather than inside it
-      with a `Promise.all` that awaited nothing. The reference cascade — content
-      nodes and `CharacterRefs` — is still open.
+- [x] **`db/index.ts`, `removeCharacter`: `// TODO: consider dependencies
+      e.g. passages`.** Now cascades, matching `removeVariable`. A character is
+      referenced by `Character.masks[].assetId` (asset manager), by its
+      relationships, by an event's `persona` and `characters` fields, and by
+      character-reference nodes in event content.
+      - **Mask assets**: trashed only when nothing else names them, outside the
+        Dexie transaction (was a `Promise.all` that awaited nothing).
+      - **Relationships**: an edge with a missing end is meaningless, so both are
+        removed (0.8.0).
+      - **`Event.persona` and `Event.characters`**: cleared on every event in the
+        world that named the character, as targeted field updates so a racing
+        content save is not clobbered.
+      - **Content character-reference nodes are deliberately *not* rewritten.**
+        Unlike the dangling-child-ref class, a missing character is benign — the
+        editor renders a `missing-character` placeholder and the engine filters
+        the absent record out — and rewriting the Slate document from outside
+        would be overwritten by an open content editor's next debounced save, the
+        same reason the asset manager will not clear an event-image reference. The
+        author removes the node. Written up in `CLAUDE.md`.
 - [ ] **`db/index.ts:464`, `removeWorld`: `// TODO: replace 'delete' method with
       methods that handle children`.** Drops the whole Dexie database, so it
       happens to be safe today; it stops being safe the moment anything outside
