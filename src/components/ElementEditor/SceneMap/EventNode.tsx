@@ -750,12 +750,15 @@ const EventNode: React.FC<NodeProps<{
           data.eventId
         )
 
-        await Promise.all([
-          foundPaths.map(async (foundPath) => {
-            foundPath?.id &&
+        // Spread so the removals are actually awaited; a nested `.map` array
+        // resolves without awaiting any of them (#70).
+        await Promise.all(
+          foundPaths.map(
+            async (foundPath) =>
+              foundPath?.id &&
               (await api().paths.removePath(data.studioId, foundPath.id))
-          })
-        ])
+          )
+        )
       }
 
       updateNodeInternals(data.eventId)

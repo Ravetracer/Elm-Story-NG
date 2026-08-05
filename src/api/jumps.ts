@@ -159,15 +159,19 @@ export async function switchJumpToChoiceOrInputEventType(
           event.id
         ]
 
+        // Spread the path re-pointing so `Promise.all` awaits it rather than
+        // firing and forgetting a nested `.map` array (#70). Distinct path rows
+        // and the scene's child refs, so parallel is correct.
         await Promise.all([
-          pathsToPatch.map(async (path) => {
-            event?.id &&
+          ...pathsToPatch.map(
+            async (path) =>
+              event?.id &&
               (await api().paths.savePath(studioId, {
                 ...path,
                 destinationId: event.id,
                 destinationType: ELEMENT_TYPE.EVENT
               }))
-          }),
+          ),
           api().scenes.saveChildRefsToScene(
             studioId,
             jump.sceneId,

@@ -132,7 +132,10 @@ const LiveEventStream: React.FC = React.memo(() => {
         }
       })
 
-      await Promise.all([
+      // Spread, not a nested `.map` array: the latter resolves without awaiting a
+      // single `saveLiveEventState` below, so the reconciled stream state was
+      // fire-and-forget on a version bump (#70).
+      await Promise.all(
         liveEventsArr.map(async (liveEvent) => {
           const updatedLiveEventState: EngineLiveEventStateCollection = cloneDeep(
             liveEvent.state
@@ -160,7 +163,7 @@ const LiveEventStream: React.FC = React.memo(() => {
             }
           })
 
-          await Promise.all([
+          await Promise.all(
             variablesArr.map(async (variable) => {
               const foundVariable = liveEvent.state[variable.id]
 
@@ -179,7 +182,7 @@ const LiveEventStream: React.FC = React.memo(() => {
                 }
               }
             })
-          ])
+          )
 
           // #362
           engineDispatch({
@@ -196,7 +199,7 @@ const LiveEventStream: React.FC = React.memo(() => {
             updatedLiveEventState
           )
         })
-      ])
+      )
     }
   })
 

@@ -57,10 +57,16 @@ const CharacterManager: React.FC<{
 
                   try {
                     if (character.id) {
-                      await Promise.all([
-                        api().events.removeDeadPersonas(studioId, character.id),
-                        api().characters.removeCharacter(studioId, character.id)
-                      ])
+                      // The whole cascade — relationships, event personas and
+                      // character refs, and mask assets — lives in
+                      // `removeCharacter`, mirroring `removeVariable`. It used to
+                      // also call `removeDeadPersonas` here, which cleared personas
+                      // a second time (and only personas, never the character
+                      // refs).
+                      await api().characters.removeCharacter(
+                        studioId,
+                        character.id
+                      )
 
                       composerDispatch({
                         type: COMPOSER_ACTION_TYPE.ELEMENT_REMOVE,

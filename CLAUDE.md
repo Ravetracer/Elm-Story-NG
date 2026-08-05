@@ -1282,7 +1282,7 @@ includes anything that ends in a file picker.
 
 ## Bug classes that have already bitten
 
-Most breakage since the revival is one of these five. Check them first.
+Most breakage since the revival is one of these six. Check them first.
 
 **1. rc-dock's light-theme colour leaking in.** `rc-dock.css` sets
 `.dock-panel { color: rgba(0, 0, 0, 0.85) }`. Anything inside a dock panel that
@@ -1358,6 +1358,28 @@ resume before any play or fade. Diagnose it by reading
 `Howler.state`, `Howler.ctx.state` and `_howls[0].seek()` together; either one
 alone is misleading. Note also that the preview's mute defaults to **on**
 (`devTools.muted`), which is a far more common reason for hearing nothing.
+
+**6. `Promise.all` over an array *of arrays* — the fire-and-forget remove.** The
+pattern is `await Promise.all([ things.map(async x => await remove(x)), more.map(...) ])`.
+The argument is an array whose *elements are arrays*, and an array is not a
+thenable, so `Promise.all` resolves it immediately — **without awaiting a single
+one of the promises inside**. The removals still start (the `.map` runs their
+async bodies), so it usually *looks* fine; it fails as a race when the caller
+tears down or writes next before the detached promises settle, leaving orphaned
+rows, paths or assets. The fix is a **flat** array of promises: spread each map,
+`Promise.all([ ...a.map(...), ...b.map(...) ])`, or `Promise.all(a.map(...))` for
+one. This bit `removeCharacter` first (fixed long ago) and then hid in **eleven**
+more remove/cascade sites — `removePath`, `removePathsByEventRef`, `removeScene`
+(that one had to become **sequential**, not just flattened, because its children
+splice the shared `Scene.children`), `removeVariable`, `removeEvent`, two
+`switchEvent*` type-changers, the jump→event conversion, `EventNode`'s passthrough
+cleanup, and the engine's `LiveEventStream` version-bump reconciliation. Watch for
+two tells: a bare `things.map(` as the first line inside `Promise.all([`, and a
+`push(arr.map(...))` that grows a promise list by whole arrays. **The one place it
+is *not* a bug is inside a Dexie `transaction`** — the engine's `save*CollectionData`
+use `Promise.all([map])` but the transaction tracks every operation started in its
+scope and commits only when they finish, so those are correct-by-transaction and
+left as they are.
 
 ## Resuming a storyworld
 

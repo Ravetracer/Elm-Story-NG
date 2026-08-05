@@ -652,12 +652,31 @@ Ranked. These are the reason this section is worth having.
       `localStorage[worldId]` meta, written by the embedded engine and cleared by
       nothing; the api-layer `removeWorld` now removes it. Both the reasoning and
       the fix are in the code comments and `CLAUDE.md`.
-- [ ] **`db/index.ts:1176`, `:1401`, `:1560` — `// TODO: #70; async issue`.**
-      Three near-identical notes on `removePath` and friends: parallel removes
-      that would be correct done in order. This is the same lost-update trap
-      `Scene.children` already produced twice — see `CLAUDE.md`, "The scene map
-      clipboard". Worth auditing every `Promise.all` over a remove, not just
-      these three.
+- [x] **`db/index.ts`, `// TODO: #70; async issue`.** The notes framed this as
+      "parallel vs. in-order," but the real defect was worse: the removes ran
+      `Promise.all([ arr.map(...), arr.map(...) ])` — `Promise.all` over an array
+      *of arrays*, which are not thenables, so it resolved **without awaiting a
+      single removal**. Fire-and-forget, the exact bug already fixed once in the
+      old `removeCharacter`. Audited every `Promise.all` over a remove across the
+      whole codebase, not just the three flagged lines, and fixed **eleven** sites:
+      - `db/index.ts`: `removePath`, `removePathsByEventRef`, `removeVariable`,
+        `removeEvent` (flattened with spread — distinct-table row removals, so
+        parallel-but-awaited is correct); `removeScene` (made **sequential**,
+        because its `removeEvent`/`removeJump` children each splice the shared
+        `Scene.children` — the documented lost-update trap).
+      - `api/events.ts`: `switchEventFromChoiceToInputType` (also restored a
+        missing `await` on a path removal) and `switchEventFromChoiceOrInputToJumpType`.
+      - `api/jumps.ts` (jump→event conversion), `SceneMap/EventNode.tsx`
+        (passthrough node cleanup), and the engine's `LiveEventStream`, whose outer
+        loop fire-and-forgot `saveLiveEventState` on a version bump.
+      - Removed the two dead/redundant cleaners `removeDeadPersonas` and
+        `removeDeadCharacterRefs` (`api/events.ts`); the character cascade now lives
+        solely in `removeCharacter`, and `CharacterManager` calls only that.
+
+      The engine's `save*CollectionData` use the same `Promise.all([map])` shape
+      but are wrapped in a Dexie `transaction`, which tracks the started operations
+      and commits only once they finish, so they are correct-by-transaction and
+      were left alone. Bug class written up in `CLAUDE.md`.
 - [ ] **`db/index.ts:848`, `removeJump`: `// TODO: WHY`.** Removing a
       non-existent jump logs an error and resolves rather than throwing. Decide
       which it is; the comment is the author admitting they did not.

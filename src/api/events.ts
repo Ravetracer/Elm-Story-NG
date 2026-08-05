@@ -163,13 +163,19 @@ export async function switchEventFromChoiceToInputType(
         event.id
       )
 
+      // Flat array of promises, spread so `Promise.all` actually awaits the path
+      // and choice removals — nesting the `.map` arrays resolved without awaiting
+      // any of them (#70). `removeChoice` does not touch `event.choices`, so the
+      // wholesale `saveChoiceRefsToEvent([])` is the only writer of it and the
+      // parallel run is safe.
       await Promise.all([
-        foundPassthroughPaths.map(async (foundPath) => {
-          foundPath.id &&
+        ...foundPassthroughPaths.map(
+          async (foundPath) =>
+            foundPath.id &&
             foundPath.choiceId === undefined &&
-            api().paths.removePath(studioId, foundPath.id)
-        }),
-        event.choices.map(
+            (await api().paths.removePath(studioId, foundPath.id))
+        ),
+        ...event.choices.map(
           async (choiceId) =>
             await api().choices.removeChoice(studioId, choiceId)
         ),
@@ -228,15 +234,19 @@ export async function switchEventFromChoiceOrInputToJumpType(
             jump.id
           ]
 
+          // Flat array of promises, spread so the path re-pointing is actually
+          // awaited rather than fired and forgotten (#70). Distinct path rows and
+          // the scene's child refs, so parallel is correct.
           await Promise.all([
-            pathsToPatch.map(async (path) => {
-              jump?.id &&
+            ...pathsToPatch.map(
+              async (path) =>
+                jump?.id &&
                 (await api().paths.savePath(studioId, {
                   ...path,
                   destinationId: jump.id,
                   destinationType: ELEMENT_TYPE.JUMP
                 }))
-            }),
+            ),
             api().scenes.saveChildRefsToScene(
               studioId,
               event.sceneId,
@@ -333,68 +343,12 @@ export async function removeDeadPersonaRefsFromEvent(
   }
 }
 
-// when characters are removed
-export async function removeDeadPersonas(
-  studioId: StudioId,
-  characterId: ElementId
-) {
-  const db = getLibraryDatabase(studioId)
-
-  try {
-    const events = await db.events
-      .where('persona')
-      .equals(characterId)
-      .toArray()
-
-    await Promise.all([
-      events.map(async (event) => {
-        try {
-          event.id &&
-            (await db.events.update(event.id, {
-              ...event,
-              persona: undefined,
-              updated: Date.now()
-            }))
-        } catch (error) {
-          throw error
-        }
-      })
-    ])
-  } catch (error) {
-    throw error
-  }
-}
-
-// when characters are removed
-// elmstorygames/feedback#212
-export async function removeDeadCharacterRefs(
-  studioId: StudioId,
-  characterId: ElementId
-) {
-  const db = getLibraryDatabase(studioId)
-
-  try {
-    const referenceEvents = await db.events
-      .where('characters')
-      .equals(characterId || '')
-      .toArray()
-
-    await Promise.all([
-      referenceEvents.map(async (event) => {
-        event.id &&
-          (await db.events.update(event.id, {
-            ...event,
-            characters: event.characters.filter(
-              (existingCharacterId) => existingCharacterId !== characterId
-            ),
-            updated: Date.now()
-          }))
-      })
-    ])
-  } catch (error) {
-    throw error
-  }
-}
+// Removing a character's dead personas and character references used to live
+// here in two functions — `removeDeadPersonas` (wired into character deletion)
+// and `removeDeadCharacterRefs` (wired into nothing). Both did full-event writes
+// that could clobber an open editor's content, and both had the #70
+// array-of-arrays bug. The cascade now lives in `LibraryDatabase.removeCharacter`
+// as targeted field updates, mirroring `removeVariable`, so both are gone.
 
 // when mask is disabled, reset to NEUTRAL
 export async function resetPersonaMaskFromEvent(

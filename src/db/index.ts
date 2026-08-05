@@ -1154,10 +1154,18 @@ export class LibraryDatabase extends Dexie {
         jump.id && (await this.removeJump(jump.id))
       }
 
-      await Promise.all([
-        eventIds.map(async (eventId) => await this.removeEvent(eventId)),
-        jumpIds.map(async (jumpId) => await this.removeJump(jumpId))
-      ])
+      /*
+       * Sequential, not `Promise.all`. `removeEvent` and `removeJump` each read,
+       * splice and save the scene's `children` array, so removing them in
+       * parallel is the `Scene.children` lost-update trap the scene map clipboard
+       * documents — each removal splices its own copy and the last write wins,
+       * stranding child refs. (The previous `Promise.all([map, map])` awaited
+       * nothing at all, #70, so it never even got that far.) The scene row is
+       * deleted below regardless, but sibling events sharing a path would also
+       * double-remove it, so ordering is the clean, correct choice here.
+       */
+      for (const eventId of eventIds) await this.removeEvent(eventId)
+      for (const jumpId of jumpIds) await this.removeJump(jumpId)
 
       scene?.audio?.[0] &&
         (await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
@@ -1311,15 +1319,19 @@ export class LibraryDatabase extends Dexie {
           .where({ pathId })
           .toArray()
 
+      // Flat array of promises, not an array of `.map` arrays: the latter
+      // resolves without awaiting a single removal (#70). Distinct tables
+      // (conditions, effects, object conditions all indexed by pathId), so
+      // awaiting them in parallel is correct.
       await Promise.all([
-        conditions.map(
+        ...conditions.map(
           async (condition) =>
             condition.id && (await this.removeCondition(condition.id))
         ),
-        effects.map(
+        ...effects.map(
           async (effect) => effect.id && (await this.removeEffect(effect.id))
         ),
-        objectConditions.map(
+        ...objectConditions.map(
           async (condition) =>
             condition.id && (await this.removeObjectCondition(condition.id))
         )
@@ -1333,7 +1345,6 @@ export class LibraryDatabase extends Dexie {
 
           await this.paths.delete(pathId)
         } else {
-          // TODO: #70; async issue - we can do things in order, but this is likely more efficient
           logger.error(
             `LibraryDatabase->removePath->Unable to remove path with ID: '${pathId}'. Does not exist.`
           )
@@ -1355,12 +1366,14 @@ export class LibraryDatabase extends Dexie {
           .where({ destinationId: eventId })
           .toArray()
 
+      // Flat array of promises, not an array of `.map` arrays, which would
+      // resolve without awaiting a single removal (#70).
       await Promise.all([
-        originRoutes.map(
+        ...originRoutes.map(
           async (originRoute) =>
             originRoute.id && (await this.removePath(originRoute.id))
         ),
-        destinationRoutes.map(
+        ...destinationRoutes.map(
           async (destinationRoute) =>
             destinationRoute.id && (await this.removePath(destinationRoute.id))
         )
@@ -1558,7 +1571,6 @@ export class LibraryDatabase extends Dexie {
 
           await this.conditions.delete(conditionId)
         } else {
-          // TODO: #70; async issue - we can do things in order, but this is likely more efficent
           logger.error(
             `LibraryDatabase->removeCondition->Unable to remove condition with ID: '${conditionId}'. Does not exist.`
           )
@@ -1717,7 +1729,6 @@ export class LibraryDatabase extends Dexie {
 
           await this.effects.delete(effectId)
         } else {
-          // TODO: #70; async issue - we can do things in order, but this is likely more efficient
           logger.error(
             `LibraryDatabase->removeEffect->Unable to remove effect with ID: '${effectId}'. Does not exist.`
           )
@@ -1997,15 +2008,25 @@ export class LibraryDatabase extends Dexie {
         choices = await this.choices.where({ eventId }).toArray(),
         inputs = await this.inputs.where({ eventId }).toArray()
 
+      /*
+       * A flat array of the child promises, not an array *of* `.map` arrays.
+       * `Promise.all` over nested arrays treats each inner array as an
+       * already-resolved value and returns without awaiting a single removal —
+       * the fire-and-forget bug (#70) that also bit the old `removeCharacter`.
+       * These are the event's own choices, inputs, jumps and paths, on distinct
+       * tables, so awaiting them in parallel is correct; the shared-array care is
+       * the caller's, since it is `Scene.children` that a multi-event removal
+       * races (see `removeScene` and the scene map clipboard).
+       */
       const removeEventPromises = [
-        jumps.map(
+        ...jumps.map(
           async (jump) =>
             jump.id && (await this.saveJumpPath(jump.id, [jump.path[0]]))
         ),
-        choices.map(
+        ...choices.map(
           async (choice) => choice.id && (await this.removeChoice(choice.id))
         ),
-        inputs.map(
+        ...inputs.map(
           async (input) => input.id && (await this.removeInput(input.id))
         )
       ]
@@ -2021,7 +2042,7 @@ export class LibraryDatabase extends Dexie {
         )
 
         removeEventPromises.push(
-          pathsWithOrigin.map(
+          ...pathsWithOrigin.map(
             async (path) => path.id && (await this.removePath(path.id))
           )
         )
@@ -2033,7 +2054,7 @@ export class LibraryDatabase extends Dexie {
         )
 
         removeEventPromises.push(
-          pathsWithDestination.map(
+          ...pathsWithDestination.map(
             async (path) => path.id && (await this.removePath(path.id))
           )
         )
@@ -2331,15 +2352,18 @@ export class LibraryDatabase extends Dexie {
         effects = await this.effects.where({ variableId }).toArray(),
         inputs = await this.inputs.where({ variableId }).toArray()
 
+      // Flat array of promises, not an array of `.map` arrays, which would
+      // resolve without awaiting a single removal (#70). Distinct tables, so
+      // awaiting them in parallel is correct.
       await Promise.all([
-        conditions.map(
+        ...conditions.map(
           async (condition) =>
             condition.id && (await this.removeCondition(condition.id))
         ),
-        effects.map(
+        ...effects.map(
           async (effect) => effect.id && (await this.removeEffect(effect.id))
         ),
-        inputs.map(
+        ...inputs.map(
           async (input) =>
             input.id && (await this.saveVariableRefToInput(input.id, undefined))
         )
