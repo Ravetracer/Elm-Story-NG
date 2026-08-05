@@ -137,6 +137,21 @@
     // display: grid;
   }
 
+  // The storyworld's background, filling the window behind the reading column.
+  // Absolute against #runtime and first in paint order, so the title card and the
+  // event stream — both opaque over --background-color — sit on top and the image
+  // shows in the gutters around the centred column. pointer-events: none so it
+  // never intercepts a click meant for the story.
+  #world-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+
   #title-card {
     justify-content: center;
     align-content: center;

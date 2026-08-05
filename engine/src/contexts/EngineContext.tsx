@@ -50,6 +50,7 @@ interface EngineState {
     choicePresentation?: CHOICE_PRESENTATION
     transition?: ENGINE_TRANSITION
     themeColors?: WorldThemeColors
+    backgroundAssetId?: string
     studioId: StudioId
     studioTitle: string
     title: string

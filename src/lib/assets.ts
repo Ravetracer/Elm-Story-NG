@@ -71,7 +71,8 @@ export enum ASSET_REFERENCE_TYPE {
   OBJECT_IMAGE = 'OBJECT_IMAGE',
   OBJECT_STACKED_IMAGE = 'OBJECT_STACKED_IMAGE',
   SCENE_AUDIO = 'SCENE_AUDIO',
-  WORLD_COVER = 'WORLD_COVER'
+  WORLD_COVER = 'WORLD_COVER',
+  WORLD_BACKGROUND = 'WORLD_BACKGROUND'
 }
 
 /** Where a storyworld points at an asset. */
@@ -163,6 +164,19 @@ export const WORLD_COVER_PIPELINE: ImageAssetPipeline = {
 }
 
 /**
+ * A landscape 16:9 at a larger size than the cover, because it fills the whole
+ * window behind the reading column rather than sitting in a card. The author
+ * positions the crop, so a 16:9 background is a chosen region rather than a blind
+ * one; `background-size: cover` in the engine then fills whatever the viewport is.
+ */
+export const WORLD_BACKGROUND_PIPELINE: ImageAssetPipeline = {
+  aspectRatio: 16 / 9,
+  size: { width: 1920, height: 1080 },
+  format: 'webp',
+  quality: 0.8
+}
+
+/**
  * What an asset *is*, as opposed to where it is referenced from.
  *
  * The distinction only appears once an asset can be uploaded before it is
@@ -176,6 +190,7 @@ export enum ASSET_KIND {
   EVENT_IMAGE = 'EVENT_IMAGE',
   OBJECT_IMAGE = 'OBJECT_IMAGE',
   WORLD_COVER = 'WORLD_COVER',
+  WORLD_BACKGROUND = 'WORLD_BACKGROUND',
   AUDIO = 'AUDIO'
 }
 
@@ -220,6 +235,12 @@ export const ASSET_KINDS: Record<ASSET_KIND, AssetKindProfile> = {
     accept: 'image/*',
     pipeline: WORLD_COVER_PIPELINE
   },
+  [ASSET_KIND.WORLD_BACKGROUND]: {
+    label: 'Storyworld Background',
+    ext: 'webp',
+    accept: 'image/*',
+    pipeline: WORLD_BACKGROUND_PIPELINE
+  },
   [ASSET_KIND.AUDIO]: {
     label: 'Audio',
     ext: 'mp3',
@@ -240,6 +261,8 @@ export const assetKindForReference = (
       return ASSET_KIND.OBJECT_IMAGE
     case ASSET_REFERENCE_TYPE.WORLD_COVER:
       return ASSET_KIND.WORLD_COVER
+    case ASSET_REFERENCE_TYPE.WORLD_BACKGROUND:
+      return ASSET_KIND.WORLD_BACKGROUND
     case ASSET_REFERENCE_TYPE.EVENT_AUDIO:
     case ASSET_REFERENCE_TYPE.SCENE_AUDIO:
       return ASSET_KIND.AUDIO
@@ -263,10 +286,10 @@ export interface AssetReferenceSources {
 }
 
 /**
- * Every place a storyworld can name an asset, keyed by asset id. There are seven
+ * Every place a storyworld can name an asset, keyed by asset id. There are eight
  * as of 0.8.0: Character.masks[].assetId, Event.images[], Event.audio[0],
- * Scene.audio[0], WorldObject.assetId, WorldObject.stackedAssetId and
- * World.coverAssetId.
+ * Scene.audio[0], WorldObject.assetId, WorldObject.stackedAssetId,
+ * World.coverAssetId and World.backgroundAssetId.
  *
  * **This function has to cover all of them or the manager offers to delete a file
  * that is in use**, which is why a new writer belongs here in the same change that
@@ -339,12 +362,19 @@ export const collectAssetReferences = ({
     })
   )
 
-  if (world)
+  if (world) {
     add(world.coverAssetId, {
       type: ASSET_REFERENCE_TYPE.WORLD_COVER,
       elementId: world.id as ElementId,
       elementTitle: world.title
     })
+
+    add(world.backgroundAssetId, {
+      type: ASSET_REFERENCE_TYPE.WORLD_BACKGROUND,
+      elementId: world.id as ElementId,
+      elementTitle: world.title
+    })
+  }
 
   return references
 }

@@ -852,6 +852,8 @@ export interface EngineWorldData {
   themeColors?: WorldThemeColors
   copyright?: string
   coverAssetId?: string
+  /** ASSET_KIND.WORLD_BACKGROUND. Filled behind the reading column. */
+  backgroundAssetId?: string
   description?: string
   designer: string
   engine: string

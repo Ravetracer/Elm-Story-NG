@@ -51,6 +51,7 @@ const WORLD_INFO_FIELDS = [
   'themeColors',
   'copyright',
   'coverAssetId',
+  'backgroundAssetId',
   'description',
   'designer',
   'id',

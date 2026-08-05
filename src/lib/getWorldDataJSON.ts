@@ -66,6 +66,7 @@ export default async (
         transition: world.transition,
         themeColors: world.themeColors,
         copyright: world.copyright,
+        backgroundAssetId: world.backgroundAssetId,
         coverAssetId: world.coverAssetId,
         description: world.description,
         designer: world.designer,

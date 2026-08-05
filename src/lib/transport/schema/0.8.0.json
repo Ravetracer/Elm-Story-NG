@@ -99,6 +99,9 @@
         "coverAssetId": {
           "type": "string"
         },
+        "backgroundAssetId": {
+          "type": "string"
+        },
         "objectNoRecipeMessage": {
           "type": "string"
         }

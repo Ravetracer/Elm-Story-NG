@@ -12,6 +12,7 @@ import ElementTitle from '../ElementTitle'
 import ChoicePresentationSelect from '../../ChoicePresentationSelect'
 import TransitionSelect from '../../TransitionSelect'
 import WorldCover from './WorldCover'
+import WorldBackground from './WorldBackground'
 import WorldColors from './WorldColors'
 import JumpTo from '../../JumpTo'
 
@@ -168,6 +169,23 @@ const WorldProperties: React.FC<{
               <Collapse.Panel header="Cover" key="cover-panel">
                 <div className={parentStyles.content}>
                   <WorldCover studioId={studioId} world={world} />
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          {/*
+            BACKGROUND
+
+            Filled behind the engine's reading column, in the window's gutters
+            around the 68rem column. A separate slot from the cover: the cover is a
+            card image, the background is full-bleed at play.
+          */}
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['background-panel']}>
+              <Collapse.Panel header="Background" key="background-panel">
+                <div className={parentStyles.content}>
+                  <WorldBackground studioId={studioId} world={world} />
                 </div>
               </Collapse.Panel>
             </Collapse>

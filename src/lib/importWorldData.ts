@@ -544,6 +544,7 @@ export default (
             themeColors: _.themeColors,
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,
+            backgroundAssetId: _.backgroundAssetId,
             description: _.description,
             designer: _.designer,
             engine: _.engine,

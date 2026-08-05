@@ -205,6 +205,8 @@ export interface World extends Element {
   copyright?: string
   /** ASSET_KIND.WORLD_COVER. Shown on the dashboard card and the engine title card. */
   coverAssetId?: string
+  /** ASSET_KIND.WORLD_BACKGROUND. Filled behind the engine's reading column. */
+  backgroundAssetId?: string
   description?: string
   designer: string
   engine: string

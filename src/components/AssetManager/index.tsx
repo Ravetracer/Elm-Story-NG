@@ -308,6 +308,21 @@ const AssetManager: React.FC<{
 
           break
         }
+        case ASSET_REFERENCE_TYPE.WORLD_BACKGROUND: {
+          const referencedWorld = await api().worlds.getWorld(
+            studioId,
+            reference.elementId
+          )
+
+          if (referencedWorld?.backgroundAssetId !== asset.id) break
+
+          await api().worlds.saveWorld(studioId, {
+            ...referencedWorld,
+            backgroundAssetId: undefined
+          })
+
+          break
+        }
         default:
           break
       }

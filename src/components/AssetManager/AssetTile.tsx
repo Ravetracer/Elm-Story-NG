@@ -48,6 +48,8 @@ const referenceLabel = ({
       return `Scene '${elementTitle}' audio`
     case ASSET_REFERENCE_TYPE.WORLD_COVER:
       return `Storyworld '${elementTitle}' cover`
+    case ASSET_REFERENCE_TYPE.WORLD_BACKGROUND:
+      return `Storyworld '${elementTitle}' background`
   }
 }
 

@@ -24,6 +24,8 @@ import EventXRay, { ENGINE_XRAY_CONTAINER_HEIGHT } from './EventXRay'
 import ErrorNotification from './ErrorNotification'
 import ObjectPanel from './ObjectPanel'
 
+import useImageLoader from '../lib/hooks/useImageLoader'
+
 const Renderer: React.FC = React.memo(() => {
   const { engine, engineDispatch } = useContext(EngineContext)
 
@@ -77,10 +79,29 @@ const Renderer: React.FC = React.memo(() => {
     engineDispatch({ type: ENGINE_ACTION_TYPE.SET_VISIBLE, visible })
   }, [visible])
 
+  // The storyworld's background, filled behind the reading column and shown in
+  // the window's gutters around it. The reply guard keys on both ids, so this and
+  // the title card's cover (both correlated on the world id) do not answer each
+  // other. Empty placeholder: a world with no background shows none, which is how
+  // every pre-0.8.0 storyworld keeps the presentation it has.
+  const backgroundData = useImageLoader({
+    eventId: engine.worldInfo?.id ?? '',
+    assetId: engine.worldInfo?.backgroundAssetId,
+    placeholder: '',
+    ext: 'webp'
+  })
+
   return (
     <div id="renderer">
       {engine.worldInfo && (
         <>
+          {backgroundData && (
+            <div
+              id="world-background"
+              style={{ backgroundImage: `url(${backgroundData})` }}
+            />
+          )}
+
           <AudioMixer />
 
           {!engine.playing && !engine.isComposer && (

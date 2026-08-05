@@ -102,6 +102,7 @@ export interface RootData {
   themeColors?: WorldThemeColors
   copyright?: string
   coverAssetId?: string
+  backgroundAssetId?: string
   description?: string
   designer: string
   engine: string
