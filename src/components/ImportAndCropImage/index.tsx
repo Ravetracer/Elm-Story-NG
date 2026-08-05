@@ -1,5 +1,5 @@
 import { getCroppedImageData } from '../../lib'
-import { ImageAssetPipeline } from '../../lib/assets'
+import { ImageAssetPipeline, isAnimatedWebP } from '../../lib/assets'
 import React, {
   useCallback,
   useEffect,
@@ -46,6 +46,10 @@ const ImportAndCropImage = React.forwardRef<
     // event content image slot has always written; character masks are jpeg.
     format?: ImageAssetPipeline['format']
     quality?: number
+    // When set, an imported animated WebP bypasses the cropper and is stored as
+    // its original bytes — a canvas re-encode would keep only the first frame. Off
+    // for kinds whose display is a fixed shape (a character mask) or a still.
+    allowAnimation?: boolean
     onImportImageData: () => void
     onImportImageCropComplete: (image: CroppedImage | null) => void
     onSelectNewImage: () => void
@@ -63,6 +67,7 @@ const ImportAndCropImage = React.forwardRef<
       size,
       format,
       quality,
+      allowAnimation,
       onImportImageData,
       onImportImageCropComplete,
       onSelectNewImage
@@ -83,6 +88,22 @@ const ImportAndCropImage = React.forwardRef<
     ) => {
       if (event.target.files && event.target.files.length > 0) {
         const maskImage = event.target.files[0]
+
+        // An animated WebP cannot survive the cropper's canvas re-encode, so it
+        // skips it and is stored as its original bytes. The slot displays it with
+        // object-fit, so an uncropped shape still fits. Detected from the file's
+        // own bytes rather than its extension.
+        if (allowAnimation && isAnimatedWebP(await maskImage.arrayBuffer())) {
+          onImportImageCropComplete({
+            type: imageType || undefined,
+            data: maskImage,
+            url: URL.createObjectURL(maskImage)
+          })
+
+          resetState()
+
+          return
+        }
 
         const reader = new FileReader()
 

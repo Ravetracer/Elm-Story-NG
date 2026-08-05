@@ -479,6 +479,9 @@ const AssetManager: React.FC<{
           aspectRatio={importPipeline?.aspectRatio}
           format={importPipeline?.format}
           quality={importPipeline?.quality}
+          // event images may be animated WebP; other kinds are a fixed shape or
+          // a still and keep the cropper
+          allowAnimation={importKind === ASSET_KIND.EVENT_IMAGE}
           size={importPipeline?.size || { width: 0, height: 0 }}
           containerStyle={{ background: 'transparent' }}
           // the stage fills the body above the controls instead of taking the

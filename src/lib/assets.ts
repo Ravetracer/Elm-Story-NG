@@ -51,6 +51,40 @@ const IMAGE_EXTENSIONS = [
 
 const AUDIO_EXTENSIONS = ['aac', 'flac', 'm4a', 'mp3', 'oga', 'ogg', 'wav']
 
+/**
+ * Whether a WebP file's bytes carry animation, read from the VP8X extended
+ * header's animation flag.
+ *
+ * An animated WebP must skip the crop pipeline: `getCroppedImageData` re-encodes
+ * through a canvas, which keeps only the first frame, so the file is stored as
+ * its original bytes instead. Only WebP is detected — GIF and APNG would each
+ * need a second extension per kind, breaking the one-extension-per-kind invariant
+ * every asset read site depends on, so they stay out.
+ */
+export const isAnimatedWebP = (buffer: ArrayBuffer): boolean => {
+  const bytes = new Uint8Array(buffer)
+
+  // 'RIFF' <size> 'WEBP' 'VP8X' <size> <flags…>; the flags byte is at 20 and its
+  // animation bit is 0x02. A file shorter than that cannot be an animated WebP.
+  if (bytes.length < 21) return false
+
+  const tag = (offset: number) =>
+    String.fromCharCode(
+      bytes[offset],
+      bytes[offset + 1],
+      bytes[offset + 2],
+      bytes[offset + 3]
+    )
+
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WEBP') return false
+
+  // Only the extended 'VP8X' form carries the flags; a plain still WebP is 'VP8 '
+  // or 'VP8L' and is never animated.
+  if (tag(12) !== 'VP8X') return false
+
+  return (bytes[20] & 0x02) !== 0
+}
+
 export const assetMedia = ({ ext }: { ext: string }): ASSET_MEDIA => {
   if (IMAGE_EXTENSIONS.includes(ext)) return ASSET_MEDIA.IMAGE
   if (AUDIO_EXTENSIONS.includes(ext)) return ASSET_MEDIA.AUDIO

@@ -125,6 +125,8 @@ const ImageElementSelect: React.FC<{
         aspectRatio={EVENT_IMAGE_PIPELINE.aspectRatio}
         format={EVENT_IMAGE_PIPELINE.format}
         quality={EVENT_IMAGE_PIPELINE.quality}
+        // an event illustration may be an animated WebP; it skips the cropper
+        allowAnimation
         onImportImageData={() => setCroppingImage(true)}
         onImportImageCropComplete={async (image) => {
           if (image) {
