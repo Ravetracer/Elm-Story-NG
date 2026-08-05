@@ -87,6 +87,7 @@ export const saveEngineCollectionData = async (
   const {
     children,
     choicePresentation,
+    transition,
     copyright,
     coverAssetId,
     description,
@@ -168,6 +169,7 @@ export const saveEngineCollectionData = async (
         libraryDatabase.saveWorldData({
           children,
           choicePresentation,
+          transition,
           copyright,
           coverAssetId,
           description,

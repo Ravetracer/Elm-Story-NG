@@ -63,6 +63,7 @@ export default async (
       _: {
         children: world.children as WorldChildRefs,
         choicePresentation: world.choicePresentation,
+        transition: world.transition,
         copyright: world.copyright,
         coverAssetId: world.coverAssetId,
         description: world.description,

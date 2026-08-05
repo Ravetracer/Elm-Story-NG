@@ -540,6 +540,7 @@ export default (
           await api().worlds.saveWorld(_.studioId, {
             children: _.children,
             choicePresentation: _.choicePresentation,
+            transition: _.transition,
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,
             description: _.description,

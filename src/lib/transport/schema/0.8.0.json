@@ -78,6 +78,9 @@
         "choicePresentation": {
           "type": "string"
         },
+        "transition": {
+          "type": "string"
+        },
         "coverAssetId": {
           "type": "string"
         },

@@ -1,0 +1,19 @@
+.TransitionSelect {
+  width: 100%;
+}
+
+// The description is in the dropdown only — `optionLabelProp="label"` keeps the
+// closed select down to the single word. Top level because antd portals the
+// dropdown to `document.body`, and CSS modules hash the class name without
+// rewriting the selector's structure.
+.optionLabel {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.optionDescription {
+  font-size: 11px;
+  line-height: 15px;
+  color: hsl(0, 0%, 55%);
+  white-space: normal;
+}

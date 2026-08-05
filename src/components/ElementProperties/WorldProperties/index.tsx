@@ -10,6 +10,7 @@ import { Button, Collapse, Form, Input } from 'antd'
 
 import ElementTitle from '../ElementTitle'
 import ChoicePresentationSelect from '../../ChoicePresentationSelect'
+import TransitionSelect from '../../TransitionSelect'
 import WorldCover from './WorldCover'
 import JumpTo from '../../JumpTo'
 
@@ -200,6 +201,39 @@ const WorldProperties: React.FC<{
                     How an event offers its choices. Any event can override this.
                     Not the same as an inline choice, which is one choice placed
                     inside a sentence from the content editor.
+                  </div>
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          {/*
+            TRANSITIONS
+
+            How a new event enters the stream. World-wide, with no per-event
+            override — the feel of the storyworld rather than a per-page decision.
+          */}
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['transitions-panel']}>
+              <Collapse.Panel header="Transitions" key="transitions-panel">
+                <div className={parentStyles.content}>
+                  <TransitionSelect
+                    value={world.transition}
+                    onChange={async (transition) => {
+                      if (!world.id) return
+
+                      await api().worlds.saveWorld(studioId, {
+                        // re-read rather than spreading the rendered copy: this
+                        // panel's metadata form writes to the same row
+                        ...(await api().worlds.getWorld(studioId, world.id)),
+                        transition
+                      })
+                    }}
+                  />
+
+                  <div className={styles.choicesHint}>
+                    How each new event enters the story. A player who prefers
+                    reduced motion sees no animation whatever you choose here.
                   </div>
                 </div>
               </Collapse.Panel>

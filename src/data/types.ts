@@ -228,6 +228,8 @@ export interface World extends Element {
   objectNoRecipeMessage?: string
   /** Default for the world; an event may override it. */
   choicePresentation?: CHOICE_PRESENTATION
+  /** How a live event enters the stream. Absent means FADE. */
+  transition?: ENGINE_TRANSITION
   template: WORLD_TEMPLATE
   version: string
   website?: string
@@ -396,6 +398,19 @@ export enum CHOICE_PRESENTATION {
   INLINE = 'INLINE',
   LIST = 'LIST',
   MODAL = 'MODAL'
+}
+
+/**
+ * How a live event enters the story stream. Absent means FADE, which is the
+ * behaviour every pre-0.8.0 storyworld already had, so a world that never sets
+ * this reads exactly as it did. NONE is an explicit opt-out, distinct from the
+ * player's ENGINE_MOTION.REDUCED — a reduced-motion player gets no animation
+ * whatever the author chose.
+ */
+export enum ENGINE_TRANSITION {
+  NONE = 'NONE',
+  FADE = 'FADE',
+  SLIDE = 'SLIDE'
 }
 
 /**

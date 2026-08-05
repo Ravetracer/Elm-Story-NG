@@ -24,6 +24,18 @@ export enum CHOICE_PRESENTATION {
   MODAL = 'MODAL'
 }
 
+/**
+ * How a live event enters the story stream. Absent means FADE, the behaviour
+ * every pre-0.8.0 storyworld already had. NONE is an explicit author opt-out,
+ * distinct from the player's ENGINE_MOTION.REDUCED, which suppresses animation
+ * whatever the author chose.
+ */
+export enum ENGINE_TRANSITION {
+  NONE = 'NONE',
+  FADE = 'FADE',
+  SLIDE = 'SLIDE'
+}
+
 export enum VARIABLE_SCOPE {
   WORLD = 'WORLD',
   SCENE = 'SCENE'
@@ -823,6 +835,8 @@ export interface EngineWorldMeta {
 export interface EngineWorldData {
   children: WorldChildRefs
   choicePresentation?: CHOICE_PRESENTATION
+  /** How a live event enters the stream. Absent means FADE. */
+  transition?: ENGINE_TRANSITION
   copyright?: string
   coverAssetId?: string
   description?: string

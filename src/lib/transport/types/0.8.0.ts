@@ -98,6 +98,7 @@ export type SceneChildRefs = Array<
 export interface RootData {
   children: WorldChildRefs
   choicePresentation?: CHOICE_PRESENTATION
+  transition?: ENGINE_TRANSITION
   copyright?: string
   coverAssetId?: string
   description?: string
@@ -121,6 +122,12 @@ export enum CHOICE_PRESENTATION {
   INLINE = 'INLINE',
   LIST = 'LIST',
   MODAL = 'MODAL'
+}
+
+export enum ENGINE_TRANSITION {
+  NONE = 'NONE',
+  FADE = 'FADE',
+  SLIDE = 'SLIDE'
 }
 
 export enum VARIABLE_SCOPE {

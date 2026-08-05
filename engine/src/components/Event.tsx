@@ -18,8 +18,7 @@ import {
   EngineEventData,
   EnginePathData,
   EngineLiveEventResult,
-  ENGINE_LIVE_EVENT_MESSAGE_TYPE,
-  ENGINE_MOTION
+  ENGINE_LIVE_EVENT_MESSAGE_TYPE
 } from '../types'
 import {
   ENGINE_LIVE_EVENT_STORY_OVER_RESULT_VALUE,
@@ -37,6 +36,7 @@ import EventContent from './EventContent'
 import EventChoices, { PassthroughIcon } from './EventChoices'
 import EventInput from './EventInput'
 import AcceleratedDiv from './AcceleratedDiv'
+import { isTransitionImmediate } from '../lib/transition'
 import { SettingsContext } from '../contexts/SettingsContext'
 
 export type PathProcessor = ({
@@ -184,19 +184,25 @@ export const Event: React.FC<{
     [event, liveEvent, studioId, worldId]
   )
 
+  // A NONE transition unfolds the event's height immediately, like a
+  // reduced-motion player, so the author's opt-out reaches the layout spring as
+  // well as the entry fade/slide in LiveEventStream. See `lib/transition`.
+  const noMotion = isTransitionImmediate(
+    engine.worldInfo?.transition,
+    settings.motion
+  )
+
   const [styles, api] = useSpring(() => ({
     height: 0,
     config: { clamp: true },
     overflow: 'hidden',
-    immediate:
-      !animated || introDone || settings.motion === ENGINE_MOTION.REDUCED
+    immediate: !animated || introDone || noMotion
   }))
 
   useResizeObserver(eventRef, () => {
     if (eventRef.current) {
       api.start({
-        immediate:
-          !animated || introDone || settings.motion === ENGINE_MOTION.REDUCED,
+        immediate: !animated || introDone || noMotion,
         height: eventRef.current.getBoundingClientRect().height + 1, // handles border bottom change,
         onRest: () => setIntroDone(true)
       })

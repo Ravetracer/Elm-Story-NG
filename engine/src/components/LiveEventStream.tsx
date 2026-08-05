@@ -15,9 +15,11 @@ import { getLibraryDatabase } from '../lib/db'
 
 import {
   EngineLiveEventStateCollection,
-  EngineVariableCollection
+  EngineVariableCollection,
+  ENGINE_TRANSITION
 } from '../types'
 import { INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY } from '../lib'
+import { resolveTransition, isTransitionImmediate } from '../lib/transition'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../contexts/EngineContext'
 import { SettingsContext } from '../contexts/SettingsContext'
@@ -281,10 +283,18 @@ const LiveEventStream: React.FC = React.memo(() => {
     }
   })
 
+  // SLIDE animates translateY alongside the fade; NONE and a reduced-motion
+  // player make the entry immediate. See `lib/transition`.
+  const transition = resolveTransition(engine.worldInfo?.transition),
+    noTransitionMotion = isTransitionImmediate(
+      engine.worldInfo?.transition,
+      settings.motion
+    )
+
   const liveEventStreamTransitions = useTransition(engine.liveEventsInStream, {
-    // immediate: settings.motion === ENGINE_MOTION.REDUCED,
-    from: { opacity: 0 },
-    enter: { opacity: 1 },
+    immediate: noTransitionMotion,
+    from: { opacity: 0, y: transition === ENGINE_TRANSITION.SLIDE ? 16 : 0 },
+    enter: { opacity: 1, y: 0 },
     config: { clamp: true },
     trail: 250,
     delay: 500,
@@ -320,7 +330,10 @@ const LiveEventStream: React.FC = React.memo(() => {
           {liveEventStreamTransitions((styles, liveEvent) => {
             return (
               <AcceleratedDiv
-                style={{ ...styles, transform: 'translate3d(0,0,0)' }}
+                style={{
+                  opacity: styles.opacity,
+                  transform: styles.y.to((y) => `translate3d(0,${y}px,0)`)
+                }}
                 ref={
                   engine.currentLiveEvent === liveEvent.id
                     ? currentLifeEventRef

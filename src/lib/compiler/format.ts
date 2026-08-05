@@ -59,6 +59,7 @@ function format(worldData: WorldDataJSON): string {
         .map((child) => child),
       ...pick(_, [
         'choicePresentation',
+        'transition',
         'copyright',
         'coverAssetId',
         'description',

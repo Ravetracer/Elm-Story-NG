@@ -4,6 +4,7 @@ import React, { createContext, useMemo, useReducer } from 'react'
 
 import {
   CHOICE_PRESENTATION,
+  ENGINE_TRANSITION,
   ElementId,
   EngineLiveEventData,
   WorldId,
@@ -46,6 +47,7 @@ interface EngineState {
      * silently falls back to LIST and the setting appears to do nothing.
      */
     choicePresentation?: CHOICE_PRESENTATION
+    transition?: ENGINE_TRANSITION
     studioId: StudioId
     studioTitle: string
     title: string
