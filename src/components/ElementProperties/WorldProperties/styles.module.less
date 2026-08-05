@@ -36,3 +36,42 @@
   line-height: 15px;
   color: hsl(0, 0%, 55%);
 }
+
+.colors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorLabel {
+  flex: 1;
+  font-size: 12px;
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 20px;
+  padding: 0;
+  border: 0.1rem solid hsl(0, 0%, 30%);
+  border-radius: 2px;
+  background: none;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.colorsHint {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 15px;
+  color: hsl(0, 0%, 55%);
+}

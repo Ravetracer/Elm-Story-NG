@@ -81,6 +81,21 @@
         "transition": {
           "type": "string"
         },
+        "themeColors": {
+          "type": "object",
+          "properties": {
+            "background": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "accent": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
         "coverAssetId": {
           "type": "string"
         },

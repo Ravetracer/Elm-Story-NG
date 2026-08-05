@@ -99,6 +99,7 @@ export interface RootData {
   children: WorldChildRefs
   choicePresentation?: CHOICE_PRESENTATION
   transition?: ENGINE_TRANSITION
+  themeColors?: WorldThemeColors
   copyright?: string
   coverAssetId?: string
   description?: string
@@ -128,6 +129,12 @@ export enum ENGINE_TRANSITION {
   NONE = 'NONE',
   FADE = 'FADE',
   SLIDE = 'SLIDE'
+}
+
+export interface WorldThemeColors {
+  background?: string
+  text?: string
+  accent?: string
 }
 
 export enum VARIABLE_SCOPE {

@@ -541,6 +541,7 @@ export default (
             children: _.children,
             choicePresentation: _.choicePresentation,
             transition: _.transition,
+            themeColors: _.themeColors,
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,
             description: _.description,

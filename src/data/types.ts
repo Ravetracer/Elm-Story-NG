@@ -230,6 +230,8 @@ export interface World extends Element {
   choicePresentation?: CHOICE_PRESENTATION
   /** How a live event enters the stream. Absent means FADE. */
   transition?: ENGINE_TRANSITION
+  /** Author overrides of the base theme's colours, applied on top of it. */
+  themeColors?: WorldThemeColors
   template: WORLD_TEMPLATE
   version: string
   website?: string
@@ -411,6 +413,21 @@ export enum ENGINE_TRANSITION {
   NONE = 'NONE',
   FADE = 'FADE',
   SLIDE = 'SLIDE'
+}
+
+/**
+ * An author's overrides of the engine's base theme, each a CSS colour string
+ * (e.g. `#1a1a1a` or `hsl(...)`). Every field is optional; an absent one keeps
+ * the player's chosen theme (BOOK or CONSOLE) for that token, so these layer on
+ * top of a theme rather than replacing it. The engine applies them as inline
+ * custom properties at runtime — never a generated stylesheet — because the
+ * engine's Less is regenerated on every build. `accent` drives the primary
+ * colour and its hover shades, derived with `color-mix`.
+ */
+export interface WorldThemeColors {
+  background?: string
+  text?: string
+  accent?: string
 }
 
 /**

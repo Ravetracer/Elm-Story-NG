@@ -36,6 +36,17 @@ export enum ENGINE_TRANSITION {
   SLIDE = 'SLIDE'
 }
 
+/**
+ * An author's overrides of the base theme's colours, each a CSS colour string.
+ * Every field is optional and layers on top of the player's chosen theme; the
+ * engine applies them as inline custom properties on `#runtime` at runtime.
+ */
+export interface WorldThemeColors {
+  background?: string
+  text?: string
+  accent?: string
+}
+
 export enum VARIABLE_SCOPE {
   WORLD = 'WORLD',
   SCENE = 'SCENE'
@@ -837,6 +848,8 @@ export interface EngineWorldData {
   choicePresentation?: CHOICE_PRESENTATION
   /** How a live event enters the stream. Absent means FADE. */
   transition?: ENGINE_TRANSITION
+  /** Author overrides of the base theme's colours, applied on top of it. */
+  themeColors?: WorldThemeColors
   copyright?: string
   coverAssetId?: string
   description?: string

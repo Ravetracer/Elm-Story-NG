@@ -12,6 +12,7 @@ import ElementTitle from '../ElementTitle'
 import ChoicePresentationSelect from '../../ChoicePresentationSelect'
 import TransitionSelect from '../../TransitionSelect'
 import WorldCover from './WorldCover'
+import WorldColors from './WorldColors'
 import JumpTo from '../../JumpTo'
 
 import parentStyles from '../styles.module.less'
@@ -167,6 +168,27 @@ const WorldProperties: React.FC<{
               <Collapse.Panel header="Cover" key="cover-panel">
                 <div className={parentStyles.content}>
                   <WorldCover studioId={studioId} world={world} />
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          {/*
+            COLORS
+
+            Overrides of the base theme's colours, layered over the player's
+            chosen theme. Keyed on the world id so switching storyworlds remounts
+            it with the new world's colours.
+          */}
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['colors-panel']}>
+              <Collapse.Panel header="Colors" key="colors-panel">
+                <div className={parentStyles.content}>
+                  <WorldColors
+                    key={world.id}
+                    studioId={studioId}
+                    world={world}
+                  />
                 </div>
               </Collapse.Panel>
             </Collapse>

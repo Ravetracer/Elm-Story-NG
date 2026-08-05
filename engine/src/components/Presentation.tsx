@@ -9,6 +9,7 @@ import {
 import { EngineContext } from '../contexts/EngineContext'
 
 import { getPresentationSettings } from '../lib/api'
+import { applyThemeColorProperties } from '../lib/themeColors'
 
 const Presentation: React.FC = ({ children }) => {
   const { engine } = useContext(EngineContext),
@@ -89,6 +90,19 @@ const Presentation: React.FC = ({ children }) => {
     settings.size &&
       document.documentElement.setAttribute('data-size', settings.size)
   }, [settings.size])
+
+  // The author's colour overrides, on the engine's own `#runtime` root rather
+  // than the document element the player's theme uses — so they cascade over the
+  // theme's tokens without reaching the editor's root in the composer preview.
+  // Keyed on the serialized colours because the object's identity changes on
+  // every `worldInfo` dispatch. See `lib/themeColors`.
+  const themeColors = engine.worldInfo?.themeColors
+
+  useEffect(() => {
+    const runtime = document.getElementById('runtime')
+
+    if (runtime) applyThemeColorProperties(runtime, themeColors)
+  }, [JSON.stringify(themeColors ?? null)])
 
   return (
     <>
