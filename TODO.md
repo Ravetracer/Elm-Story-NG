@@ -483,13 +483,36 @@ Depends on nothing above and benefits from there being more to present.
 notifications and inline choices already have everything they persist — the first
 two from section 3's migration, the third because section 2 established that an
 inline choice costs no schema at all — so each is interface work, exactly as all of
-section 6 was. Transitions, custom backgrounds and animated images have no fields
-anywhere, so each needs a design pass first and their fields should ride one
-migration rather than three.
+section 6 was. Transitions, custom backgrounds and animated images had no fields
+anywhere; the design pass they needed disproved the "one shared migration" premise.
 
-- [ ] Transitions *(no field yet — design first)*
-- [ ] Custom backgrounds and colors *(no field yet — design first)*
-- [ ] Animated images *(no field yet — design first)*
+**Done, and none of the three needed a migration or even a version bump.** The
+design pass turned on one realisation: `esg-asset://`'s protocol handler serves any
+path, so the fixed-per-kind extension only matters because callers *build* the URL
+from the kind. Keep every new asset WebP and the whole extension invariant holds —
+which collapsed the risky asset-model rework the "one migration" plan assumed.
+Transitions and custom colours became optional `World` fields extending 0.8.0 the
+way `Variable.description` extended 0.7.0; the background became a WebP asset kind
+mirroring the cover; and animated images became an import-pipeline change with no
+field at all. See `CLAUDE.md`, "Presentation: transitions, colours, background and
+animation".
+
+- [x] Transitions — `World.transition` (FADE, SLIDE, NONE), set from a Transitions
+      panel in the storyworld's properties. FADE is the default an unset world had;
+      NONE is the author's opt-out and a reduced-motion player animates for none of
+      them. `engine/src/lib/transition.ts` is the shared resolution, covered by
+      `src/__tests__/transition.test.ts`.
+- [x] Custom backgrounds and colors — `World.themeColors` ({ background, text,
+      accent }) layered over the player's theme as inline custom properties on
+      `#runtime` (never a generated stylesheet, per the PWA-export constraint), and
+      `World.backgroundAssetId`, a new `WORLD_BACKGROUND` asset kind filled behind
+      the reading column. `engine/src/lib/themeColors.ts` derives the properties,
+      covered by `src/__tests__/themeColors.test.ts`.
+- [x] Animated images — an animated WebP event image skips the cropper and is
+      stored as its original bytes rather than flattened to its first frame by the
+      canvas re-encode. `isAnimatedWebP` reads the VP8X animation flag, covered by
+      `src/__tests__/animatedWebP.test.ts`. GIF and APNG stay out — each would need
+      a second extension per kind, which the read-site invariant forbids.
 - [x] Choice modals — a **Choices** panel on the storyworld sets the default and one
       on a CHOICE event overrides it, offering List, Row and Modal. See `CLAUDE.md`,
       "How a set of choices is offered".

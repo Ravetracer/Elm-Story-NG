@@ -786,6 +786,84 @@ is added. It opens from **Interface Text** in the storyworld outline's title bar
   exported PWA only, so those 29 strings are covered by the key-coverage test rather
   than by eye.
 
+## Presentation: transitions, colours, background and animation
+
+Section 7's last three items — transitions, custom backgrounds and colours, and
+animated images. `TODO.md` planned them as "three fields riding one migration"; the
+design pass disproved that. **None of them needed a migration or a version bump**,
+because of one realisation: `esg-asset://`'s `protocol.handle` in `src/main.ts`
+serves whatever path a URL names, so the fixed-per-kind extension the asset manager
+section warns about only matters because callers *build* the URL from the kind.
+Keep every new asset **WebP** and the whole invariant holds — which is why the
+risky "store the extension per asset" rework never happened.
+
+- **`World.transition` is `FADE | SLIDE | NONE`, and FADE is the unset default.**
+  A storyworld written before the field fades exactly as it did. `SLIDE` adds a
+  rising `translateY` to the fade; `NONE` is the author's own opt-out, **distinct
+  from the player's `ENGINE_MOTION.REDUCED`** — a reduced-motion player animates for
+  none of the three. `engine/src/lib/transition.ts` is the pure resolution
+  (`resolveTransition`, `isTransitionImmediate`), shared by `LiveEventStream` (the
+  entry fade/slide) and `Event` (the height unfold) so the two cannot disagree about
+  when to animate; `src/__tests__/transition.test.ts` covers it. The panel is
+  `TransitionSelect`, world-only with no per-event override — the feel of the
+  storyworld, not a per-page decision.
+  - **`AcceleratedDiv` now lets a caller override `transform`.** It hardcoded
+    `translate3d(0,0,0)` to force GPU compositing; that is the *default* now (spread
+    last, caller wins), so SLIDE can animate `translateY` through it. Every existing
+    caller already passed `translate3d(0,0,0)`, so nothing else changed.
+
+- **`World.themeColors` ({ background, text, accent }) layers over the player's
+  theme, it does not replace it.** An unset field keeps the theme's token, and the
+  whole map is stored `undefined` when nothing is overridden. `accent` drives
+  `--primary-color` and its three hover shades, derived with `color-mix` so the
+  author supplies one colour rather than four — the base theme declares the shades
+  as separate literals, which a lone `--primary-color` override would leave
+  mismatched. `engine/src/lib/themeColors.ts` builds and applies the properties,
+  covered by `src/__tests__/themeColors.test.ts`.
+  - **Applied on `#runtime`, not `document.documentElement`.** The player's theme
+    sets `data-theme` on the document element; the author's colours go on the
+    engine's own mount root instead — the same element `ObjectPanel` writes
+    `--object-panel-width` to — so they cascade over the inherited `html[data-theme]`
+    tokens **without reaching the editor's own root in the composer preview**. This
+    is also why no `engine-editor.less` change was needed: an inline custom property
+    wins over any stylesheet declaration in either context.
+  - **The applier clears the managed properties an author did not set.** Removing a
+    colour has to revert it to the theme, not strand the last value, so
+    `THEME_COLOR_PROPERTIES` is a fixed list and every one absent from the build is
+    `removeProperty`'d. The effect keys on `JSON.stringify(themeColors)` because the
+    object's identity changes on every `worldInfo` dispatch.
+
+- **`World.backgroundAssetId` is a new `WORLD_BACKGROUND` asset kind**, a landscape
+  16:9 at 1920×1080 WebP whose crop the author positions — mirroring `coverAssetId`
+  through every seam (`ASSET_REFERENCE_TYPE`, `assetKindForReference`, the eighth
+  writer in `collectAssetReferences`, the asset manager's clear-on-delete and
+  reference label, `AssetTile`'s label switch, the import kind menu, and a
+  choose/clear panel that leaves a replaced file for the manager to judge). The
+  engine fills it as a `#world-background` layer inside `#renderer`, **first in
+  paint order and behind the opaque event stream**, so it shows in the window's
+  gutters around the centred 68rem column rather than under the prose.
+  `#live-event-stream` is transparent and absolute, which is what lets the layer
+  show through; get the paint order wrong and the stream covers it. A world with no
+  background shows none.
+
+- **Animated images are an import-pipeline change with no field at all.** An event
+  image imported as an **animated WebP** skips the cropper and is stored as its
+  original bytes — `getCroppedImageData`'s canvas re-encode keeps only the first
+  frame. `isAnimatedWebP` in `lib/assets.ts` reads the VP8X extended header's
+  animation flag (bit `0x02` at byte 20) from the file's own bytes, not its
+  extension; `ImportAndCropImage` gains an `allowAnimation` prop that bypasses the
+  crop and completes with the original file when the flag is set. `src/__tests__/animatedWebP.test.ts`
+  covers the detector.
+  - **Scoped to event images**, on both import surfaces — the content editor's image
+    slot (`ImageElementSelect`, always) and the asset manager when the chosen kind is
+    `EVENT_IMAGE`. Character masks (a fixed 4:5 shape, jpeg) and stills keep the
+    cropper. The slot displays with `background-size`/object-fit, so an uncropped
+    animated shape still fits.
+  - **GIF and APNG are deliberately out.** Each is a second extension, and every
+    asset read site asks for the kind's one extension — so supporting them means
+    storing the extension per asset, the exact rework the WebP-only scope avoids.
+    Animated WebP keeps the `.webp` extension, so nothing downstream changed.
+
 ## The storyworld map
 
 `components/StoryworldMap`, opened from the node button in the storyworld
