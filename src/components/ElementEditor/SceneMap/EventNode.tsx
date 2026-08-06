@@ -30,12 +30,12 @@ import {
 import {
   useChoice,
   useChoicesByEventRef,
-  useEvent,
   useInput,
   usePathsByChoiceRef,
-  usePathsBySceneRef,
   useVariable
 } from '../../../hooks'
+
+import { useSceneMapData } from './SceneMapDataContext'
 
 import {
   ComposerContext,
@@ -574,8 +574,14 @@ const EventNode: React.FC<NodeProps<{
   onChoiceSelect: (eventId: ElementId, choiceId: ElementId | null) => void
   type: ELEMENT_TYPE
 }>> = ({ data }) => {
-  const event = useEvent(data.studioId, data.eventId),
-    choicesByEventRef = useChoicesByEventRef(data.studioId, data.eventId)
+  // The event and the scene's paths come from the SceneMap's single queries
+  // (SceneMapDataContext) rather than a per-node useEvent + usePathsBySceneRef.
+  // eventsById is live via the SceneMap's useEventsBySceneRef, so this stays as
+  // fresh as the old per-node query; a missing id reads undefined, matching it.
+  const { scenePaths, eventsById } = useSceneMapData(),
+    event = eventsById[data.eventId]
+
+  const choicesByEventRef = useChoicesByEventRef(data.studioId, data.eventId)
 
   const updateNodeInternals = useUpdateNodeInternals()
 
@@ -603,8 +609,6 @@ const EventNode: React.FC<NodeProps<{
       validTarget: false,
       validSource: false
     })
-
-  const scenePaths = usePathsBySceneRef(data.studioId, data.sceneId, []) || []
 
   const nodes: FlowElement<NodeData>[] = useStoreState((state) => state.nodes)
 

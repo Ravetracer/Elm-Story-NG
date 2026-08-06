@@ -17,12 +17,12 @@ import {
   ElementId
 } from '../../../data/types'
 
-import { useCharacters, useVariables } from '../../../hooks'
-
 import { Spin } from 'antd'
 import { FormOutlined, LoadingOutlined, UserOutlined } from '@ant-design/icons'
 
 import { eventContentToPreview } from '../../../lib/serialization'
+
+import { useSceneMapData } from './SceneMapDataContext'
 
 import styles from './styles.module.less'
 
@@ -90,8 +90,10 @@ const EventSnippet: React.FC<{
   flatBottom: boolean
   onEditPassage: (eventId: ElementId) => void
 }> = ({ studioId, worldId, eventId, content, flatBottom, onEditPassage }) => {
-  const variables = useVariables(studioId, worldId, []),
-    characters = useCharacters(studioId, worldId, [])
+  // Scene-wide, queried once by the SceneMap rather than once per node. Same
+  // loading semantics as the old useVariables/useCharacters: undefined until
+  // the world's collections resolve.
+  const { variables, characters } = useSceneMapData()
 
   const [initialWorldState, setInitialWorldState] = useState<
       WorldState | undefined

@@ -1,7 +1,13 @@
 import logger from '../../../lib/logger'
 import { getRandomElementName } from '../../../lib'
 
-import React, { useContext, useEffect, useRef, useState } from 'react'
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { cloneDeep } from 'lodash-es'
 import useEventListener from '@use-it/event-listener'
 import isHotkey from 'is-hotkey'
@@ -46,12 +52,18 @@ import {
 } from '../../../contexts/ElementEditorTabContext'
 
 import {
+  useCharacters,
   useDebouncedResizeObserver,
   useJumpsBySceneRef,
   useEventsBySceneRef,
   usePathsBySceneRef,
-  useScene
+  useScene,
+  useVariables
 } from '../../../hooks'
+
+import SceneMapDataContext, {
+  SceneMapData
+} from './SceneMapDataContext'
 
 import ReactFlow, {
   Background,
@@ -535,6 +547,36 @@ const SceneMap: React.FC<{
     scene = useScene(studioId, sceneId),
     paths = usePathsBySceneRef(studioId, sceneId),
     events = useEventsBySceneRef(studioId, sceneId)
+
+  // World-scoped data every node in this scene shares. Queried once here and
+  // published through SceneMapDataContext, instead of once per node. Keyed on
+  // scene?.worldId so it re-runs when the scene resolves; an empty worldId
+  // returns an empty array rather than throwing.
+  const variables = useVariables(studioId, scene?.worldId || '', [
+      scene?.worldId
+    ]),
+    characters = useCharacters(studioId, scene?.worldId || '', [
+      scene?.worldId
+    ])
+
+  // Memoised on the query results, NOT on this component's render. SceneMap
+  // re-renders on every zoom/pan/selection (it subscribes to the react-flow
+  // store below); an unmemoised value would re-render every consuming node on
+  // every wheel tick.
+  const sceneMapData = useMemo<SceneMapData>(() => {
+    const eventsById: SceneMapData['eventsById'] = {}
+
+    events?.forEach((event) => {
+      if (event.id) eventsById[event.id] = event
+    })
+
+    return {
+      scenePaths: paths || [],
+      variables,
+      characters,
+      eventsById
+    }
+  }, [paths, variables, characters, events])
 
   const currentZoom = useStoreState((state) => state.transform[2]),
     nodes = useStoreState((state) => state.nodes),
@@ -1880,7 +1922,7 @@ const SceneMap: React.FC<{
   ])
 
   return (
-    <>
+    <SceneMapDataContext.Provider value={sceneMapData}>
       {events && (
         <div
           id={`scene-view-${sceneId}`}
@@ -2578,7 +2620,7 @@ const SceneMap: React.FC<{
           </ReactFlow>
         </div>
       )}
-    </>
+    </SceneMapDataContext.Provider>
   )
 }
 
