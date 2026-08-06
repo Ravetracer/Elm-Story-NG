@@ -86,21 +86,61 @@ retention. Closing tabs recovers the cost. *(Not cleanly re-derived to a 12-tab
 number this session — UI automation of the nested outline proved too fragile;
 the mechanism and the prior number stand.)*
 
-## Ranked fixes (cheapest win first — none applied yet, 2026-08-06)
+## Ranked fixes
 
-1. **Lift the world-scoped queries out of `EventSnippet`.** `useVariables` /
-   `useCharacters` return identical data for all 27 nodes — query once in
-   `SceneMap` and pass down (context or prop). Removes ~54 live queries. Low risk.
-2. **Drop the per-node `usePathsBySceneRef`** (`EventNode.tsx:607`); the scene's
-   paths are already loaded once at `index.tsx:536` — thread them down. Removes
-   ~27 whole-scene path queries.
-3. **Remove the redundant per-node `useEvent`** (`EventNode.tsx:577`); use the
-   event object already in the scene-level array. Removes ~27 queries.
-4. **Make inactive cached SceneMap tabs bail out of rendering** (or unmount them)
-   — the single biggest win for the compounding symptom, and the "next real win"
-   already flagged in `CLAUDE.md`.
-5. **Stagger / cap the per-node serialization** (drop `leading:true`, or batch the
-   IPC) so 27 nodes don't hit the asset/character/choice IPC simultaneously.
+### Done — 0.43.4 (commit `38b68bf`): fixes 1–3 in one change
+
+`SceneMapDataContext.tsx` — the SceneMap runs the scene's path query, the world's
+variable and character queries, and builds an events-by-id map **once**, and
+publishes them. `EventNode` and `EventSnippet` consume the context instead of:
+- `EventSnippet` `useVariables` + `useCharacters` (×27 → ×1 each)
+- `EventNode` `usePathsBySceneRef` (×27 → 0; reuses the scene-level query)
+- `EventNode` `useEvent` (×27 → 0; reads the events-by-id map)
+
+The context value is memoised on `[paths, variables, characters, events]`, **not**
+on the SceneMap's render, because the SceneMap re-renders on every zoom/pan/
+selection (it subscribes to the react-flow store) — an unmemoised value would
+re-render every consuming node on every wheel tick, worse than the queries it
+replaces.
+
+**Measured (same 27-node scene, cold):** per-open logger/render fan-out
+**2204 → 170 lines (≈13×)**. Verified the scene still renders correctly — 27
+nodes, portraits, character references, prose previews, choices all intact.
+
+**Cold-open block time unchanged (~1060 ms).** This is the key finding: the block
+is **not** the live-query fan-out. Removing ~130 live queries left the block
+identical, so it is dominated by **react-flow initial node measurement + per-node
+content serialization**, not data loading. What fixes 1–3 buy is far fewer live
+queries and re-renders **per cached tab**, which is exactly what compounds as
+scene tabs accumulate (compounding cost = per-tab work × open tabs).
+
+### Open — the block-time levers (need react-flow work, do with live verification)
+
+4. **The react-flow measurement amplifier.** `EventNode.tsx` subscribes to the
+   entire `state.nodes` twice (`useStoreState`, for `events` and `nodes`), used
+   only inside event handlers (`validateConnection`, choice `onSelect`). On mount,
+   react-flow measures 27 nodes and mutates `state.nodes` each time, so every node
+   re-renders on every measurement — up to ~27×27 renders. Reading nodes
+   on-demand instead of subscribing would cut this. **Risk:** react-flow-renderer
+   9.7.4 carries two stores (legacy easy-peasy `useStoreState`/`useStoreActions`
+   the app uses, plus a zustand `useStore`/`useStoreApi`); mixing them or swapping
+   subscription for `getState()` is the trap-rich territory `CLAUDE.md` warns
+   about (`onlyRenderVisibleElements`, node measurement → the "missing nodes"
+   correctness bug). Do it deliberately, verify node count live before/after.
+5. **Stagger / cap the per-node serialization.** `EventSnippet` preview is
+   `leading:true` so all 27 serialize on mount (`lib/serialization.ts`, per-node
+   IPC). Spreading it across frames would break up the long task. Only worth it if
+   profiling attributes a meaningful slice of the block to serialization vs
+   measurement — confirm first (measure a small scene vs the big one; the block is
+   per-node, so it scales with node count either way).
+
+### Still the biggest compounding win: cheap inactive tabs
+
+rc-dock keeps every opened scene tab mounted. Fixes 1–3 cut each tab's live-query
+load, but a hidden SceneMap still holds its remaining queries and re-renders on
+ComposerContext dispatches. Letting a hidden SceneMap bail out of its expensive
+work (guarded so hooks still run — `rules-of-hooks` gates) is the "next real win"
+`CLAUDE.md` flags. Overlaps with #4.
 
 Verify each with a before/after `scene-open-perf.mjs` run on the same scene, same
 outline expansion. Numbers from the running app, not from reasoning.

@@ -94,12 +94,11 @@ The slate `EventContent` editor (`index.tsx:89`) only mounts when
 `editorTab.eventForEditing.visible` — opening an event for editing, not opening a
 scene. Not part of the 4s unless the author is editing.
 
-## Candidate fixes (unverified — measure first)
+## Fixes — see [performance.md](performance.md) for the ledger
 
-1. Drop the 27× `usePathsBySceneRef` in `EventNode` — pass scene paths down from
-   the one scene-level query, or a context.
-2. Drop the 54× `useVariables`/`useCharacters` in `EventSnippet` — the world's
-   variable/character lists are identical for every node; lift to one query.
-3. Remove the redundant per-node `useEvent` (`:577`).
-4. Avoid full-array `state.nodes` subscription in `EventNode`.
-5. Batch/limit the per-node serialization IPC storm on mount.
+Fixes 1–3 (lift the per-node world/scene queries into `SceneMapDataContext`) are
+**done in 0.43.4** — `EventNode` and `EventSnippet` now read `scenePaths`,
+`variables`, `characters` and an events-by-id map from context instead of their
+own live queries. The `state.nodes` amplifier (#4) and the serialization storm
+(#5) remain open; both target the cold-open **block** rather than the query
+fan-out. Details, measurements and risks in `performance.md`.
