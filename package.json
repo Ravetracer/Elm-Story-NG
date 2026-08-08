@@ -2,7 +2,7 @@
   "name": "esg-app",
   "productName": "Elm Story - NG",
   "description": "Elm Story - NG: a continuation of the Elm Story storyworld editor.",
-  "version": "0.55.0",
+  "version": "0.56.0",
   "author": {
     "name": "Ravetracer",
     "email": "me@ravetracer.de"
@@ -32,6 +32,9 @@
     "dev:web": "npm run engine:sync && vite --config vite.web.config.mts",
     "build:web": "npm run engine:sync && vite build --config vite.web.config.mts",
     "preview:web": "vite preview --config vite.web.config.mts",
+    "dev:docs": "vite --config vite.docs.config.mts",
+    "build:docs": "vite build --config vite.docs.config.mts",
+    "preview:docs": "vite preview --config vite.docs.config.mts",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder build --publish never",
     "typecheck": "tsc --noEmit && tsc --noEmit -p engine/tsconfig.json",

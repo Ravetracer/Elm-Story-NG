@@ -19,6 +19,7 @@ folder.
 | [scene-loading.md](scene-loading.md) | Click-to-render path for opening a scene; data hooks; the SceneMap elements effect |
 | [performance.md](performance.md) | Measured load/render costs, profiling method, findings, and open items |
 | [browser-build.md](browser-build.md) | The editor in a browser (§10): the `electron` seam, the adapter, import/export, PWA export, remaining work |
+| [docs-site.md](docs-site.md) | The public landing + documentation + tutorial site (§8): build, structure, and how it stays in sync with the in-app help |
 
 ## Conventions
 

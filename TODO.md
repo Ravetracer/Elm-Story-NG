@@ -591,12 +591,27 @@ the expressions page below, so a site can lift it rather than start over.
       - `VariableHelp` was split into a reusable `VariableHelpContent`, rendered
         for the hub's Expressions topic, so the expression reference is still one
         source held by `variableHelpExamples.test.ts`.
-- [ ] Static documentation site — can render `ElementHelp/content.tsx`,
-      `HELP_GROUPS` and the `VariableHelpContent` sheet rather than rewriting them,
-      so the in-app help stays the single source of truth.
-- [ ] A proper expressions page, including arithmetic, the method calls, and a
-      correction that `!=` is the inequality operator and `=/=` never was one —
-      the `VariableHelp` sheet is already most of it.
+- [x] **Static documentation + landing site** (`docs/`, built by
+      `vite.docs.config.mts` → `dist-docs/`, published exactly like the web editor:
+      `npm run build:docs` / `dev:docs` / `preview:docs`). A small standalone React
+      app with three areas — a **landing page** (adapted from the maintainer's
+      `!dev/drive-g.html` template: dark neon-purple aesthetic matching the app's
+      accent, all assets local, no CDN — Tailwind/Bootstrap-icons/Pexels images all
+      removed in favour of one hand-authored stylesheet and inline SVG icons), a
+      **documentation** section, and a **tutorial**. Landing links to the editor
+      (`EDITOR_URL` in `docs/config.ts` — set it to the deployed editor URL), the
+      GitHub repo, and the docs. Verified live in a browser (landing/docs/tutorial,
+      no console errors, no external resource loads).
+- [x] **The docs render the in-app help directly.** `docs/pages/Docs.tsx` imports
+      `HELP_CONTENT`, `HELP_GROUPS` and `helpTopicTitle` from
+      `components/ElementHelp/content.tsx` (pure React — no antd — so it renders
+      unchanged), keeping the element/tool reference a single source. **The
+      expressions page is the one duplicate:** `VariableHelpContent` pulls antd,
+      which the site does not carry, so `docs/pages/Expressions.tsx` is a
+      plain-React copy — keep it in step with `VariableHelp.tsx` /
+      `lib/templates.ts` (noted in its header). The maintainer accepted this
+      duplication. **When features change, update both the in-app help and, for
+      expressions, the docs copy.**
 
 ## 9. Inherited code TODOs
 

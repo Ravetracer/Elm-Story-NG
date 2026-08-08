@@ -132,15 +132,20 @@ which otherwise have no visible cue. `src/__tests__/elementHelp.test.ts` holds
 every button-reachable topic — and every hub nav entry — to resolving to content.
 
 `ElementHelp/content.tsx` is written against the code, not ported from the
-archived docs, and is the intended source for a future docs site — render
-`content.tsx` + `HELP_GROUPS` rather than rewriting them. **Template-expression
-help is the exception**: it lives only in `VariableManager/VariableHelp.tsx`
+archived docs. **The public documentation site (`docs/`, §8) now renders it** —
+`docs/pages/Docs.tsx` imports `HELP_CONTENT` + `HELP_GROUPS` + `helpTopicTitle`
+directly, so `content.tsx` is one source shared by the in-app help and the site
+(it is pure React — React + a type-only enum, no antd — which is what lets the
+site render it unchanged; do not add antd imports to it). **Template-expression
+help is the exception**: it lives in `VariableManager/VariableHelp.tsx`
 (`VariableHelpContent`, the sheet without its header), held to the real parser by
 `src/__tests__/variableHelpExamples.test.ts`; `content.tsx`'s `EXPRESSIONS` topic
 has no `HELP_CONTENT` entry — the hub renders `VariableHelpContent` for it — so the
-two cannot drift. Together they are the only accurate documentation in the product.
-The help buttons for OBJECT and RECIPE are deliberately absent until those ship a
-UI.
+two cannot drift. Because `VariableHelpContent` pulls antd, the docs site cannot
+render it and carries a **hand-kept plain-React copy** at `docs/pages/Expressions.tsx`
+— the one place documentation is duplicated, so change both (see `dev-doc/docs-site.md`).
+Together they are the only accurate documentation in the product. The help buttons
+for OBJECT and RECIPE are deliberately absent until those ship a UI.
 
 ## Authoring affordances that are easy to miss
 
