@@ -121,8 +121,6 @@ const MaskWrapper: React.FC<{
 
             if (foundMaskIndex !== -1) {
               try {
-                const assetId = newMasks[foundMaskIndex].assetId
-
                 if (type === CHARACTER_MASK_TYPE.NEUTRAL) {
                   newMasks[foundMaskIndex].assetId = undefined
                 } else {
@@ -130,9 +128,9 @@ const MaskWrapper: React.FC<{
                 }
 
                 if (character.id) {
-                  // the reference is cleared first, because the count that
-                  // decides whether the image is dead is read back out of the
-                  // database — another mask may carry the same id
+                  // Only the mask reference is cleared; the image file is left
+                  // on disk. Assets are trashed exclusively from the asset
+                  // manager, so clearing a mask never deletes its image.
                   await Promise.all([
                     api().events.resetPersonaMaskFromEvent(
                       studioId,
@@ -144,14 +142,6 @@ const MaskWrapper: React.FC<{
                       masks: newMasks
                     })
                   ])
-
-                  assetId &&
-                    (await api().assets.removeAssetIfUnreferenced(
-                      studioId,
-                      character.worldId,
-                      assetId,
-                      'jpeg'
-                    ))
                 }
               } catch (error) {
                 throw error

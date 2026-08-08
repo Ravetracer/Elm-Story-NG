@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 
 import { StudioId, World, WorldId } from '../../../data/types'
-import { ASSET_KIND, ASSET_KINDS } from '../../../lib/assets'
+import { ASSET_KIND } from '../../../lib/assets'
 
 import { Button } from 'antd'
 
@@ -26,19 +26,9 @@ const WorldBackground: React.FC<{ studioId: StudioId; world: World }> = ({
 
   const setBackground = useCallback(
     async (backgroundAssetId?: string) => {
-      const previous = world.backgroundAssetId
-
+      // Clearing removes only the reference; the file is left on disk for the
+      // asset manager to trash, which is the one place assets are deleted.
       await api().worlds.saveWorld(studioId, { ...world, backgroundAssetId })
-
-      // only on a clear; a replaced file is left for the asset manager to judge
-      if (!backgroundAssetId && previous) {
-        await api().assets.removeAssetIfUnreferenced(
-          studioId,
-          world.id as WorldId,
-          previous,
-          ASSET_KINDS[ASSET_KIND.WORLD_BACKGROUND].ext
-        )
-      }
     },
     [studioId, world]
   )

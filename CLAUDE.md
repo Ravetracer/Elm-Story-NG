@@ -232,12 +232,23 @@ Two masks may share an id, two events may share an mp3, and the picker makes
 sharing ordinary rather than accidental, so replacing now leaves the file alone
 and lets the manager decide whether it has died.
 
-Removing *deliberately* — clearing a mask, removing an audio profile, deleting a
-character — still removes the file, through
-`api().assets.removeAssetIfUnreferenced`. **Clear the reference before calling
-it**: the count is read back out of the database, so an element still holding the
-id counts as a reference. `removeEvent` is the exception and passes
-`filterOutEventIds`, because it cannot save an event it is deleting.
+**Clearing a reference never trashes the file either** — the asset manager is the
+only place an asset is deleted. Clearing a mask (`CharacterPersonality`), an audio
+profile (`ElementAudio`, scene or event), the storyworld cover (`WorldCover`) or
+background (`WorldBackground`) writes only the reference; the file stays on disk
+and shows as **unused** in the manager, to be trashed there or not at all. The
+element that held the reference survives with no asset, which is the intended
+state. This replaced the earlier behaviour where those four clears called
+`api().assets.removeAssetIfUnreferenced`; that helper still exists for the
+element-*deletion* cascades below.
+
+Deleting the *owner* element still trashes its now-orphaned assets:
+`removeCharacter` its masks and `removeEvent` its dead image/audio (via
+`removeDeadImageAssets`/`removeDeadAudioAsset`, which pass `filterOutEventIds`
+because they cannot save an event mid-delete), and `removeWorld` bulk-trashes the
+whole asset directory. **Clear the reference before calling
+`removeAssetIfUnreferenced`**: the count is read back out of the database, so an
+element still holding the id counts as a reference.
 
 ### Deleting a character cascades, and stops at the Slate document
 

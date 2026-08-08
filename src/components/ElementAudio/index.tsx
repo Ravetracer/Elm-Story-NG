@@ -120,22 +120,15 @@ const ElementAudio: React.FC<{
           onRemove={async () => {
             if (!element.audio?.[0]) return
 
-            const assetId = element.audio[0]
-
             try {
-              // the reference is cleared first, because the count that decides
-              // whether the file is dead is read back out of the database
+              // Only the reference is cleared; the file is left on disk.
+              // Assets are trashed exclusively from the asset manager, so
+              // removing a sound from an event never deletes it — the file
+              // simply shows as unreferenced there.
               await elementSaveEndpoint(studioId, {
                 ...element,
                 audio: undefined
               })
-
-              await api().assets.removeAssetIfUnreferenced(
-                studioId,
-                element.worldId,
-                assetId,
-                'mp3'
-              )
             } catch (error) {
               throw error
             }
