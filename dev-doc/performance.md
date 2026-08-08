@@ -158,13 +158,53 @@ scene tabs accumulate (compounding cost = per-tab work × open tabs).
    measurement — confirm first (measure a small scene vs the big one; the block is
    per-node, so it scales with node count either way).
 
-### Still the biggest compounding win: cheap inactive tabs
+### Inactive-tab bailout — investigated and decided against (2026-08-08)
 
-rc-dock keeps every opened scene tab mounted. Fixes 1–3 cut each tab's live-query
-load, but a hidden SceneMap still holds its remaining queries and re-renders on
-ComposerContext dispatches. Letting a hidden SceneMap bail out of its expensive
-work (guarded so hooks still run — `rules-of-hooks` gates) is the "next real win"
-`CLAUDE.md` flags. Overlaps with #4.
+rc-dock keeps every opened scene tab mounted (`cached: true`), so a hidden SceneMap
+re-renders on every `ComposerContext` dispatch. This was flagged as the "next real
+win". It was measured after fixes 1–4 and the conclusion is **not worth the
+trade-off at current cost** — recorded here so it is not re-investigated.
 
-Verify each with a before/after `scene-open-perf.mjs` run on the same scene, same
-outline expansion. Numbers from the running app, not from reasoning.
+**Measured** (imported world, active scene Fr. Wittgenstein, a burst of 12 event
+selections; each selection is a `ComposerContext` dispatch that fans out to every
+mounted SceneMap). Long-task ms over the burst:
+
+| open scene tabs | long-task ms / 12 selections |
+| --- | --- |
+| 1 | ~1383–1448 |
+| 3 | ~1650–1743 |
+
+So the **per-hidden-tab cost is ~10–15 ms per dispatch** (≈125–175 ms for 2 extra
+tabs over 12 clicks). Fixes 1–4 already brought it down from the pre-optimization
+~1330 ms/click era; it only becomes noticeable at high tab counts (~200 ms/dispatch
+at ~18 tabs), and closing unused tabs already recovers it. Note the **dominant
+cost is the active tab + outline fan-out** (~1400 ms / 12 selections with a *single*
+tab), not the hidden tabs.
+
+**Why the cheap "bail out but stay mounted" fix does not work.** The obvious
+approach — return the same element reference for the react-flow subtree while
+hidden so React skips reconciling it — does **not** stop the cost. The ~10–15 ms is
+almost entirely `EventNode`/`ChoiceRow`/`JumpNode` re-rendering, and each of those
+calls `useContext(ComposerContext)` directly (`EventNode.tsx:598`,
+`EventNode.tsx:229`, …). React context propagation re-renders **every mounted
+consumer** on every dispatch and **bypasses element-identity and `React.memo`
+bailouts** — so freezing an ancestor element changes nothing for the deep
+consumers. The only mechanisms that actually remove the cost are:
+
+- **Unmount each hidden tab's react-flow view** (placeholder when
+  `composer.selectedWorldOutlineElement.id !== sceneId` — a reliable "not the front
+  tab" signal, since `ElementEditor.onLayoutChange:285-299` syncs the outline
+  selection to the active dock tab both ways). Kills the per-tab cost, but switching
+  back re-mounts react-flow and re-measures the graph — a few hundred ms instead of
+  today's instant switch. A poor trade for a frequent action to save ~10–15 ms on
+  another frequent action.
+- **Split `ComposerContext`** so nodes subscribe only to the fields they need.
+  Large, cross-cutting (29 consumers), and it barely helps: the fields nodes read
+  are *selection* state, which changes on exactly the frequent dispatches.
+
+**Decision: leave it.** Closing unused tabs (already the `CLAUDE.md` guidance) is the
+pragmatic recovery. The performance case is closed at 0.43.5; reopen only if a real
+workload makes the tab fan-out hurt.
+
+Verify any future work with a before/after run on the same scene, same outline
+expansion. Numbers from the running app, not from reasoning.
