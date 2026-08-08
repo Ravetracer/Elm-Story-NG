@@ -9,7 +9,7 @@
  *   and extracts it there.
  *
  * A bundle exported from either build imports into the other with its media
- * intact. This is the interchange TODO.md §10 chose over a directory picker.
+ * intact. This is the interchange the original roadmap §10 chose over a directory picker.
  *
  * Environment-agnostic on purpose: JSZip runs in both the browser and Node, and
  * the bundle is produced and consumed as a `Uint8Array` so neither a DOM `Blob`

@@ -207,3 +207,24 @@ maintainer's final live check.
 MCP): navigate, `browser_evaluate` for DOM/IndexedDB/fetch, `browser_file_upload`
 for imports. Fixtures must live inside the project root (Playwright allowed-roots);
 `.playwright-mcp/` is allowed and gitignored — clean it up after.
+
+## Non-goal: a collaboration / cloud backend (rejected, and why)
+
+Preserved from the retired roadmap because the reasoning outlives the idea. A PHP
+backend with logins was considered and dropped: shared PHP hosting cannot hold a
+WebSocket (mod_php dies per request), so real-time collaboration was never on the
+table, and the useful version was only a snapshot store with `If-Match`/409
+optimistic concurrency — backup and single-author continuation, not teamwork. The
+REST API and cloud services from the original authors' `1.0.0` plan are dropped
+with it: they served a commercial platform that no longer exists, and a local-first
+app has no client to serve.
+
+Two findings worth keeping if collaboration is ever revisited:
+
+- **Scene-level check-out is the natural lock.** A `Path` never crosses a scene
+  boundary and only a `Jump` does, so two authors working in two different scenes
+  cannot collide on events, choices, inputs or paths.
+- **But characters, variables and assets are world-scoped**, which scene locks
+  would not protect — and a variable rename silently breaks every template
+  expression written against the old title (expressions resolve variables by title,
+  not id, and nothing reports the break; the prose just renders an ERROR span).

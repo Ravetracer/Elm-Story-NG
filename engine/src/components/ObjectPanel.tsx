@@ -51,7 +51,7 @@ import { EngineContext } from '../contexts/EngineContext'
  * all of them.
  *
  * **It is a rail beside the stream, not a drawer under it**, which is what
- * `TODO.md` §4 asked for and what an earlier version of this file argued against.
+ * the original roadmap §4 asked for and what an earlier version of this file argued against.
  * The argument was that the centre of the storyteller is a 68rem column
  * (`--runtime-width`) and splitting it in two leaves the prose too narrow. That
  * holds for two panes and not for a rail: at `--object-panel-width` the prose goes

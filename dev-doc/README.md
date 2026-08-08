@@ -20,6 +20,8 @@ folder.
 | [performance.md](performance.md) | Measured load/render costs, profiling method, findings, and open items |
 | [browser-build.md](browser-build.md) | The editor in a browser (§10): the `electron` seam, the adapter, import/export, PWA export, remaining work |
 | [docs-site.md](docs-site.md) | The public landing + documentation + tutorial site (§8): build, structure, and how it stays in sync with the in-app help |
+| [DESIGN.md](DESIGN.md) | The settled rationale behind the 0.8.0 persisted shape — why each field/table is what it is (the retired roadmap's design pass, kept for the "why") |
+| [0.7.1-archive.md](0.7.1-archive.md) | Forensic record of what the 0.7.1 upstream archive did and did not contain, plus the dead-code cleanup notes it surfaced |
 
 ## Conventions
 

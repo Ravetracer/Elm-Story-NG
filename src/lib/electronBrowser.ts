@@ -5,7 +5,7 @@
  * `import { ipcRenderer } from 'electron'` keep working unchanged in a plain
  * browser tab — there is no Electron main process behind them.
  *
- * What it implements (see TODO.md §10 for the surface):
+ * What it implements (see the original roadmap §10 for the surface):
  *
  * - **PLATFORM** — `App` renders nothing until `app.platform` arrives over IPC,
  *   so the adapter delivers it to every `PLATFORM` listener as soon as one is

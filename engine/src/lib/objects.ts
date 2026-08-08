@@ -553,7 +553,7 @@ export const take = (
  * writing a second live event with the same `destination` as the one it follows.
  * That second event rendered the whole event again, and its stale twin kept
  * clickable choices whose `objects` predated the take, so taking something and then
- * clicking the *upper* copy of a choice silently dropped it. See `TODO.md` §4.5.
+ * clicking the *upper* copy of a choice silently dropped it. See the original roadmap §4.5.
  *
  * `collapseRepeat` is for refusals and inspections. "Nothing happens." said four
  * times because the player pressed Use four times is noise, and so is the same

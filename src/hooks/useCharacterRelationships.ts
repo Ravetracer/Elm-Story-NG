@@ -34,7 +34,7 @@ const useCharacterRelationships = (
  * relationship names the character in exactly one of them. Reading only `from`
  * would show a character half its own relationships — the half an author happened
  * to enter in that direction — which is the "either side of the relationship"
- * requirement `TODO.md` set for object recipes and which applies here for the same
+ * requirement the original roadmap set for object recipes and which applies here for the same
  * reason.
  */
 const useCharacterRelationshipsByCharacter = (

@@ -7,7 +7,8 @@ what is easy to get wrong.
 
 This revival started from 0.7.0. A **0.7.1** archive also survives, and what it
 does and does not contain is recorded under
-[The import upgrade chain](#the-import-upgrade-chain) and in `TODO.md`. The short
+[The import upgrade chain](#the-import-upgrade-chain) and in
+`dev-doc/0.7.1-archive.md`. The short
 version: it is a version-string release whose only new feature is an `ErrorModal`
 that nothing dispatches and that would not compile here, its `db/v11.ts` clobbers
 v10's migration, and its `.gitattributes` corrupted the repository's `.ttf` and
@@ -553,7 +554,7 @@ interface work with no schema cost.
   back missing.
 - **`VARIABLE_SCOPE.SCENE` resets a variable to its initial value on entry to its
   scene**, and **"entering a scene" is not a `JUMP` live event** whatever
-  `DESIGN.md` §11 originally said. A live event's type comes from the *destination
+  `dev-doc/DESIGN.md` §11 originally said. A live event's type comes from the *destination
   event's* type, so crossing a scene boundary is typed CHOICE or INPUT like anything
   else and JUMP appears only when the destination is a jump element; keyed off the
   type, the reset never fired. The test is that the destination event's `sceneId`
@@ -581,8 +582,8 @@ section 3.
   silently, a notification tells the player something changed — which is why the
   panel sits *below* Effects.
 - **It is a line in the stream, not a toast, and that was a decision.**
-  `DESIGN.md` §12 said "a transient line" and left the presentation open;
-  `ROADMAP.md` proposed generalising the engine's `ErrorNotification`. That was
+  `dev-doc/DESIGN.md` §12 said "a transient line" and left the presentation open;
+  an earlier roadmap proposed generalising the engine's `ErrorNotification`. That was
   rejected on evidence: `ErrorNotification` is gated behind `engine.isComposer` in
   `Renderer` and styled only in `engine-editor.less`, so a player in an exported
   PWA has never seen it, and the player-facing half would have been built from
@@ -757,13 +758,13 @@ section 3, so this was interface work with no schema cost.
 
 A choice offered inside the prose instead of in the list beneath it — `/` →
 **Inline Choice** in the event content editor. The second item of section 7, and
-`DESIGN.md` §12 was right that it costs no schema: the node is a void
+`dev-doc/DESIGN.md` §12 was right that it costs no schema: the node is a void
 `ELEMENT_FORMATS.CHOICE` carrying a `choice_id`, exactly as the image node carries
 an `asset_id`, and the choice stays a row in `choices` where the paths already
 point at it.
 
 - **The prose owns nothing, which is why the bookkeeping §12 called for was not
-  needed.** Both `DESIGN.md` §12 and `TODO.md` §7 said `lib/contentEditor` would
+  needed.** Both `dev-doc/DESIGN.md` §12 and the retired §7 plan said `lib/contentEditor` would
   have to diff choice nodes against `Event.choices` the way it diffs images
   against `Event.images`, "or a deleted node leaves an orphaned choice". Deleting
   the node **un-inlines** instead: the row stays in `choices`, its id stays in
@@ -898,7 +899,7 @@ is added. It opens from **Interface Text** in the storyworld outline's title bar
 ## Presentation: transitions, colours, background and animation
 
 Section 7's last three items — transitions, custom backgrounds and colours, and
-animated images. `TODO.md` planned them as "three fields riding one migration"; the
+animated images. The plan framed them as "three fields riding one migration"; the
 design pass disproved that. **None of them needed a migration or a version bump**,
 because of one realisation: `esg-asset://`'s `protocol.handle` in `src/main.ts`
 serves whatever path a URL names, so the fixed-per-kind extension the asset manager
@@ -1045,8 +1046,8 @@ up only in numbers.
 
 ## The scene map's viewport, and how it used to stall
 
-The per-gesture stall is fixed; `TODO.md`'s "Why the scene map stalled while you
-moved it" holds the measurements. Four things there are load-bearing and easy to
+The per-gesture stall is fixed; `dev-doc/performance.md` holds the measurements.
+Four things there are load-bearing and easy to
 undo by accident.
 
 - **A live query dependency must name the field, not the record.** `useScene` is a
@@ -1447,7 +1448,7 @@ left as they are.
 ## Resuming a storyworld
 
 A playthrough saves and resumes on its own, and there is deliberately no save/load
-feature — `TODO.md` section 5 is obsolete rather than pending. One bookmark per
+feature — the old save/load plan is obsolete rather than pending. One bookmark per
 storyworld, `___auto___<worldId>`, is rewritten on **every** live event, and a live
 event carries the full variable state, the object deltas and the object messages,
 so resuming one resumes everything. The title card reads the bookmark and offers
@@ -1491,7 +1492,7 @@ that path.
 
 ## The 0.8.0 shape
 
-`DESIGN.md` is the settled design and the reasoning behind every field; this
+`dev-doc/DESIGN.md` is the settled design and the reasoning behind every field; this
 section is only what is easy to get wrong now that it exists. The schema version is
 **0.8.0** and it adds four editor tables — `objects`, `recipes`,
 `objectConditions`, `characterRelationships` — of which the engine gets three.
@@ -1538,7 +1539,7 @@ builds against them.
   cannot quietly change what an existing world does.
 - **Taking and combining update the live event the player is on; they do not
   append one.** `ENGINE_LIVE_EVENT_TYPE.OBJECT_TAKE` and `OBJECT_COMBINE` are
-  declared and never written, and `DESIGN.md` §5 still describes the appending
+  declared and never written, and `dev-doc/DESIGN.md` §5 still describes the appending
   design it superseded. The appended event carried the *same* `destination`, and
   `LiveEvent` renders `Event` for `destination` — so it drew the whole event a
   second time, and both copies kept enabled choices. Taking a path builds the next
@@ -1567,7 +1568,7 @@ builds against them.
   somewhere.** The name is a tooltip, positioned from JavaScript because the rail's
   groups scroll and a CSS `::after` is clipped by that scroll container. The
   description is printed into the stream as an `INSPECTION` message when a tile is
-  selected — the one thing inspecting writes, against `DESIGN.md`'s "changes no
+  selected — the one thing inspecting writes, against `dev-doc/DESIGN.md`'s "changes no
   state", which is still true of deltas and variables. And an object with no image
   falls back to its initials, because with no title beside it the tile would
   otherwise be an empty square.

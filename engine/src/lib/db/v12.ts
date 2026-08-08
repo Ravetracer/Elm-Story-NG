@@ -14,7 +14,7 @@ import { LIBRARY_TABLE } from '.'
  * existing `live_events` table, and Dexie declares indexes rather than shapes, so
  * it needs no version bump at all. A live event saved before 0.8.0 simply has no
  * such property, and absent means "no deltas", so an old save reads as a pristine
- * world. `TODO.md` originally assumed the opposite; the design pass in `DESIGN.md`
+ * world. the original roadmap originally assumed the opposite; the design pass in `DESIGN.md`
  * disproved it.
  *
  * `characterRelationships` has no table here. It is authoring metadata and is

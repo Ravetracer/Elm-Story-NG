@@ -22,7 +22,7 @@ enum OBJECT_TAB {
  * without picking an arbitrary owner. What it *can* do is be reachable from
  * either side, which is why the selection lives here: the objects pane lists the
  * recipes naming the selected object, and clicking one switches tab and selects
- * it. `TODO.md` asks for exactly that.
+ * it. the original roadmap asks for exactly that.
  *
  * A tab rather than a sixth button in the outline's title bar. The title bar just
  * gained a row of its own for growing into, but "recipes" is not a peer of "the

@@ -1,9 +1,16 @@
 # Design pass: the 0.8.0 persisted shape
 
-This is `TODO.md` section 2 — the settled shape of **every** field that will need
-a new persisted slot, decided in one pass so section 3's migrations happen once.
-No code is written here. Section 3 implements exactly what this file says; section
-4 and later build on it without touching the schema again.
+> **Historical note.** This was the settled design for the 0.8.0 work, all of
+> which shipped. It is kept because it is the *rationale* behind the current
+> persisted shape — the "why is this not a table" that `CLAUDE.md` and ~20 code
+> comments still point to. It references the retired `TODO.md`/`ROADMAP.md` (now
+> in git history only) by their old section numbers; read those as historical
+> pointers, not live documents.
+
+This is the settled shape of **every** field that will need a new persisted slot,
+decided in one pass so the migrations happen once. No code is written here; the
+implementation follows exactly what this file says and builds on it without
+touching the schema again.
 
 `CLAUDE.md` is the authority on how the existing model behaves. This file only
 adds what is new, and records why each decision went the way it did — including

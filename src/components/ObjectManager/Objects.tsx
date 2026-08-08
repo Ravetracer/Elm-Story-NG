@@ -54,7 +54,7 @@ import styles from './styles.module.less'
  * **Recipes are edited on their own tab**, because a recipe relates two or more
  * objects and belongs to none of them. What appears here is the *read* side of
  * that relationship: every recipe naming this object, whichever side it is on, with
- * a click through to it. That is what `TODO.md` asks for by "show an object's
+ * a click through to it. That is what the original roadmap asks for by "show an object's
  * recipes from either side of the relationship".
  */
 const Objects: React.FC<{

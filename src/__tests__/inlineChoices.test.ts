@@ -164,7 +164,7 @@ describe('the choices an event prose already offers', () => {
 })
 
 /**
- * The consequence of the model, stated as a test because DESIGN.md §12 and TODO.md
+ * The consequence of the model, stated as a test because DESIGN.md §12 and the original roadmap
  * §7 both predicted the opposite and the reasoning is worth keeping.
  *
  * Both said `lib/contentEditor` would have to diff inline choice nodes against

@@ -39,7 +39,7 @@ import styles from './styles.module.less'
  * A surface of its own rather than a panel inside an object's form, because a
  * recipe **relates two or more objects and belongs to none of them**. The objects
  * pane lists the recipes naming a given object from either side and opens them
- * here, which is what `TODO.md` means by showing a recipe "from either side of the
+ * here, which is what the original roadmap means by showing a recipe "from either side of the
  * relationship".
  *
  * Everything about how a recipe *behaves* is in `engine/src/lib/objects.ts` and
