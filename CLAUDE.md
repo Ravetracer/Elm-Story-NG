@@ -1359,6 +1359,7 @@ this four times already:
 | invisible inactive dock tab labels | `routes/Composer/styles.module.less` |
 | invisible SceneMap event node previews | `.EventSnippet` in `SceneMap/styles.module.less` |
 | invisible event content while editing | `.EventContent` in `EventContent/styles.module.less` |
+| black variable name / trash icon / audio play button in the element inspector | base `color` on `.componentDetailViewWrapper` in `ElementProperties/styles.module.less` |
 
 Headings often escape because antd's dark theme colours `h1`–`h6` explicitly,
 which makes the symptom masquerade as a heading-versus-paragraph problem. It bites

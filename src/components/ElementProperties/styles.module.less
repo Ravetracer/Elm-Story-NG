@@ -24,6 +24,15 @@
     }
 
     .componentDetailViewWrapper {
+      // Bug class 1 (rc-dock's `.dock-panel { color: rgba(0,0,0,0.85) }`): this
+      // inspector wrapper set no base text colour, so anything relying on
+      // inheritance fell to black on the dark UI — the trigger condition's
+      // variable name and trash icon (VariableRow's `.variableTitle`/`.deleteCell`
+      // set none), and AudioProfile's play button. antd-coloured controls and the
+      // explicit greys below override this, so only the un-coloured inheritors are
+      // repaired. Latent in path conditions too, surfaced by scene triggers.
+      color: rgba(255, 255, 255, 0.85);
+
       .componentId {
         font-size: 12px;
         color: var(--component-id);
