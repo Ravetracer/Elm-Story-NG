@@ -2,10 +2,20 @@
   "name": "esg-app",
   "productName": "Elm Story - NG",
   "description": "Elm Story - NG: a continuation of the Elm Story storyworld editor.",
-  "version": "0.52.0",
+  "version": "0.52.1",
   "author": {
-    "name": "Elm Story Games",
-    "email": "elmstorygames@gmail.com"
+    "name": "Ravetracer",
+    "email": "me@ravetracer.de"
+  },
+  "contributors": [
+    {
+      "name": "Elm Story Games",
+      "email": "elmstorygames@gmail.com"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ravetracer/Elm-Story-NG.git"
   },
   "private": true,
   "license": "GPL-3.0-or-later",

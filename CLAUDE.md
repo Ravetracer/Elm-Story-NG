@@ -47,9 +47,14 @@ point of it:
 - **The product name changed; the authors' name did not.** "Elm Story - NG"
   replaces "Elm Story" wherever it names the application. "Elm Story Games" and
   "Elm Story Games LLC" stay exactly as they are in the copyright line,
-  `CREDITS`, `README.md` and both `package.json` `author` fields, because there
-  they are attribution rather than branding. Renaming attribution would
-  misattribute it.
+  `CREDITS` and `README.md`, because there they are attribution rather than
+  branding. Renaming attribution would misattribute it.
+- **The `package.json` `author` fields are the one exception, by the
+  maintainer's decision.** Both now name **Ravetracer** (`me@ravetracer.de`), the
+  reviver who maintains this fork, with the original **Elm Story Games** entry
+  preserved under `contributors` rather than deleted — the original authorship
+  survives while the fork's maintainer is credited as author. This is the sole
+  place the rename deliberately touches attribution.
 - **On-disk identifiers keep their `esg-` prefix.** `esg-asset://`, the
   `esg-library-<studioId>` databases, the `esg-ui-scale` preference key and
   `package.json`'s `"name": "esg-app"` are all storage keys. Renaming one does not

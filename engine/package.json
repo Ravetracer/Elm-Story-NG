@@ -7,9 +7,15 @@
     "url": "git+https://gitlab.com/elmstorygames/storyteller.git"
   },
   "author": {
-    "name": "Elm Story Games",
-    "email": "elmstorygames@gmail.com"
+    "name": "Ravetracer",
+    "email": "me@ravetracer.de"
   },
+  "contributors": [
+    {
+      "name": "Elm Story Games",
+      "email": "elmstorygames@gmail.com"
+    }
+  ],
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "rimraf ../assets/engine-dist && vite build",
