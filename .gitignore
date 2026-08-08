@@ -78,3 +78,6 @@ src/styles/engine-editor.less
 
 # Playwright MCP scratch output
 .playwright-mcp
+
+# Local dev scratch (screenshots shared into the session, etc.)
+\!dev/

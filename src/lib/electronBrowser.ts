@@ -122,6 +122,33 @@ const revokeObjectUrl = (key: string) => {
 
 type InvokeHandler = (payload: AnyRecord) => Promise<unknown>
 
+// Opens the browser's file picker and resolves with the chosen File, or null if
+// the author cancels. Called synchronously from within the import click handler
+// so the click() stays inside the user gesture that a file dialog requires.
+const pickFile = (accept: string): Promise<File | null> =>
+  new Promise((resolve) => {
+    const input = document.createElement('input')
+
+    input.type = 'file'
+    input.accept = accept
+    input.style.display = 'none'
+
+    let settled = false
+    const done = (file: File | null) => {
+      if (settled) return
+      settled = true
+      input.remove()
+      resolve(file)
+    }
+
+    input.onchange = () => done(input.files?.[0] ?? null)
+    // Chromium fires 'cancel' when the dialog is dismissed.
+    input.oncancel = () => done(null)
+
+    document.body.appendChild(input)
+    input.click()
+  })
+
 const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -272,8 +299,26 @@ const invokeHandlers: Partial<Record<WINDOW_EVENT_TYPE, InvokeHandler>> = {
     ipcRenderer.emit(WINDOW_EVENT_TYPE.EXPORT_WORLD_COMPLETE)
   },
 
+  [WINDOW_EVENT_TYPE.IMPORT_WORLD_GET_JSON]: async () => {
+    const file = await pickFile('.json,application/json')
+
+    // Cancelled — the caller treats an absent worldData as "nothing imported".
+    if (!file) return { worldData: undefined, jsonPath: undefined }
+
+    // A browser file input hands over one file with no sibling assets directory,
+    // so this imports the storyworld data only; its images and audio are not
+    // carried and read as missing until the ZIP interchange lands (§10 phase 2).
+    // jsonPath is undefined, so IMPORT_WORLD_ASSETS below is a no-op. A JSON.parse
+    // failure surfaces as the caller's "corrupt or empty" error, which is right.
+    const text = await file.text()
+
+    return { worldData: JSON.parse(text), jsonPath: undefined }
+  },
+
   [WINDOW_EVENT_TYPE.IMPORT_WORLD_ASSETS]: async () => {
-    // paired with the import flow, wired up in §10 phase 2
+    // No filesystem to copy an assets directory from; browser imports carry no
+    // assets yet (see IMPORT_WORLD_GET_JSON). The ZIP interchange (§10 phase 2)
+    // will write the unpacked blobs to the asset store here.
     return
   }
 }

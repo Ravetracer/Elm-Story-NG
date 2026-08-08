@@ -961,13 +961,17 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       problem: blob URLs are seekable because the browser knows the length, so the
       `Accept-Ranges` / 206 / unseekable-MP3 handling described in `CLAUDE.md` has
       nothing to do here.
-- [ ] **Decide the import interchange.** `IMPORT_WORLD_ASSETS` copies from an
-      `assets` directory *beside* the chosen JSON, and a browser file input gives
-      one file with no siblings. Either `showDirectoryPicker()` (Chromium and Edge
-      only — no Firefox, no Safari) or **change the interchange to a single ZIP**.
-      The ZIP is the better answer and is better for humans too, but it is a format
-      decision and belongs with section 2's thinking rather than being made in
-      passing.
+- [~] **Import interchange.** JSON import works in the browser now:
+      `IMPORT_WORLD_GET_JSON` opens a file picker (`<input type=file>` clicked
+      inside the import gesture) and returns the parsed world data; the rest of
+      the pipeline (validate, upgrade chain, create studio, persist) runs
+      unchanged. Verified live: importing `0-7-test.json` created the studio and
+      world and opened its composer. **Assets are not carried** — a lone JSON has
+      no sibling `assets` directory — so images and audio read as missing until a
+      single **ZIP** interchange (JSON + assets) is added alongside the ZIP
+      *export* below (phase 2). ZIP remains the chosen answer over
+      `showDirectoryPicker()` (Chromium/Edge only). `jszip` is present but only as
+      a transitive dep; the ZIP work should add it as a direct dependency.
 - [ ] **Export without a main process.** Both JSON and PWA export currently go
       through `EXPORT_WORLD_START`. JSON becomes a `Blob` plus `<a download>`; PWA
       becomes fetch `engine-dist` as static assets, run the same replacement, emit a
