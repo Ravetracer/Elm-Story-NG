@@ -672,10 +672,6 @@ const EventContent: React.FC<{
           }
 
           return
-        case HOTKEY_EXPRESSION.CLOSE_BRACKET:
-          if (selectedExpression.isInside) return
-
-          return
         case HOTKEY_EXPRESSION.EXIT:
           if (selectedExpression.isInside) {
             Transforms.move(editor, {
@@ -984,6 +980,24 @@ const EventContent: React.FC<{
                   renderLeaf={renderLeaf}
                   decorate={decorate}
                   onKeyDown={(_event) => {
+                    /*
+                     * The `{` expression trigger is matched on the produced
+                     * character, not through the is-hotkey/keyCode loop below.
+                     * is-hotkey matches by physical keyCode, so the old
+                     * 'shift+[' binding fired for the German `?` key (Shift+ß,
+                     * same keyCode as US `[`) — swallowing `?` and inserting
+                     * `{  }`, and stealing `` ` `` via 'shift+]'. `event.key` is
+                     * the resolved character on every layout, so `{` auto-pairs
+                     * and `?`/`` ` `` type normally. dev-doc/keyboard.md.
+                     */
+                    if (_event.key === '{') {
+                      _event.preventDefault()
+                      processHotkey(HOTKEY_EXPRESSION.OPEN_BRACKET)
+                      setIsAllSelected(false)
+
+                      return
+                    }
+
                     for (const hotkey in HOTKEYS) {
                       if (isHotkey(hotkey, _event)) {
                         if (

@@ -275,8 +275,13 @@ export const HOTKEYS: { [hotkey: string]: string } = {
   arrowdown: HOTKEY_SELECTION.MENU_DOWN,
   backspace: HOTKEY_BASIC.BACKSPACE,
   delete: HOTKEY_BASIC.DELETE,
-  'shift+[': HOTKEY_EXPRESSION.OPEN_BRACKET,
-  'shift+]': HOTKEY_EXPRESSION.CLOSE_BRACKET,
+  // The `{` expression trigger is NOT bound here. is-hotkey matches by physical
+  // keyCode, and a 'shift+[' binding fires on any keyboard whose `[` keyCode is
+  // produced by a different character — notably a German layout, where the `?`
+  // key (Shift+ß) shares US `[`'s keyCode 219, so `?` was swallowed and replaced
+  // with `{  }` (and `shift+]` likewise stole the ` key). `{` is detected by the
+  // produced character in EventContent's onKeyDown instead, which is
+  // layout-independent. See dev-doc/keyboard.md.
   esc: HOTKEY_EXPRESSION.EXIT
 }
 
