@@ -261,22 +261,6 @@ const EventContent: React.FC<{
                 return node
               }
             }
-            // TODO: only if we are lazy loading images, better to show empty space
-            // {
-            //   replace: (node) => {
-            //     if (node instanceof Element && node.attribs) {
-            //       if (node.attribs['data-type'] === 'img') {
-            //         const assetId =
-            //           node.attribs['data-asset-id'] === 'undefined'
-            //             ? undefined
-            //             : node.attribs['data-asset-id']
-            //         return <EventImage eventId={eventId} assetId={assetId} />
-            //       }
-            //     }
-
-            //     return
-            //   }
-            // }
           )
         )
       }

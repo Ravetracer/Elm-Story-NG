@@ -150,10 +150,6 @@ const ImageElementSelect: React.FC<{
         <div
           className={`${styles.image} ${selected ? styles.selected : ''}`}
           style={{ backgroundImage: imagePath ? `url(${imagePath})` : 'unset' }}
-          onClick={() => {
-            // TODO: this doesn't work properly with the cache
-            // importInlineImageRef.current?.import()
-          }}
         >
           <div className={styles.toolbar}>
             {onImageAssetSelect && (
@@ -175,10 +171,6 @@ const ImageElementSelect: React.FC<{
           </div>
         </div>
       )}
-
-      {/* {element.asset_id && !loadingImage && !imagePath && (
-        <div>Missing Image...</div>
-      )} */}
 
       {!element.asset_id && (
         <div

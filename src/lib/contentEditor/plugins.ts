@@ -236,42 +236,10 @@ export const withEmbeds = (editor: EditorType) => {
 export const withCharacters = (editor: EditorType) => {
   const { isInline, isVoid } = editor
 
-  // TODO: this doesn't do anything, but has some useful code
-  // editor.deleteBackward = (unit) => {
-  //   logger.info(`contentEditor->plugins->withCharacters->deleteBackward`)
-
-  //   if (!editor.selection) return deleteBackward(unit)
-
-  //   const anchor = editor.selection.anchor
-
-  //   // character is about to be deleted, but is not selected
-  //   if (Path.hasPrevious(anchor.path) && anchor.offset === 0) {
-  //     const previousNode = Node.get(editor, Path.previous(anchor.path))
-
-  //     if (
-  //       Element.isElement(previousNode) &&
-  //       previousNode.type === ELEMENT_FORMATS.CHARACTER &&
-  //       previousNode.character_id
-  //     ) {
-  //       logger.info(`delete character ${previousNode.character_id}`)
-  //     }
-
-  //     return deleteBackward(unit)
-  //   }
-
-  //   const parentPath = Path.parent(editor.selection.anchor.path)
-  //   const parentNode = Node.get(editor, parentPath)
-
-  //   if (
-  //     Element.isElement(parentNode) &&
-  //     parentNode.type === ELEMENT_FORMATS.CHARACTER &&
-  //     parentNode.character_id
-  //   ) {
-  //     logger.info(`delete character ${parentNode.character_id}`)
-  //   }
-
-  //   deleteBackward(unit)
-  // }
+  // A `deleteBackward` override that removed the character on backspace was
+  // drafted here and abandoned: character-reference nodes deliberately outlive
+  // the character (the cascade lives in db removeCharacter, and a missing
+  // character renders as a placeholder), so it was removed rather than revived.
 
   editor.isInline = (element) =>
     element.type === ELEMENT_FORMATS.CHARACTER ? true : isInline(element)

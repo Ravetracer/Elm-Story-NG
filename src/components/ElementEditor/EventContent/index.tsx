@@ -800,15 +800,6 @@ const EventContent: React.FC<{
 
       // TODO: stack hack
       setTimeout(() => {
-        // TODO: this might be desired UX, but is confusing
-        // const startingElement = Node.last(editor, [])
-
-        // if (
-        //   Element.isElement(startingElement) &&
-        //   startingElement.type === ELEMENT_FORMATS.IMG
-        // )
-        //   return
-
         Transforms.select(editor, Editor.end(editor, []))
         ReactEditor.focus(editor)
       }, 1)

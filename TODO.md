@@ -763,8 +763,11 @@ instead of awaited).
 - [ ] `SceneMap/EventNode.tsx:264`: `this is being processed all the time`.
       Measured and **overstated** — see "Still open" in the note at the end of
       this file.
-- [ ] `engine/src/components/EventContent.tsx:242`: image lazy-loading, written
-      and commented out.
+- [x] `engine/src/components/EventContent.tsx`: the commented-out image
+      lazy-loading `replace` block is removed. It was a breadcrumb, not working
+      code — lazy-loading storyteller images (an `EventImage` that shows empty
+      space until in view) remains a possible **feature** if wanted, but it is a
+      build, not a revival of that block.
 
 ### 9.6 Duplication the authors flagged themselves
 
@@ -836,14 +839,19 @@ Cheap to resolve, and each one currently costs a reader time.
 - [ ] `WorldVariables/index.tsx:171`: `consider preserving the operator in certain
       cases` when a variable is retyped (#314). Now a variable-manager question —
       see `CLAUDE.md`, "The variable manager".
-- [ ] `EventContent/index.tsx:583`: `should hide command menu and toolbar
-      first...` on Escape. **Answered by distraction-free mode**, which made
-      Escape step out one layer at a time; verify and delete the comment.
-- [ ] `EventContent/index.tsx:641`, `contentEditor/plugins.ts:239`,
-      `ImageElementSelect.tsx:137` (`this doesn't work properly with the cache`),
-      `engine/src/components/EventContent.tsx:242`: four blocks of commented-out
-      code kept for reference. Either revive or delete — they read as live code
-      when grepping.
+- [x] `EventContent/index.tsx`: the Escape `should hide command menu and toolbar
+      first` note is resolved. Verified `processHotkey('esc')` already steps out
+      one layer at a time (command menu, then distraction-free mode, then the
+      editor); the stale note was replaced.
+- [x] The commented-out code blocks are gone — they read as live code when
+      grepping. Deleted: the abandoned `deleteBackward` character remover in
+      `contentEditor/plugins.ts` (contradicts the settled design where a
+      character node outlives its character), the lazy-loading `replace` in the
+      engine's `EventContent` (see 9.5), an empty image-click handler and a
+      commented `Missing Image...` block in `ImageElementSelect`, and a commented
+      skip-selection block in `EventContent`. The one live idea among them —
+      showing a placeholder for a missing image — is still tracked at
+      `lib/serialization.ts:50` below.
 - [ ] `CharacterElementSelect.tsx:547` and `:1077`: two behaviours left
       deliberately unbuilt pending demand (`unless this gets requested enough`,
       `only if designers decide they want ES to make this choice`). Product
