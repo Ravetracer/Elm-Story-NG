@@ -255,11 +255,21 @@ only runs on a real transition, so a resume stays silent while the persisted
   excluded (no `pathId`); a loopback is **included** (a wrong-input counter is a
   real edge). Nothing plays yet — the signal has no consumer until slice 3.
   Typecheck clean both projects; 21 trigger tests + 100 adjacent tests pass.
-- **Next — audio one-shot (slice 3):** a consumer of `engine.triggerSounds` that
-  plays each id as a parallel fire-and-forget `Howl` through
-  `resumeAudioContext()`, PWA path direct + composer path via the devtools
-  resolver. **This is the slice to verify in a real PWA export.**
-- **Then — the scene Triggers panel + help/docs.**
+- **Slice 3 — audio one-shot (done, needs live verification).**
+  `playOneShotSound` in `useAudioMixer.ts` plays a trigger's mp3 as a
+  fire-and-forget `Howl` (`autoplay`, self-unloads on end), mixed in parallel
+  with the scene/event tracks and resumed through `resumeAudioContext()` first
+  (bug class 5). A consumer effect keyed on `engine.triggerSounds.key` fires each
+  id: an exported PWA resolves `assets/content/<id>.mp3` directly; the composer
+  requests the URL over the devtools bus (`for: 'TRIGGER'`, a new member of the
+  asset union) and plays it on the reply, matched against a pending-id ref and
+  handled outside the `currentLiveEvent === eventId` guard (a one-shot's reply can
+  land a live event later). Muted plays nothing. Typecheck clean; all 387 tests
+  pass. **No automated audio test — verify in a real PWA export (composer mutes by
+  default and resolves URLs differently): the bell rings once on the edge, stays
+  silent while held, rings again after a fall/rise, and a resume does not replay.**
+- **Then — the scene Triggers panel + help/docs** (the last slice; makes it
+  authorable and documents it for users).
 
 ## Decisions (settled) and open implementation questions
 

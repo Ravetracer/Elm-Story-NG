@@ -1,6 +1,6 @@
 import { Howl, Howler } from 'howler'
 
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { EngineContext } from '../../contexts/EngineContext'
 import {
   AudioProfile,
@@ -75,6 +75,33 @@ const resumeAudioContext = async () => {
   }
 
   ;(Howler as unknown as { state: AudioContextState }).state = ctx.state
+}
+
+/**
+ * Plays a scene trigger's sound as a one-shot, mixed in parallel with the scene
+ * and event tracks — WebAudio sums any number of sources, so the bell layers over
+ * whatever is already playing rather than replacing it (dev-doc/scene-triggers.md).
+ *
+ * It is its own `Howl` rather than the EVENT track, which is a persistent
+ * cross-fading slot driven by the current event's audio profile. This one is
+ * fire-and-forget: it plays once and unloads itself, so nothing has to track or
+ * stop it.
+ *
+ * **It resumes the context first, like every other play path here.** A `play()`
+ * against a suspended context reports success and produces silence forever (the
+ * desync described at the top of this file), so the one-shot would be the one
+ * sound that never comes back after the tab is backgrounded.
+ */
+const playOneShotSound = async (source: string) => {
+  await resumeAudioContext()
+
+  const sound = new Howl({ src: [source], autoplay: true, html5: false })
+
+  const dispose = () => sound.unload()
+
+  sound.once('end', dispose)
+  sound.once('loaderror', dispose)
+  sound.once('playerror', dispose)
 }
 
 const useAudioTrack = ({
@@ -306,6 +333,10 @@ export const useAudioMixer = ({
 
   const onEventAudioEnd = useCallback(() => setEventAudioDucking(false), [])
 
+  // Asset ids of trigger sounds awaiting a composer URL round-trip, so a reply
+  // only plays a sound this hook actually asked for.
+  const pendingTriggerSounds = useRef<Set<string>>(new Set())
+
   const eventAudioId = profiles.event?.[0]
 
   // Duck when an event brings audio (keyed on the id, a primitive, so a new
@@ -314,10 +345,74 @@ export const useAudioMixer = ({
     setEventAudioDucking(Boolean(eventAudioId))
   }, [eventAudioId])
 
+  /*
+   * Scene-trigger one-shots. Keyed on the transient `key` so the same sound
+   * firing again retriggers, and — because `engine.triggerSounds` is never
+   * persisted — a resumed playthrough never replays it. An exported PWA resolves
+   * the asset path directly; the composer preview has no static asset directory,
+   * so it asks its host for the URL over the devtools bus and plays on the reply
+   * (see `processEvent`). Muted (the composer default) plays nothing, like the
+   * scene and event tracks.
+   */
+  const triggerSoundsKey = engine.triggerSounds?.key
+
+  useEffect(() => {
+    const triggerSounds = engine.triggerSounds
+
+    if (!triggerSounds?.assetIds.length || muted) return
+
+    triggerSounds.assetIds.forEach((assetId) => {
+      if (!engine.isComposer) {
+        playOneShotSound(`assets/content/${assetId}.mp3`)
+
+        return
+      }
+
+      pendingTriggerSounds.current.add(assetId)
+
+      window.dispatchEvent(
+        new CustomEvent<EngineDevToolsLiveEvent>(
+          ENGINE_DEVTOOLS_LIVE_EVENTS.ENGINE_TO_COMPOSER,
+          {
+            detail: {
+              eventType: ENGINE_DEVTOOLS_LIVE_EVENT_TYPE.GET_ASSET_URL,
+              eventId: engine.currentLiveEvent,
+              asset: { id: assetId, for: 'TRIGGER', ext: 'mp3' }
+            }
+          }
+        )
+      )
+    })
+    // Deliberately keyed on the firing `key` alone; `muted`/`isComposer` are read
+    // at fire time and must not replay the sound on their own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerSoundsKey])
+
   const processEvent = (event: Event) => {
     const { detail } = event as CustomEvent<EngineDevToolsLiveEvent>
 
     if (detail.eventType === ENGINE_DEVTOOLS_LIVE_EVENT_TYPE.RETURN_ASSET_URL) {
+      /*
+       * A trigger sound's URL, resolved by the composer host. Handled before the
+       * scene/event matching below and outside its `currentLiveEvent === eventId`
+       * guard: a one-shot fires on a transition and the reply can land a live
+       * event later, so tying it to the current event would drop it. It is matched
+       * against the ids this hook actually requested instead.
+       */
+      if (detail.asset?.for === 'TRIGGER') {
+        const triggerAssetId = detail.asset.id
+
+        if (triggerAssetId && pendingTriggerSounds.current.has(triggerAssetId)) {
+          pendingTriggerSounds.current.delete(triggerAssetId)
+
+          if (detail.asset.url && detail.asset.exists) {
+            playOneShotSound(detail.asset.url.replaceAll('"', ''))
+          }
+        }
+
+        return
+      }
+
       if (
         detail?.asset?.url &&
         detail?.asset.id &&

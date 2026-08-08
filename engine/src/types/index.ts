@@ -461,7 +461,7 @@ export interface EngineDevToolsLiveEvent {
   muteFrom?: 'DEVTOOLS' | 'AUDIO_PROFILE'
   asset?: {
     id?: string
-    for?: 'SCENE' | 'EVENT'
+    for?: 'SCENE' | 'EVENT' | 'TRIGGER'
     url?: string
     exists?: boolean
     ext?: 'jpeg' | 'webp' | 'mp3'
