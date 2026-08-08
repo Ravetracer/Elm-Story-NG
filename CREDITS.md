@@ -14,11 +14,11 @@ The original Elm Story, which Elm Story - NG is based on:
 
 Elm Story - NG is revived and maintained by:
 
-- Christian Nielebock (Ravetracer)
-  https://github.com/Ravetracer/Elm-Story-NG
+- Christian Nielebock (Ravetracer) — [github.com/Ravetracer/Elm-Story-NG](https://github.com/Ravetracer/Elm-Story-NG)
 
 ## Supporters
 
 - Claude (Anthropic) — engineering assistance
 
-Coming soon: your name here. Contributions are welcome on GitHub.
+Coming soon: your name here. Contributions are welcome on
+[GitHub](https://github.com/Ravetracer/Elm-Story-NG).

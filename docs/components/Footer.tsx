@@ -80,7 +80,7 @@ const Footer: React.FC = () => (
           </li>
           <li>
             <a
-              href={`${REPO_URL}/blob/main/CREDITS`}
+              href={`${REPO_URL}/blob/main/CREDITS.md`}
               target="_blank"
               rel="noopener noreferrer"
             >
