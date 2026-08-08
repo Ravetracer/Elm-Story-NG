@@ -245,9 +245,21 @@ only runs on a real transition, so a resume stays silent while the persisted
   `triggerConditionHolds` in `engine/src/lib/state.ts`, covered by
   `src/__tests__/sceneTriggers.test.ts` (18 tests). Typecheck clean both projects;
   schema still validates. No engine wiring, no audio, no UI yet.
-- **Next — engine wiring:** call `triggerFires` in `gotoNextLiveEvent`, resolve
-  the destination scene's triggers, emit fired sounds as a transient signal.
-- **Then — audio one-shot**, then **the scene Triggers panel + help/docs**.
+- **Slice 2 — engine wiring (done).** Pure `collectTriggerSounds` in
+  `engine/src/lib/state.ts` (tested, 3 more cases). `gotoNextLiveEvent`
+  (`LiveEvent.tsx`) evaluates the destination scene's triggers after effects +
+  scene reset — prevState from the departing live event's stored `state`,
+  `isSceneEntry` from the from/to event scene ids — and dispatches the fired
+  sounds via a new transient `ENGINE_ACTION_TYPE.PLAY_TRIGGER_SOUNDS`
+  (`engine.triggerSounds = { key, assetIds }`, `key` a fresh uuid). RESTART is
+  excluded (no `pathId`); a loopback is **included** (a wrong-input counter is a
+  real edge). Nothing plays yet — the signal has no consumer until slice 3.
+  Typecheck clean both projects; 21 trigger tests + 100 adjacent tests pass.
+- **Next — audio one-shot (slice 3):** a consumer of `engine.triggerSounds` that
+  plays each id as a parallel fire-and-forget `Howl` through
+  `resumeAudioContext()`, PWA path direct + composer path via the devtools
+  resolver. **This is the slice to verify in a real PWA export.**
+- **Then — the scene Triggers panel + help/docs.**
 
 ## Decisions (settled) and open implementation questions
 

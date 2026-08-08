@@ -2,7 +2,7 @@
   "name": "esg-app",
   "productName": "Elm Story - NG",
   "description": "Elm Story - NG: a continuation of the Elm Story storyworld editor.",
-  "version": "0.56.11",
+  "version": "0.56.12",
   "author": {
     "name": "Ravetracer",
     "email": "me@ravetracer.de"

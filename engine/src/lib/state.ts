@@ -2,6 +2,7 @@ import { cloneDeep } from 'lodash'
 
 import {
   COMPARE_OPERATOR_TYPE,
+  ElementId,
   EngineLiveEventMessageData,
   EngineLiveEventStateCollection,
   EngineTriggerData,
@@ -174,6 +175,27 @@ export const triggerFires = (
 
   return !prevHolds || (Boolean(trigger.fireOnEntry) && isSceneEntry)
 }
+
+/**
+ * The sound ids of every trigger that fires across a transition, in scene order.
+ *
+ * The wiring seam for a scene's triggers: `gotoNextLiveEvent` computes the two
+ * states and the scene-entry flag from the database, and this decides which
+ * sounds fire. Pure, so the "which fire" decision is tested here rather than
+ * behind the database plumbing. No cap — every qualifying sound is returned and
+ * plays in parallel.
+ */
+export const collectTriggerSounds = (
+  triggers: EngineTriggerData[],
+  prevState: EngineLiveEventStateCollection,
+  nextState: EngineLiveEventStateCollection,
+  isSceneEntry: boolean
+): ElementId[] =>
+  triggers
+    .filter((trigger) =>
+      triggerFires(trigger, prevState, nextState, isSceneEntry)
+    )
+    .map((trigger) => trigger.sound)
 
 /**
  * Applies variable assignments to a copy of the state.

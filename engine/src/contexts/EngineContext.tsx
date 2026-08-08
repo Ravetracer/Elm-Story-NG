@@ -24,6 +24,14 @@ interface EngineState {
     xrayVisible: boolean
   }
   liveEventsInStream: EngineLiveEventData[]
+  /**
+   * A transient one-shot request from a scene trigger firing: the sounds to play
+   * and a `key` unique to this firing. The audio mixer plays them keyed on
+   * `key`, so the same sound firing twice still retriggers, and — because it is
+   * never persisted — a resumed playthrough does not replay it. Set only from a
+   * real transition in `gotoNextLiveEvent`. See `dev-doc/scene-triggers.md`.
+   */
+  triggerSounds?: { key: string; assetIds: ElementId[] }
   installed: boolean
   installId: string | undefined
   isComposer: boolean
@@ -88,7 +96,8 @@ export enum ENGINE_ACTION_TYPE {
   DEVTOOLS_MUTE = 'DEVTOOLS_MUTE',
   TOGGLE_DEVTOOLS_XRAY = 'TOGGLE_DEVTOOLS_XRAY',
   DEVTOOLS_RESET = 'DEVTOOLS_RESET',
-  UPDATE_LIVE_EVENT_IN_STREAM = 'UPDATE_EVENT_IN_STREAM'
+  UPDATE_LIVE_EVENT_IN_STREAM = 'UPDATE_EVENT_IN_STREAM',
+  PLAY_TRIGGER_SOUNDS = 'PLAY_TRIGGER_SOUNDS'
 }
 
 type EngineActionType =
@@ -137,6 +146,11 @@ type EngineActionType =
   | { type: ENGINE_ACTION_TYPE.TOGGLE_DEVTOOLS_EXPRESSIONS }
   | { type: ENGINE_ACTION_TYPE.TOGGLE_DEVTOOLS_XRAY }
   | { type: ENGINE_ACTION_TYPE.TOGGLE_DEVTOOLS_MUTED }
+  | {
+      type: ENGINE_ACTION_TYPE.PLAY_TRIGGER_SOUNDS
+      assetIds: ElementId[]
+      key: string
+    }
   | { type: ENGINE_ACTION_TYPE.DEVTOOLS_MUTE }
   | {
       type: ENGINE_ACTION_TYPE.DEVTOOLS_RESET
@@ -279,6 +293,11 @@ const engineReducer = (
           muted: !state.devTools.muted
         }
       }
+    case ENGINE_ACTION_TYPE.PLAY_TRIGGER_SOUNDS:
+      return {
+        ...state,
+        triggerSounds: { key: action.key, assetIds: action.assetIds }
+      }
     case ENGINE_ACTION_TYPE.DEVTOOLS_MUTE:
       return {
         ...state,
@@ -316,6 +335,7 @@ const defaultEngineState: EngineState = {
     reset: false
   },
   liveEventsInStream: [],
+  triggerSounds: undefined,
   installed: false,
   installId: undefined,
   isComposer: false,

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { triggerConditionHolds, triggerFires } from '../../engine/src/lib/state'
+import {
+  collectTriggerSounds,
+  triggerConditionHolds,
+  triggerFires
+} from '../../engine/src/lib/state'
 
 import {
   COMPARE_OPERATOR_TYPE,
@@ -233,5 +237,57 @@ describe('triggerFires — fireOnEntry', () => {
 
     // A single boolean, so the OR of "rising edge" and "entry" cannot double-fire.
     expect(triggerFires(t, low, already, true)).toBe(true)
+  })
+})
+
+describe('collectTriggerSounds', () => {
+  const ringing = trigger([movesGte('6')], { id: 'ring', sound: 'bell' })
+  const alarm = trigger(
+    [['alarm', COMPARE_OPERATOR_TYPE.EQ, 'true', VARIABLE_TYPE.BOOLEAN]],
+    { id: 'alarm', sound: 'siren' }
+  )
+
+  it('returns the sounds of every firing trigger, in scene order', () => {
+    const prev = state({
+      moves: [VARIABLE_TYPE.NUMBER, '5'],
+      alarm: [VARIABLE_TYPE.BOOLEAN, 'false']
+    })
+    const next = state({
+      moves: [VARIABLE_TYPE.NUMBER, '6'],
+      alarm: [VARIABLE_TYPE.BOOLEAN, 'true']
+    })
+
+    // Both cross into true on the same transition — both play, no cap.
+    expect(collectTriggerSounds([ringing, alarm], prev, next, false)).toEqual([
+      'bell',
+      'siren'
+    ])
+  })
+
+  it('omits triggers that do not fire', () => {
+    const prev = state({
+      moves: [VARIABLE_TYPE.NUMBER, '5'],
+      alarm: [VARIABLE_TYPE.BOOLEAN, 'false']
+    })
+    const next = state({
+      moves: [VARIABLE_TYPE.NUMBER, '6'],
+      alarm: [VARIABLE_TYPE.BOOLEAN, 'false']
+    })
+
+    expect(collectTriggerSounds([ringing, alarm], prev, next, false)).toEqual([
+      'bell'
+    ])
+  })
+
+  it('is empty when nothing fires', () => {
+    const held = state({
+      moves: [VARIABLE_TYPE.NUMBER, '6'],
+      alarm: [VARIABLE_TYPE.BOOLEAN, 'true']
+    })
+
+    // true -> true for both: no rising edge, nothing plays.
+    expect(collectTriggerSounds([ringing, alarm], held, held, false)).toEqual(
+      []
+    )
   })
 })

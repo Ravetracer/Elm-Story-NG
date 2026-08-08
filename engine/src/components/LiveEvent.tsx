@@ -20,9 +20,11 @@ import {
 import { getLibraryDatabase } from '../lib/db'
 
 import {
+  getEvent,
   getLiveEvent,
   getLiveEventInitial,
   getPathNotification,
+  getScene,
   processEffectsByRoute,
   processSceneScopeOnEntry,
   saveBookmarkLiveEvent,
@@ -31,6 +33,8 @@ import {
   saveLiveEventNext,
   saveLiveEventResult
 } from '../lib/api'
+
+import { collectTriggerSounds } from '../lib/state'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../contexts/EngineContext'
 
@@ -216,6 +220,52 @@ const LiveEvent: React.FC<{ data: EngineLiveEventData; animated: boolean }> = ({
             version: engine.worldInfo?.version
           })
         ])
+
+        /*
+         * Scene triggers: fire a one-shot sound on the rising edge of a variable
+         * condition (dev-doc/scene-triggers.md). Evaluated here, at the single
+         * transition point, against the departing live event's stored state and
+         * the `nextState` this crossing just produced — so the edge is real and a
+         * resumed playthrough (which never runs this function) cannot replay it.
+         *
+         * A RESTART is a fresh start rather than a narrative step, so its triggers
+         * are left alone: the ended-story state versus the initial state is not a
+         * transition an author reasoned about. A loopback is deliberately *not*
+         * excluded — a wrong-input loopback that ticks a counter is a real edge an
+         * author would want to catch (the buzzer on the third wrong guess). The
+         * `pathId` guard already stands RESTART down, since a restart carries none.
+         *
+         * The fired sounds go out as a transient dispatch keyed by a fresh id, not
+         * a field on the live event — the audio mixer plays them once on that key.
+         */
+        if (pathId && liveEventType !== ENGINE_LIVE_EVENT_TYPE.RESTART) {
+          const [fromEvent, toEvent] = await Promise.all([
+            getEvent(studioId, data.destination),
+            getEvent(studioId, destinationId)
+          ])
+
+          if (toEvent?.sceneId) {
+            const scene = await getScene(studioId, toEvent.sceneId),
+              triggers = scene?.triggers ?? []
+
+            if (triggers.length) {
+              const sounds = collectTriggerSounds(
+                triggers,
+                storedLiveEvent?.state || data.state,
+                nextState,
+                toEvent.sceneId !== fromEvent?.sceneId
+              )
+
+              if (sounds.length) {
+                engineDispatch({
+                  type: ENGINE_ACTION_TYPE.PLAY_TRIGGER_SOUNDS,
+                  assetIds: sounds,
+                  key: uuid()
+                })
+              }
+            }
+          }
+        }
 
         const updatedBookmark = await saveBookmarkLiveEvent(
           studioId,
