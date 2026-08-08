@@ -102,16 +102,24 @@ and drawn by an `<img>`: `src/components/TitleBar/mark.svg` and
 - **"NG" is illegible below about 18px** and is a purple accent at title bar size,
   not a readable suffix. That is why the title bar spells the name out beside it.
 
-### The info box has no links, deliberately
+### The info box links only to the maintainer's own pages
 
 `ESGModal` used to carry six social icons, the site and the licence. Every one
 pointed at the original authors: `elmstory.com` and `docs.elmstory.com` no longer
 resolve, the Patreon redirects to Patreon's own front page and the Twitter account
 is gone, while the itch.io, Reddit, Twitch and YouTube pages that *do* still answer
 are the original project's. A link that sends someone asking for help with this app
-to a page the people behind it do not run is worse than no link, so the box states
-what it is and stops there. `LICENSE` and `CREDITS` are named as files rather than
-linked.
+to a page the people behind it do not run is worse than no link, so **every one of
+those was removed.** For a long while the box then carried no links at all.
+
+It now carries exactly two — **Website** (`links.ts`'s `LANDING_URL`, the landing
+site) and **Source on GitHub** (`REPO_URL`) — because those are the maintainer's
+*own* pages, which is the opposite case: the whole objection was to linking the
+original authors' pages, not to linking at all. `src/lib/links.ts` is the one place
+these URLs live (`LANDING_URL`, `EDITOR_URL`, `REPO_URL`); they open through
+`WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK` (`shell.openExternal` on desktop,
+`window.open` in the browser build). Nothing pointing at the original authors goes
+back in. `LICENSE` and `CREDITS` are still named as files rather than linked.
 
 The same reasoning applies to `lib/saveStarterContent.ts`, whose generated
 storyworld shipped six dead `elmstory.com` links to every new author, and to the

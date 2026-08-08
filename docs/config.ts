@@ -6,6 +6,8 @@
  */
 export const REPO_URL = 'https://github.com/Ravetracer/Elm-Story-NG'
 
-export const EDITOR_URL = REPO_URL
+// The deployed browser editor. This site is the landing at
+// elm-story-ng.ravetracer.de; the editor lives on its own domain.
+export const EDITOR_URL = 'https://elm-story-ng-edit.ravetracer.de'
 
 export const LICENSE = 'GPL-3.0-or-later'
