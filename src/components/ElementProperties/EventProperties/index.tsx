@@ -310,7 +310,10 @@ const StoryworldEndingToggle: React.FC<{
       event.id && (await api().events.setEventEnding(studioId, event.id, false))
     }
 
-    // TODO: it might be necessary to check choices in the future #397
+    // An event that offers choices or takes input is not an ending, so clear the
+    // ending flag if a flagged event gains either. (#397 wondered whether choices
+    // needed checking; they are — `choices.length` is the guard, alongside the
+    // INPUT type — so this is settled rather than open.)
     if (
       ((choices && choices.length > 0) || event.type === EVENT_TYPE.INPUT) &&
       event.ending &&

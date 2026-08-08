@@ -765,8 +765,11 @@ Traceable to `elmstorygames/feedback`, which makes them the authors' own triage.
       the Delete key to duplicate that would re-open the hazard for no new
       capability, so the dead code is gone and the deliberate decision is documented
       in place.
-- [ ] **#397** — `EventProperties/index.tsx:270`: `it might be necessary to check
-      choices in the future`, on the effect that clears `event.ending`.
+- [x] **#397** — settled, not open. The effect on `EventProperties` clears an
+      event's `ending` flag when it offers choices or takes input; the note
+      wondered whether choices needed checking, but `choices.length` is already the
+      guard (with the INPUT type). Replaced the speculative TODO with a comment
+      saying so.
 - [x] **#92** — `WorldInspector`: `Fire only when tab is active`. The add,
       manage and help actions were in each tab's title, which rc-dock renders for
       every tab in the bar, so the add `+` fired even when its tab was inactive.
@@ -776,8 +779,11 @@ Traceable to `elmstorygames/feedback`, which makes them the authors' own triage.
       tab's `+`/manage/help work.
 - [ ] **#132** — `WorldOutline/index.tsx:488`: `stack hack`, a `setTimeout(…, 1)`
       to order two dispatches.
-- [ ] **#422** — `engine/src/components/Installer.tsx:79`: `this is set again
-      after install`; the world info dispatch is duplicated deliberately.
+- [x] **#422** — already resolved (during the interface-text/`Installer` work).
+      The bare TODO is now an explanatory `// #422:` comment: the world-info
+      dispatch on a re-install over a *playing* preview is deliberate, and
+      `lastDispatched` is written by both writers so they cannot disagree about
+      what was last sent. Documented in `CLAUDE.md`'s interface-text section.
 
 ### 9.4 `setTimeout` ordering hacks
 
