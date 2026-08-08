@@ -21,13 +21,10 @@ import styles from './styles.module.less'
  * picker: the choice is already made in a modal that has its own confirmation, and
  * a second Save to commit it reads as the pick not having worked.
  *
- * **Clearing removes the file, choosing does not.** Replacing leaves the old asset
- * on disk for the asset manager to judge, because two elements may share an id and
- * the picker makes sharing ordinary — the rule `CLAUDE.md` states for every other
- * slot. Clearing is deliberate, so it goes through
- * `removeAssetIfUnreferenced`, **after** the reference is cleared: the count is read
- * back out of the database, so a world still holding the id counts as a reference
- * and nothing would ever be removed.
+ * **Neither clearing nor choosing removes the file.** Both write only the
+ * reference; the cover image stays on disk and shows as unused in the asset
+ * manager, which is the one place assets are trashed — the rule `CLAUDE.md`
+ * states for every slot. A cleared cover simply becomes an unused asset.
  */
 const WorldCover: React.FC<{ studioId: StudioId; world: World }> = ({
   studioId,

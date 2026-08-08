@@ -595,14 +595,10 @@ export const syncImagesFromEventContentToEventData = async (
     return
   }
 
-  // next, we need to look at every event to see if any of these images are being used
-  // if not, send to .trash or move back to primary
-  // record with imageId as key and length of events as value
-  await api().events.removeDeadImageAssets(
-    studioId,
-    foundEvent.worldId,
-    imagesToRemoveById
-  )
+  // An image removed from the prose is left on disk, not trashed — like every
+  // other asset reference, it is only ever deleted from the asset manager, where
+  // it now shows as unused. The event's `images` array was already updated above,
+  // so the reference index stays accurate; the file simply outlives the node.
 }
 
 export const isLinkActive = (editor: EditorType) => {

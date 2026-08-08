@@ -38,7 +38,7 @@ export async function removeCharacter(
   characterId: ElementId
 ) {
   try {
-    await getLibraryDatabase(studioId).removeCharacter(studioId, characterId)
+    await getLibraryDatabase(studioId).removeCharacter(characterId)
   } catch (error) {
     throw error
   }

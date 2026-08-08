@@ -46,7 +46,6 @@ import {
   EngineSettingsData
 } from '../lib/transport/types/0.5.1'
 import { WINDOW_EVENT_TYPE } from '../lib/events'
-import { ASSET_KIND, ASSET_KINDS } from '../lib/assets'
 
 // DATABASE VERSIONS / UPGRADES
 import v1 from './v1'
@@ -61,8 +60,6 @@ import v9 from './v9'
 import v10 from './v10' // 0.7.0
 import v11 from './v11' // 0.7.1
 import v12 from './v12' // 0.8.0
-
-import api from '../api'
 
 export enum DB_NAME {
   APP = 'esg-app',
@@ -362,7 +359,7 @@ export class LibraryDatabase extends Dexie {
     return character
   }
 
-  public async removeCharacter(studioId: StudioId, characterId: ElementId) {
+  public async removeCharacter(characterId: ElementId) {
     logger.info(`LibraryDatabase->removeCharacter`)
 
     try {
@@ -434,17 +431,10 @@ export class LibraryDatabase extends Dexie {
           })
       }
 
-      /*
-       * Collected before the delete and trashed after it, each only when nothing
-       * else names it — two masks are allowed to share one image.
-       */
-      const deadMaskAssets = character.masks
-        .filter((mask) => mask.assetId)
-        .map((mask) => ({
-          assetId: mask.assetId as string,
-          worldId
-        }))
-
+      // The character's mask images are left on disk. Like every other asset
+      // reference, they are trashed only from the asset manager — where they now
+      // show as unused — never as a side effect of deleting the character. (A
+      // mask image may also be shared by another character.)
       await this.transaction('rw', this.characters, async () => {
         logger.info(
           `LibraryDatabase->removeCharacter->Removing character with ID: ${characterId}`
@@ -452,16 +442,6 @@ export class LibraryDatabase extends Dexie {
 
         await this.characters.delete(characterId)
       })
-
-      // sequentially, so each count sees what the one before it trashed
-      for (const { assetId, worldId } of deadMaskAssets) {
-        await api().assets.removeAssetIfUnreferenced(
-          studioId,
-          worldId,
-          assetId,
-          'jpeg'
-        )
-      }
     } catch (error) {
       throw error
     }
@@ -1937,15 +1917,7 @@ export class LibraryDatabase extends Dexie {
   public async removeEvent(
     eventId: ElementId,
     skipOriginPaths: boolean = false,
-    skipDestinationPaths: boolean = false,
-    /*
-     * Set when something outside the database still references the event's
-     * assets — a scene map cut, whose clipboard holds the event until it is
-     * pasted. Trashing them here would hand back an event whose image and audio
-     * files are in userData/.trash. An unpasted cut therefore leaves the assets
-     * behind, which the asset manager is there to find.
-     */
-    keepAssets: boolean = false
+    skipDestinationPaths: boolean = false
   ) {
     try {
       logger.info('LibraryDatabase->removeEvent')
@@ -1966,29 +1938,11 @@ export class LibraryDatabase extends Dexie {
         }
       }
 
-      // scene map copy and paste lets two events name one mp3, so the file is
-      // only trashed once nothing else in the storyworld references it. This used
-      // to remove the asset unconditionally, which took the track from under the
-      // other event.
-      !keepAssets &&
-        event?.audio?.[0] &&
-        event.id &&
-        (await api().events.removeDeadAudioAsset(
-          this.studioId,
-          event.worldId,
-          event.audio[0],
-          [event.id]
-        ))
-
-      if (!keepAssets && event?.id && event.images.length > 0) {
-        await api().events.removeDeadImageAssets(
-          this.studioId,
-          event.worldId,
-          event.images,
-          [event.id]
-        )
-      }
-
+      // The event's image and audio files are left on disk. Like every other
+      // asset reference, they are trashed only from the asset manager, where
+      // they show as unused — never as a side effect of deleting the event. This
+      // also makes the scene-map cut, which used to depend on a `keepAssets`
+      // flag to hold a cut event's files, correct by default.
       await this.transaction('rw', this.events, async () => {
         if (await this.getElement(LIBRARY_TABLE.EVENTS, eventId)) {
           logger.info(
@@ -2701,25 +2655,13 @@ export class LibraryDatabase extends Dexie {
         if (changed) await this.saveObject({ ...other, placements })
       }
 
-      const deadAsset = object.assetId,
-        deadStackedAsset = object.stackedAssetId
-
+      // The object's image and stacked-image files are left on disk. Like every
+      // other asset reference, they are trashed only from the asset manager,
+      // where they show as unused — never as a side effect of deleting the
+      // object.
       await this.transaction('rw', this.objects, async () => {
         await this.objects.delete(objectId)
       })
-
-      // sequentially, so each count sees what the one before it trashed, and
-      // after the reference is gone — the count is read back out of the database
-      for (const assetId of [deadAsset, deadStackedAsset]) {
-        if (!assetId) continue
-
-        await api().assets.removeAssetIfUnreferenced(
-          this.studioId,
-          worldId,
-          assetId,
-          ASSET_KINDS[ASSET_KIND.OBJECT_IMAGE].ext
-        )
-      }
     } catch (error) {
       throw error
     }

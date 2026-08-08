@@ -122,8 +122,8 @@ describe('collectAssetReferences', () => {
   })
 
   it('collects every reference to a shared asset', () => {
-    // the same image id can legitimately appear on more than one event, which is
-    // why removeDeadImageAssets counts events before trashing an image
+    // the same image id can legitimately appear on more than one event, so the
+    // asset manager must count every reference before it offers to trash a file
     const references = collectAssetReferences({
       events: [
         event('event-1', 'Ankunft', { images: ['shared'] }),

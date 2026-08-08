@@ -232,29 +232,36 @@ Two masks may share an id, two events may share an mp3, and the picker makes
 sharing ordinary rather than accidental, so replacing now leaves the file alone
 and lets the manager decide whether it has died.
 
-**Clearing a reference never trashes the file either** — the asset manager is the
-only place an asset is deleted. Clearing a mask (`CharacterPersonality`), an audio
-profile (`ElementAudio`, scene or event), the storyworld cover (`WorldCover`) or
-background (`WorldBackground`) writes only the reference; the file stays on disk
-and shows as **unused** in the manager, to be trashed there or not at all. The
-element that held the reference survives with no asset, which is the intended
-state. This replaced the earlier behaviour where those four clears called
-`api().assets.removeAssetIfUnreferenced`; that helper still exists for the
-element-*deletion* cascades below.
+**Nothing outside the asset manager deletes an asset.** Neither clearing a
+reference nor deleting the element that holds it trashes the file — it stays on
+disk and shows as **unused** in the manager, to be trashed there or not at all.
+This covers clearing a mask (`CharacterPersonality`), an audio profile
+(`ElementAudio`, scene or event), the storyworld cover (`WorldCover`) or
+background (`WorldBackground`), **and** deleting the owner outright:
+`removeCharacter` leaves its masks, `removeEvent` its image and audio,
+`removeObject` its two images, and removing an image node from event prose
+(`lib/contentEditor`) leaves the file. The element goes; the asset survives,
+which is the intended state. The reference *index* still updates — e.g.
+`Event.images` is rewritten so the count stays accurate — only the file is left
+alone.
 
-Because clearing leaves unused files behind, **a PWA export warns about them
-first** (`ExportWorldMenu`): it runs the same `collateAssets` + `isAssetUnused`
-join the manager uses and, if anything is unreferenced, offers to cancel and
-clean up rather than pack files that would bloat the download and be precached
-for every player. It never deletes — it points the author at the manager.
+The old reference-count-and-trash helpers this replaced are **gone**:
+`removeAssetIfUnreferenced` (and the `api/assets` module), `removeDeadImageAssets`
+and `removeDeadAudioAsset` were deleted, along with `removeEvent`'s `keepAssets`
+parameter — a scene-map cut now keeps a cut event's files automatically, because
+deletion no longer trashes. `collectAssetReferences` in `lib/assets` stays: it is
+the counting core the manager and the export check below still use.
 
-Deleting the *owner* element still trashes its now-orphaned assets:
-`removeCharacter` its masks and `removeEvent` its dead image/audio (via
-`removeDeadImageAssets`/`removeDeadAudioAsset`, which pass `filterOutEventIds`
-because they cannot save an event mid-delete), and `removeWorld` bulk-trashes the
-whole asset directory. **Clear the reference before calling
-`removeAssetIfUnreferenced`**: the count is read back out of the database, so an
-element still holding the id counts as a reference.
+The **one exception is deleting a whole world** (`removeWorld`), which bulk-trashes
+the entire asset directory through `REMOVE_ASSETS` type GAME — the world and its
+storage go together and there is no manager left to clean it. That is destroying
+the world, not managing an asset.
+
+Because clearing and deleting leave unused files behind, **a PWA export warns
+about them first** (`ExportWorldMenu`): it runs the same `collateAssets` +
+`isAssetUnused` join the manager uses and, if anything is unreferenced, offers to
+cancel and clean up rather than pack files that would bloat the download and be
+precached for every player. It never deletes — it points the author at the manager.
 
 ### Deleting a character cascades, and stops at the Slate document
 
@@ -279,8 +286,9 @@ the character before deleting the row, and leaves the content nodes alone.
   throw. Rewriting the document from outside would be overwritten by an open
   editor's next debounced save — the asset-manager and inline-choice reasoning —
   so the node outlives the character and the author removes it.
-- **Mask assets** are trashed only when nothing else names them, after the row is
-  deleted (two masks may share an id), per the rule above.
+- **Mask assets are left on disk**, not trashed — like every asset reference,
+  they are removed only from the asset manager (where they show as unused), never
+  as a side effect of deleting the character. See the rule above.
 
 ### Deleting a world is a bulk delete, on purpose
 
@@ -493,16 +501,13 @@ open.
 
 Two more things worth knowing:
 
-- **A cut keeps the event's assets** (`removeEvent`'s `keepAssets`). The clipboard
-  still names the images and audio, and trashing them would paste an event whose
-  files are in `userData/.trash`. An unpasted cut therefore leaves assets behind,
-  which is what the asset manager is for.
-- **`Event.audio` needed reference counting before two events could share an
-  mp3.** `removeDeadImageAssets` already did this for images; `removeDeadAudioAsset`
-  now mirrors it, through `collectAssetReferences` so a scene audio profile counts
-  too. `Event.audio` has no Dexie index (`v10.ts` indexes `images` but not
-  `audio`), so the count is taken in memory. Before this, deleting either of two
-  events sharing a track took the file from under the other.
+- **A cut keeps the event's assets** — automatically now. `removeEvent` no longer
+  trashes anything (see "Nothing outside the asset manager deletes an asset"), so
+  a cut event's images and audio stay on disk for the paste with no special flag.
+  An unpasted cut leaves the files behind, which is what the asset manager is for.
+  (This is why `removeEvent`'s old `keepAssets` parameter and the
+  `removeDeadImageAssets`/`removeDeadAudioAsset` helpers were removed — deletion
+  never trashes, so the shared-mp3 hazard they guarded against cannot arise.)
 - **The commands are performed by the scene map, not where they are asked for.**
   Cutting needs its element-removal path and pasting its viewport centre, so the
   toolbar sets `composer.sceneMapClipboardCommand` and the map runs and clears it —
@@ -1578,8 +1583,9 @@ builds against them.
   *stacked* image, and the storyworld cover. Every field on
   `AssetReferenceSources` is optional, so a caller that omits one gets a silently
   incomplete count — and an incomplete count means the asset manager offering to
-  delete a file that is in use. `removeDeadAudioAsset` omits the image sources on
-  purpose and says so, because objects and covers cannot name an mp3.
+  delete a file that is in use. The asset manager and the PWA-export check are its
+  callers now (the old `removeDead*`/`removeAssetIfUnreferenced` helpers that also
+  used it were removed); both pass the full source set.
 - **An object has two image slots and therefore two `ASSET_REFERENCE_TYPE`s.**
   Clearing a reference means clearing a named field, and one type could not say
   whether that was `assetId` or `stackedAssetId`. `ASSET_KIND.WORLD_COVER`'s

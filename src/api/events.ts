@@ -1,10 +1,6 @@
 import { LIBRARY_TABLE, getLibraryDatabase } from '../db'
-import { ipcRenderer } from 'electron'
 import { v4 as uuid } from 'uuid'
 import { getRandomElementName } from '../lib'
-import { collectAssetReferences } from '../lib/assets'
-
-import { WINDOW_EVENT_TYPE } from '../lib/events'
 
 import { Descendant } from 'slate'
 import {
@@ -46,16 +42,13 @@ export async function removeEvent(
   studioId: StudioId,
   eventId: ElementId,
   skipOriginPaths: boolean = false,
-  skipDestinationPaths: boolean = false,
-  // a scene map cut holds the event on the clipboard, so its assets outlive it
-  keepAssets: boolean = false
+  skipDestinationPaths: boolean = false
 ) {
   try {
     await getLibraryDatabase(studioId).removeEvent(
       eventId,
       skipOriginPaths,
-      skipDestinationPaths,
-      keepAssets
+      skipDestinationPaths
     )
   } catch (error) {
     throw error
@@ -394,115 +387,6 @@ export async function resetPersonaMaskFromEvent(
         }
       })
     )
-  } catch (error) {
-    throw error
-  }
-}
-
-export async function getEventsByImageId(studioId: StudioId, imageId: string) {
-  try {
-    return await getLibraryDatabase(studioId).events
-      .where('images')
-      .equals(imageId || '')
-      .toArray()
-  } catch (error) {
-    throw error
-  }
-}
-
-export async function removeDeadImageAssets(
-  studioId: StudioId,
-  worldId: WorldId,
-  imagesToRemoveById: string[],
-  // when events are removed, the images array is not updated
-  // so we need to filter this event from the length check
-  // supports filtering multiple events if desired
-  filterOutEventIds?: string[]
-) {
-  const foundEventsByImageId: { [imageId: string]: number } = {}
-
-  await Promise.all(
-    imagesToRemoveById.map(async (imageId) => {
-      try {
-        if (!foundEventsByImageId[imageId]) foundEventsByImageId[imageId] = 0
-
-        foundEventsByImageId[imageId] =
-          foundEventsByImageId[imageId] +
-          (await api().events.getEventsByImageId(studioId, imageId)).filter(
-            (event) => event.id && !filterOutEventIds?.includes(event.id)
-          ).length
-      } catch (error) {
-        throw error
-      }
-    })
-  )
-
-  // check events length by imageId and if 0, send the image to .trash
-  Promise.all(
-    Object.keys(foundEventsByImageId).map(async (imageId) => {
-      if (foundEventsByImageId[imageId] === 0) {
-        // send image to the trash
-        ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-          studioId,
-          worldId,
-          id: imageId,
-          ext: 'webp',
-          trash: true
-        })
-      }
-    })
-  )
-}
-
-/**
- * The audio equivalent of removeDeadImageAssets, needed once two events can name
- * one mp3 — which scene map copy and paste made possible. Before it existed,
- * `removeEvent` sent an event's audio to be removed unconditionally, so deleting
- * either of two events sharing a track took the file from under the other.
- *
- * `Event.audio` has no Dexie index (`v10.ts` indexes images but not audio), so
- * the reference count is taken in memory rather than by query, and through
- * `collectAssetReferences` so it counts every place a storyworld can name an
- * asset rather than just the events — a scene audio profile counts too.
- *
- * Note this trashes rather than deletes outright, matching the image path and
- * leaving RESTORE_ASSET applicable.
- */
-export async function removeDeadAudioAsset(
-  studioId: StudioId,
-  worldId: WorldId,
-  assetId: string,
-  // an event being removed still names its audio, so it is filtered out of the
-  // count the same way removeDeadImageAssets does
-  filterOutEventIds?: ElementId[]
-) {
-  try {
-    // Events and scenes are the *complete* set of audio references, so the object
-    // and world-cover sources 0.8.0 added are deliberately not fetched here: both
-    // are image kinds and cannot name an mp3. Anything that adds a second audio
-    // writer does belong in this call.
-    const [events, scenes] = await Promise.all([
-      api().events.getEventsByWorldRef(studioId, worldId),
-      api().scenes.getScenesByWorldRef(studioId, worldId)
-    ])
-
-    const references =
-      collectAssetReferences({
-        events: events.filter(
-          (event) => event.id && !filterOutEventIds?.includes(event.id)
-        ),
-        scenes
-      }).get(assetId) ?? []
-
-    if (references.length === 0) {
-      await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSET, {
-        studioId,
-        worldId,
-        id: assetId,
-        ext: 'mp3',
-        trash: true
-      })
-    }
   } catch (error) {
     throw error
   }

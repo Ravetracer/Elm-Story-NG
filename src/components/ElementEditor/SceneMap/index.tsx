@@ -501,14 +501,12 @@ async function removeElementFromScene(
   studioId: StudioId,
   scene: Scene,
   type: ELEMENT_TYPE,
-  id: ElementId,
-  // a cut keeps the event's assets, because its clipboard still names them
-  keepAssets: boolean = false
+  id: ElementId
 ): Promise<void> {
   if (scene.id) {
     switch (type) {
       case ELEMENT_TYPE.EVENT:
-        await api().events.removeEvent(studioId, id, false, false, keepAssets)
+        await api().events.removeEvent(studioId, id, false, false)
 
         break
       case ELEMENT_TYPE.JUMP:
@@ -1060,11 +1058,12 @@ const SceneMap: React.FC<{
      * of them, so the next time that storyworld is opened it takes the renderer
      * down.
      *
-     * keepAssets: the clipboard still names the images and audio, and trashing
-     * them here would paste an event whose files are in .trash.
+     * A cut keeps the event's images and audio automatically now: element
+     * deletion no longer trashes assets, so the clipboard's files stay on disk
+     * for the paste.
      */
     for (const { id, type } of nodes) {
-      await removeElementFromScene(studioId, scene, type, id, true)
+      await removeElementFromScene(studioId, scene, type, id)
     }
   }
 

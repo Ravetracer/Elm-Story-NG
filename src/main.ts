@@ -499,7 +499,6 @@ const createWindow = async () => {
             }
           } catch (error) {
             // TODO: return error to app
-            // see api().events.removeDeadImageAssets
           }
         }
       )
