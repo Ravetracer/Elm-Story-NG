@@ -49,6 +49,10 @@ const StorageBanner: React.FC = () => {
   >(null)
   const [lastExport, setLastExport] = useState<number | undefined>(undefined)
   const [exporting, setExporting] = useState(false)
+  // Chrome grants persistence only on heuristics (site engagement, install,
+  // notifications) and otherwise resolves persist() to false with no prompt — so
+  // the button appears to do nothing. This records that denial to explain it.
+  const [persistDenied, setPersistDenied] = useState(false)
 
   // Ask for persistence once on mount, then read where it landed.
   useEffect(() => {
@@ -89,9 +93,12 @@ const StorageBanner: React.FC = () => {
     isBackupStale(lastExport, Date.now())
 
   const enablePersistence = async () => {
-    await requestPersistentStorage()
+    const granted = await requestPersistentStorage()
 
     setStatus(await getStorageStatus())
+    // A false here is Chrome declining silently, not an error; surface why so the
+    // button does not look broken.
+    setPersistDenied(!granted)
   }
 
   const exportBackup = async () => {
@@ -130,23 +137,40 @@ const StorageBanner: React.FC = () => {
       <ExclamationCircleFilled className={styles.icon} />
 
       {showPersistWarning ? (
-        <>
-          <span className={styles.message}>
-            Storage isn&apos;t persistent{usage ? ` (${usage} used)` : ''} — the
-            browser could evict your storyworlds without warning. Export backups
-            you can re-import.
-          </span>
+        persistDenied ? (
+          <>
+            <span className={styles.message}>
+              The browser declined to make storage persistent. Chrome grants it
+              once you&apos;ve used the app for a while or installed it — until
+              then, export a backup ZIP of each storyworld you can re-import.
+            </span>
 
-          <button className={styles.primary} onClick={enablePersistence}>
-            Enable persistence
-          </button>
-          <button
-            className={styles.secondary}
-            onClick={() => setPersistDismissed(true)}
-          >
-            Dismiss
-          </button>
-        </>
+            <button
+              className={styles.secondary}
+              onClick={() => setPersistDismissed(true)}
+            >
+              Dismiss
+            </button>
+          </>
+        ) : (
+          <>
+            <span className={styles.message}>
+              Storage isn&apos;t persistent{usage ? ` (${usage} used)` : ''} — the
+              browser could evict your storyworlds without warning. Export backups
+              you can re-import.
+            </span>
+
+            <button className={styles.primary} onClick={enablePersistence}>
+              Enable persistence
+            </button>
+            <button
+              className={styles.secondary}
+              onClick={() => setPersistDismissed(true)}
+            >
+              Dismiss
+            </button>
+          </>
+        )
       ) : (
         <>
           <span className={styles.message}>

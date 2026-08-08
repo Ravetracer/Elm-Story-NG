@@ -672,7 +672,17 @@ const ensurePopupScaleStyle = () => {
   const style = document.createElement('style')
 
   style.id = 'esg-popup-scale'
-  style.textContent = `${POPUP_SELECTORS.join(',')}{transform:scale(var(--esg-ui-scale,1)) !important;transform-origin:top left !important;}`
+  style.textContent = [
+    // Positioned popups: dom-align pinned their top-left, so scale from there.
+    `${POPUP_SELECTORS.join(
+      ','
+    )}{transform:scale(var(--esg-ui-scale,1)) !important;transform-origin:top left !important;}`,
+    // Modals are centred, not dom-aligned, so scale from their own centre to stay
+    // centred: `top center` for the default top-anchored modal (keeps its top edge
+    // and horizontal centre), `center` when antd's vertical-centre mode is on.
+    `.ant-modal{transform:scale(var(--esg-ui-scale,1)) !important;transform-origin:top center !important;}`,
+    `.ant-modal-centered .ant-modal{transform-origin:center center !important;}`
+  ].join('')
 
   document.head.appendChild(style)
 }

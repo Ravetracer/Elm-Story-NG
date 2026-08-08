@@ -113,7 +113,11 @@ in `src/lib/storageDurability.ts` and surface through the web-only bottom bar
    web startup (idempotent — returns early if already persisted). It can be
    declined, so `getStorageStatus()` reads `persisted()` + `estimate()` and the
    banner shows a **persistence warning** with an *Enable persistence* re-request
-   while not granted.
+   while not granted. **Chrome declines silently** — `persist()` resolves `false`
+   with no prompt unless the origin has site engagement / is installed / has
+   notifications — so *Enable persistence* looked like it did nothing. The banner
+   now detects the `false` and swaps to an explanation (Chrome grants it with use or
+   on install; export backups meanwhile) rather than appearing broken.
 2. Because it can be declined, a re-importable export is the real backup. A
    per-world last-export timestamp lives in `localStorage['esg-world-last-export']`
    (`recordWorldExport`/`getWorldLastExport`), written on **JSON/ZIP** export
@@ -170,9 +174,14 @@ maintainer's final live check.
     small injected stylesheet (`#esg-popup-scale`) scales them from their top-left
     corner via `transform: scale(var(--esg-ui-scale)) !important`, matching the app
     size while keeping dom-align's placement. `--esg-ui-scale` is set on the (unscaled)
-    document root. `!important` beats antd's inline animation transform. Modals are
-    deliberately excluded (they are centred; a corner-anchored scale would shift
-    them), so they render at base size — the one visible inconsistency.
+    document root. `!important` beats antd's inline animation transform.
+  - **Modals scale from their centre.** The same stylesheet scales `.ant-modal`
+    with `transform-origin: top center`, and `center center` under
+    `.ant-modal-centered` (antd's vertical-centre mode), so a modal grows about its
+    own centre and stays centred rather than drifting. Verified live at 1.5 (About
+    box + New Studio/World dialogs centred and scaled). A very wide modal at Huge can
+    exceed the viewport width — transform adds no scrollbar — so pick a smaller size
+    for those.
   - **react-flow is fine under the transform** (the real worry): measured live, a
     150px node drag at scale 1.5 moved the node 156 visual px — 1:1 with the cursor,
     not amplified. Nodes render, hit-test and drag correctly.
