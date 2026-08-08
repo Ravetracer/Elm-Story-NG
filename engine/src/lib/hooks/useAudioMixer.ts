@@ -82,7 +82,8 @@ const useAudioTrack = ({
   loop,
   paused,
   volume,
-  onEnd
+  onEnd,
+  fadeOut = 1000
 }: {
   type: AudioTrackType
   source?: string
@@ -93,6 +94,9 @@ const useAudioTrack = ({
   // Fired when a non-looping sound finishes playing. Used to lift the scene
   // duck once a one-shot event clip (a door closing) has run its course.
   onEnd?: () => void
+  // How long a departing track takes to fade to silence, in ms. The scene uses
+  // a short fade so leaving a scene does not cut the music dead.
+  fadeOut?: number
 }) => {
   const { engine } = useContext(EngineContext)
 
@@ -154,6 +158,28 @@ const useAudioTrack = ({
     track[1].audio?.stop()
   }, [track])
 
+  // Fade each playing sub-track to silence over `duration` ms, then stop it
+  // (a sound that is not playing is stopped outright). Used in the composer's
+  // track-change/unmount cleanup so leaving a scene fades the music out rather
+  // than cutting it dead. `once('fade')` fires when the ramp completes.
+  const fadeOutAndStop = useCallback(
+    (duration: number) => {
+      track.forEach((subTrack) => {
+        const audio = subTrack.audio
+
+        if (!audio) return
+
+        if (audio.playing()) {
+          audio.once('fade', () => audio.stop())
+          audio.fade(audio.volume(), 0, duration)
+        } else {
+          audio.stop()
+        }
+      })
+    },
+    [track]
+  )
+
   const play = useCallback(() => {
     // elmstorygames/feedback#268
     resumeAudioContext().then(() => {
@@ -189,7 +215,7 @@ const useAudioTrack = ({
         // )
       })
 
-      subTrackToFadeOut.audio.fade(volume || 1, 0, 1000)
+      subTrackToFadeOut.audio.fade(volume || 1, 0, fadeOut)
     }
 
     if (subTrackToFadeIn?.audio) {
@@ -205,7 +231,12 @@ const useAudioTrack = ({
     }
 
     return () => {
-      engine.isComposer && stop()
+      // Fade the departing audio out rather than cutting it: on a scene change
+      // this runs before the new track's fade-in, and on unmount it runs as the
+      // preview closes. A short fade keeps leaving a scene from stopping the
+      // music dead. (Composer only, matching the original guard; the exported
+      // PWA relies on the cross-fade above.)
+      engine.isComposer && fadeOutAndStop(fadeOut)
     }
   }, [track])
 
@@ -402,7 +433,10 @@ export const useAudioMixer = ({
       muted,
       loop: profiles.scene?.[1],
       paused,
-      volume: muted ? -1 : eventAudioDucking ? 0.3 : 1
+      volume: muted ? -1 : eventAudioDucking ? 0.3 : 1,
+      // Leaving a scene fades the music out over a short beat rather than
+      // cutting it dead; the arriving scene still fades in over the default.
+      fadeOut: 350
     }),
     eventTrack = useAudioTrack({
       type: 'EVENT',
