@@ -52,6 +52,26 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
     afterClose && afterClose()
   }
 
+  // A finish() failure used to rethrow, which left the modal stuck on its spinner
+  // (importingGameData stayed true) and surfaced nothing to the author — the worst
+  // case being onReplaceGameAndFinish, which has already removed the existing world
+  // by then. Show the error in the panel the validation errors already use, and
+  // stop the spinner, so the author knows what happened.
+  function showFinishError(error: unknown, note?: string) {
+    const detail = error instanceof Error ? error.message : String(error)
+
+    setImportingGameData(false)
+    setStudioNotFound(false)
+    setGameExists(false)
+    setImportingGameDataErrors([
+      {
+        message: `${
+          note ?? 'The storyworld could not be imported.'
+        } ${detail}`.trim()
+      }
+    ])
+  }
+
   async function onCreateStudioAndFinish() {
     if (studioNotFound && studioNotFound !== true && worldData) {
       setImportingGameData(true)
@@ -64,19 +84,17 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
           tags: []
         })
 
-        // TODO: handle finish errors
-        // TODO: ts errors
         await importWorldData(worldData, incomingJSONPath, true).finish()
 
         appDispatch({
           type: APP_ACTION_TYPE.STUDIO_SELECT,
           selectedStudioId: worldData._.studioId
         })
-      } catch (error) {
-        throw error
-      }
 
-      afterClose && afterClose()
+        afterClose && afterClose()
+      } catch (error) {
+        showFinishError(error)
+      }
     }
   }
 
@@ -88,19 +106,21 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
         // Remove world first to prevent merging of existing data
         await api().worlds.removeWorld(worldData._.studioId, worldData._.id)
 
-        // TODO: handle finish errors
-        // TODO: ts errors
         await importWorldData(worldData, incomingJSONPath, true).finish()
 
         appDispatch({
           type: APP_ACTION_TYPE.STUDIO_SELECT,
           selectedStudioId: worldData._.studioId
         })
-      } catch (error) {
-        throw error
-      }
 
-      afterClose && afterClose()
+        afterClose && afterClose()
+      } catch (error) {
+        // The existing world has already been removed at this point, so say so.
+        showFinishError(
+          error,
+          'The existing storyworld was removed but the import did not finish — re-import the file to restore it.'
+        )
+      }
     }
   }
 
@@ -179,15 +199,18 @@ const ImportJSONModal: React.FC<ImportJSONModalProps> = ({
             if (
               foundStudio.worlds.findIndex((id) => id === worldData._.id) === -1
             ) {
-              // TODO: handle finish errors
-              await finish()
+              try {
+                await finish()
 
-              appDispatch({
-                type: APP_ACTION_TYPE.STUDIO_SELECT,
-                selectedStudioId: worldData._.studioId
-              })
+                appDispatch({
+                  type: APP_ACTION_TYPE.STUDIO_SELECT,
+                  selectedStudioId: worldData._.studioId
+                })
 
-              afterClose && afterClose()
+                afterClose && afterClose()
+              } catch (error) {
+                showFinishError(error)
+              }
             }
           }
         }

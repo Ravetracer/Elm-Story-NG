@@ -719,17 +719,36 @@ Ranked. These are the reason this section is worth having.
       `removeJump` runs inside `removeScene`'s child-ref loop and throwing on a
       dangling ref would abort the cascade and strand the rest as dangling refs
       (fatal on next open). Documented in place; log downgraded error → warn.
-- [ ] **`WorldOutline/index.tsx:446`: `// TODO: Move the item back to original
-      position?`** A failed drag rethrows with the tree already moved, so the UI
-      and the database disagree until a rebuild.
-- [ ] **`WorldOutline/index.tsx:1151`: `// TODO: updating DB could fail; cache
-      name if need revert on error`.** Same class, for rename.
-- [ ] **`main.ts:396`, `:427`, `:469`: `// TODO: return error to app`.** Three
-      IPC handlers that swallow failures. `IMPORT_WORLD_ASSETS` doing this is
-      already documented in `CLAUDE.md` as a testing hazard.
-- [ ] **`Modal/ImportJSONModal.tsx:65`, `:89`, `:180`: `// TODO: handle finish
-      errors`** (plus `:66`, `:90` `// TODO: ts errors`). Import is the path that
-      "silently rots" — five of these sit on it.
+- [x] **`WorldOutline`, drag (`// TODO: Move the item back to original
+      position?`).** The move is applied to the tree optimistically before the
+      database writes, so a failed write left the UI showing a position the
+      database did not hold. The tree is now snapshotted (`cloneDeep`) before the
+      optimistic move and restored in the catch, with the failure logged. Not
+      rethrown — `onDragEnd` has no catching caller. Caveat recorded in the
+      comment: a *partial* failure across the `Promise.all` writes can still leave
+      the database inconsistent; true atomicity would need a Dexie transaction
+      spanning the api calls.
+- [x] **`WorldOutline`, rename (`// TODO: updating DB could fail; cache name if
+      need revert on error`).** Not the same class after all: the database write
+      happens *before* the UI title is updated, so a failure already leaves tree
+      and database consistent at the old title — no cached-name revert is needed.
+      The bare rethrow (which would have fallen through to the title dispatch) is
+      replaced by logging, closing the edit field back to the old title, and
+      returning before the dispatch.
+- [x] **`main.ts` asset IPC (`// TODO: return error to app`).** `SAVE_ASSET` and
+      `RESTORE_ASSET` already rethrew, which rejects the renderer's `invoke()` —
+      that *is* returning the error to the app; they now also `logger.error`.
+      `REMOVE_ASSET` was the only true swallow (empty catch); it now logs but
+      still resolves, on purpose — it is reached from bulk (whole-world) and
+      cascade flows that do not handle a rejection, and a failed trash leaves a
+      stray file the asset manager shows as unused, not lost data.
+- [x] **`Modal/ImportJSONModal.tsx` (`// TODO: handle finish errors` / `ts
+      errors`).** All three `finish()` sites now surface a failure in the panel
+      the validation errors already use and stop the spinner, instead of
+      rethrowing into a stuck modal. The worst case was `onReplaceGameAndFinish`,
+      which removes the existing world *before* importing — a finish failure there
+      lost it with no feedback; it now says so explicitly and tells the author to
+      re-import. The stale `ts errors` TODOs are gone (the file typechecks at 0).
 
 ### 9.3 Known-defect notes with issue numbers
 

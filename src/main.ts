@@ -428,7 +428,9 @@ const createWindow = async () => {
 
             return path
           } catch (error) {
-            // TODO: return error to app
+            logger.error(`Failed to save asset ${path}. ${error}`)
+            // Rethrown so the renderer's invoke() promise rejects — that is how
+            // the failure reaches the app.
             throw error
           }
         }
@@ -461,7 +463,9 @@ const createWindow = async () => {
 
             await fs.move(assetInTrashPath, `${assetsPath}/${id}.${ext}`)
           } catch (error) {
-            // TODO: return error to app
+            logger.error(`Failed to restore asset ${assetInTrashPath}. ${error}`)
+            // Rethrown so the renderer's invoke() promise rejects — that is how
+            // the failure reaches the app.
             throw error
           }
         }
@@ -504,7 +508,11 @@ const createWindow = async () => {
               await fs.remove(assetPath)
             }
           } catch (error) {
-            // TODO: return error to app
+            // Logged rather than thrown: removal is best-effort and is reached
+            // from bulk (whole-world) and cascade flows that do not handle a
+            // rejection. A failed trash leaves a stray file the asset manager
+            // still shows as unused — not lost data — so it must not abort them.
+            logger.error(`Failed to remove asset. ${error}`)
           }
         }
       )

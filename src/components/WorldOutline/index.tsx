@@ -207,6 +207,11 @@ const WorldOutline: React.FC<{ studioId: StudioId; world: World }> = ({
         `
       )
 
+      // Snapshotted before the optimistic move below so a failed database write
+      // can put the tree back — otherwise the UI shows the new position while the
+      // database still holds the old refs (see the catch below).
+      const previousTreeData = cloneDeep(treeData)
+
       const newTreeData = moveItemOnTree(treeData, source, destination)
 
       if (!destinationParent.isExpanded) destinationParent.isExpanded = true
@@ -453,8 +458,17 @@ const WorldOutline: React.FC<{ studioId: StudioId; world: World }> = ({
               return
           }
         } catch (error) {
-          // TODO: Move the item back to original position?
-          throw error
+          // A write failed, so revert the optimistic move rather than leave the
+          // tree showing a position the database does not hold. Not rethrown: the
+          // tree's onDragEnd has no caller that catches it, so a throw here is only
+          // an unhandled rejection. (A partial failure across the Promise.all
+          // writes can still leave the database itself inconsistent — true
+          // atomicity would need a Dexie transaction spanning the api calls.)
+          logger.error(
+            `Failed to move '${movingElement.data.title}'; reverting. ${error}`
+          )
+
+          setTreeData(previousTreeData)
         }
       }
     } else if (movingElement) {
@@ -1155,10 +1169,23 @@ const WorldOutline: React.FC<{ studioId: StudioId; world: World }> = ({
               break
           }
         } catch (error) {
-          throw error
+          // The database write above happens before the UI title is updated
+          // (below), so a failure leaves the tree and the database consistent at
+          // the old title — no cached-name revert is needed. Just close the edit
+          // field back to the old title and stop before the rename dispatch.
+          logger.error(
+            `Failed to rename ${elementId}; keeping the old title. ${error}`
+          )
+
+          setTreeData(
+            mutateTree(treeData, elementId, {
+              data: { ...treeData.items[elementId].data, renaming: false }
+            })
+          )
+
+          return
         }
 
-        // TODO: updating DB could fail; cache name if need revert on error
         composerDispatch({
           type: COMPOSER_ACTION_TYPE.ELEMENT_RENAME,
           renamedElement: {
