@@ -2,7 +2,7 @@
   "name": "esg-app",
   "productName": "Elm Story - NG",
   "description": "Elm Story - NG: a continuation of the Elm Story storyworld editor.",
-  "version": "0.49.2",
+  "version": "0.50.0",
   "author": {
     "name": "Elm Story Games",
     "email": "elmstorygames@gmail.com"
@@ -19,6 +19,9 @@
     "dev:nosandbox": "npm run engine:sync && electron-vite dev --noSandbox",
     "dev:debug": "electron-vite dev --noSandbox --remoteDebuggingPort 9222",
     "build": "npm run engine:sync && npm run typecheck && electron-vite build",
+    "dev:web": "npm run engine:sync && vite --config vite.web.config.mts",
+    "build:web": "npm run engine:sync && vite build --config vite.web.config.mts",
+    "preview:web": "vite preview --config vite.web.config.mts",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder build --publish never",
     "typecheck": "tsc --noEmit && tsc --noEmit -p engine/tsconfig.json",

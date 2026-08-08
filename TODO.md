@@ -941,14 +941,26 @@ The renderer imports no `fs`, `path` or `os` anywhere — all of that is in
 `src/main.ts`. (Mind that most `clipboard.*` hits in a naive grep are the *scene
 map* clipboard on `ComposerContext`, not Electron's.)
 
-- [ ] **Browser adapter behind the `electron` alias.** Also has to answer
-      `PLATFORM`: `App` gates its entire tree on `app.platform` arriving over IPC,
-      so an adapter that does not send it renders a blank page.
-- [ ] **Assets as Blobs in IndexedDB**, handed out as `URL.createObjectURL` —
-      replacing `SAVE_ASSET`, `GET_ASSET`, `LIST_ASSETS`, `REMOVE_ASSET` and
-      `RESTORE_ASSET`. This *deletes* a documented problem: blob URLs are seekable
-      because the browser knows the length, so the `Accept-Ranges` / 206 /
-      unseekable-MP3 handling described in `CLAUDE.md` has nothing to do here.
+**Phase 1 shipped (0.50.0): the build loads and persists in a browser.**
+`vite.web.config.mts` + `npm run build:web` emit a static, relative-pathed
+`dist-web/` (deployable anywhere; `npm run dev:web` / `preview:web` to run it).
+The `electron` import is aliased to `src/lib/electronBrowser.ts` — the 25 renderer
+modules are untouched. Verified live in a real browser: the dashboard renders (the
+`PLATFORM` handshake works), creating a studio writes both the `esg-app` and
+`esg-library-<studioId>` IndexedDB databases, and there are no runtime errors.
+Remaining below: export/import round-trip (phase 2) and durability + chrome
+(phase 3).
+
+- [x] **Browser adapter behind the `electron` alias**, answering `PLATFORM` so
+      `App` renders. Implements the asset IPC (below), `openExternal`→new tab,
+      `setZoomFactor`→CSS `zoom`, and no-ops the window controls.
+- [x] **Assets as Blobs in IndexedDB**, handed out as `URL.createObjectURL` —
+      `SAVE_ASSET`, `GET_ASSET`, `LIST_ASSETS`, `REMOVE_ASSET`, `REMOVE_ASSETS` and
+      `RESTORE_ASSET` are backed by a Dexie store (`esg-browser-assets`, an
+      `assets` table and a `trash` table for restore). This *deletes* a documented
+      problem: blob URLs are seekable because the browser knows the length, so the
+      `Accept-Ranges` / 206 / unseekable-MP3 handling described in `CLAUDE.md` has
+      nothing to do here.
 - [ ] **Decide the import interchange.** `IMPORT_WORLD_ASSETS` copies from an
       `assets` directory *beside* the chosen JSON, and a browser file input gives
       one file with no siblings. Either `showDirectoryPicker()` (Chromium and Edge
