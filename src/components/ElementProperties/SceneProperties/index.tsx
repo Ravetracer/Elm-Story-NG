@@ -24,6 +24,7 @@ import {
 
 import ElementTitle from '../ElementTitle'
 import ElementAudio from '../../ElementAudio'
+import SceneTriggers from './SceneTriggers'
 
 import JumpProperties from '../JumpProperties'
 import EventProperties from '../EventProperties'
@@ -114,6 +115,8 @@ const SceneDetails: React.FC<{ studioId: StudioId; sceneId: ElementId }> = ({
                   element={scene}
                 />
               </div>
+
+              <SceneTriggers studioId={studioId} scene={scene} />
 
               {!composer.selectedSceneMapEvent &&
                 !composer.selectedSceneMapJump &&

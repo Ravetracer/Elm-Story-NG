@@ -290,4 +290,12 @@ describe('collectTriggerSounds', () => {
       []
     )
   })
+
+  it('skips a firing trigger that has no sound chosen yet', () => {
+    const soundless = trigger([movesGte('6')], { id: 'wip', sound: '' })
+    const prev = state({ moves: [VARIABLE_TYPE.NUMBER, '5'] })
+    const next = state({ moves: [VARIABLE_TYPE.NUMBER, '6'] })
+
+    expect(collectTriggerSounds([soundless], prev, next, false)).toEqual([])
+  })
 })

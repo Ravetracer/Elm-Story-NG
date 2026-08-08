@@ -12,3 +12,68 @@
     padding-top: 0px;
   }
 }
+
+.triggersWrapper {
+  .propertySubPanel();
+  border-bottom: none;
+
+  .header {
+    .propertySubHeader();
+  }
+
+  .triggerCard {
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid hsl(0, 0%, 18%);
+    border-radius: 4px;
+  }
+
+  .triggerSubHeader {
+    margin: 4px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: hsl(0, 0%, 55%);
+  }
+
+  .triggerConditions {
+    margin-bottom: 8px;
+  }
+
+  .addConditionSelect {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .triggerHint,
+  .triggerSound {
+    margin-bottom: 8px;
+  }
+
+  .triggerSoundActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    :global(.ant-btn) {
+      padding: 0;
+      height: auto;
+    }
+  }
+
+  .triggerFireOnEntry {
+    display: block;
+    margin: 6px 0;
+    font-size: 12px;
+  }
+
+  .removeTrigger {
+    padding: 0;
+    height: auto;
+  }
+
+  .addTrigger {
+    padding: 0;
+    height: auto;
+  }
+}

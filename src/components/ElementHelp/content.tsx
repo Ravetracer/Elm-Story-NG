@@ -19,6 +19,7 @@ export type HelpTopic =
   | 'OVERVIEW_COMPOSER'
   | 'SCENE_MAP'
   | 'STORYWORLD_MAP'
+  | 'SCENE_TRIGGERS'
   | 'ASSET_MANAGER'
   | 'INTERFACE_TEXT'
   | 'EXPRESSIONS'
@@ -319,6 +320,41 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
       </>
     )
   },
+  SCENE_TRIGGERS: {
+    title: 'Scene triggers',
+    body: (
+      <>
+        <p>
+          A trigger plays a sound the moment a variable condition becomes true,
+          without the player choosing anything — so a counter reaching a value
+          can ring a phone, sound an alarm or chime a clock while the scene is on
+          screen.
+        </p>
+        <ul>
+          <li>
+            It fires on the <strong>rising edge</strong>: the sound plays once
+            when the condition first becomes true, then stays quiet while it
+            remains true.
+          </li>
+          <li>
+            It <strong>re-arms itself</strong> when the condition becomes false
+            again, so gating a trigger on <code>{'answered == false'}</code> lets
+            it ring again the next time it turns true — no reset needed.
+          </li>
+          <li>
+            Give it one or more conditions (all must match) and a sound. Add more
+            than one trigger to a scene to play different sounds on different
+            conditions.
+          </li>
+          <li>
+            <strong>Also fire on entry</strong> plays the sound when the player
+            walks into the scene with the condition already true, rather than only
+            when it changes while they are there.
+          </li>
+        </ul>
+      </>
+    )
+  },
   [ELEMENT_TYPE.EVENT]: {
     title: 'An event',
     body: (
@@ -580,6 +616,7 @@ export const HELP_GROUPS: { label: string; topics: HelpTopic[] }[] = [
     topics: [
       'SCENE_MAP',
       'STORYWORLD_MAP',
+      'SCENE_TRIGGERS',
       'ASSET_MANAGER',
       'INTERFACE_TEXT',
       'EXPRESSIONS'

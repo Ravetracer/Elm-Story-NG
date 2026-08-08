@@ -1,8 +1,9 @@
-# Scene triggers — spec (not yet built)
+# Scene triggers
 
-**Status: design.** Nothing in this document is implemented yet. It is the plan
-to review before any code is written, in the same spirit as `DESIGN.md`: decide
-the shape here, then build against it.
+**Status: built (needs live audio verification in a PWA export).** Authorable in
+the scene inspector; the engine evaluates and plays. This document is both the
+design rationale and the build record — see **Build progress** below for what
+each slice landed.
 
 ## What it is
 
@@ -268,8 +269,36 @@ only runs on a real transition, so a resume stays silent while the persisted
   pass. **No automated audio test — verify in a real PWA export (composer mutes by
   default and resolves URLs differently): the bell rings once on the edge, stays
   silent while held, rings again after a fall/rise, and a resume does not replay.**
-- **Then — the scene Triggers panel + help/docs** (the last slice; makes it
-  authorable and documents it for users).
+- **Slice 4 — authoring UI + help (done).** A **Triggers** panel in the scene
+  inspector (`ElementProperties/SceneProperties/SceneTriggers.tsx`), rendered
+  after Audio Profile. Each trigger card: condition rows reusing the
+  presentational `VariableRow` (`VARIABLE_ROW_TYPE.CONDITION`) plus an "Add
+  condition…" variable `Select`; a sound picker reusing the audio `AssetsModal`
+  (bare asset id, WorldCover pattern); an "also fire on entry" checkbox; remove.
+  The whole `Scene.triggers` array is read-modified-written through
+  `api().scenes.saveScene`, re-read fresh inside each save via a per-trigger
+  `mutate` so a debounced value edit cannot clobber a concurrent operator/entry
+  change on the same trigger. `useScene`'s live query re-renders the panel; no
+  `COMPOSER_ACTION_TYPE` dispatch (the outline tree is unchanged). AND-only in the
+  UI (`conditionsType` stays unset). `removeVariable` now cascades into scene
+  triggers (the fifth inline writer): it drops the variable's condition from every
+  trigger and drops a trigger left with no conditions. Help: a `SCENE_TRIGGERS`
+  topic in `ElementHelp/content.tsx` (+ `HELP_GROUPS`, + `REQUIRED_TOPICS` in the
+  test), surfaced by a `HelpButton` on the panel and rendered on the docs site
+  automatically. Full suite 389 tests pass; typecheck clean both projects.
+  **Author flow now works end to end; the only thing left is hearing it in a real
+  PWA export.**
+
+## Known follow-ups (not blocking)
+
+- **No inline sound preview in the panel** — the sound is chosen/cleared via the
+  asset modal (which previews there); the panel shows only Change/Clear. An
+  inline player could be added later.
+- **Template-expression variable autocomplete** is a separate, larger feature (a
+  variable picker inside `{ }` in the content editor, the inline-choice analog).
+  Tracked apart from triggers.
+- **AltGr `}` vs the `Ctrl+Alt+0` zoom accelerator** — see `dev-doc/keyboard.md`;
+  matters little because `{` auto-pairs the closing brace.
 
 ## Decisions (settled) and open implementation questions
 

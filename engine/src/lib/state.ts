@@ -192,8 +192,12 @@ export const collectTriggerSounds = (
   isSceneEntry: boolean
 ): ElementId[] =>
   triggers
-    .filter((trigger) =>
-      triggerFires(trigger, prevState, nextState, isSceneEntry)
+    .filter(
+      (trigger) =>
+        // A trigger with no sound chosen yet is skipped rather than played as an
+        // empty asset id — an in-progress trigger in the editor has no sound.
+        trigger.sound &&
+        triggerFires(trigger, prevState, nextState, isSceneEntry)
     )
     .map((trigger) => trigger.sound)
 

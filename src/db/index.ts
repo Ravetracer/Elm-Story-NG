@@ -2340,10 +2340,11 @@ export class LibraryDatabase extends Dexie {
       if (variable) {
         const { worldId } = variable
 
-        const [recipes, objects, relationships] = await Promise.all([
+        const [recipes, objects, relationships, scenes] = await Promise.all([
           this.recipes.where({ worldId }).toArray(),
           this.objects.where({ worldId }).toArray(),
-          this.characterRelationships.where({ worldId }).toArray()
+          this.characterRelationships.where({ worldId }).toArray(),
+          this.scenes.where({ worldId }).toArray()
         ])
 
         for (const recipe of recipes) {
@@ -2382,6 +2383,31 @@ export class LibraryDatabase extends Dexie {
               ...relationship,
               variableId: undefined
             })
+        }
+
+        // Scene triggers are a fifth inline writer of a variable id. Drop the
+        // variable's condition from every trigger, and drop a trigger whose
+        // conditions all named it — a trigger with no conditions never fires
+        // (it fails closed), so it would be a dead card. Same worldId-scoped
+        // pass as objects/recipes above.
+        for (const scene of scenes) {
+          if (!scene.id || !scene.triggers?.length) continue
+
+          let changed = false
+
+          const triggers = scene.triggers
+            .map((trigger) => {
+              const compare = trigger.compare.filter(
+                (condition) => condition[0] !== variableId
+              )
+
+              if (compare.length !== trigger.compare.length) changed = true
+
+              return { ...trigger, compare }
+            })
+            .filter((trigger) => trigger.compare.length > 0)
+
+          if (changed) await this.saveScene({ ...scene, triggers })
         }
       }
 

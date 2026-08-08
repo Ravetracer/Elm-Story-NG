@@ -40,6 +40,7 @@ const REQUIRED_TOPICS: HelpTopic[] = [
   // the scene map (reachable from the Help hub)
   'SCENE_MAP',
   'STORYWORLD_MAP',
+  'SCENE_TRIGGERS',
   'ASSET_MANAGER',
   'INTERFACE_TEXT',
   // export menu and import modal
