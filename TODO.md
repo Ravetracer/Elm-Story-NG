@@ -568,13 +568,19 @@ in `VariableManager/VariableHelp.tsx`, written against `lib/templates.ts` and he
 to it by `src/__tests__/variableHelpExamples.test.ts`. That sheet is also most of
 the expressions page below, so a site can lift it rather than start over.
 
-- [ ] Replace the remaining `ElementHelpButton` links with in-app help, or drop
-      the buttons. Element types still pointing at the dead domain: character,
-      choice, condition, effect, event, folder, input, jump, path, scene and the
-      world root, plus the JSON and PWA export entries in `ExportWorldMenu`.
-- [ ] Static documentation site
+- [x] Replace the dead `docs.elmstory.com` help links with in-app help. Every
+      `ElementHelpButton` (all element types), the JSON/PWA export entries in
+      `ExportWorldMenu`, `ImportJSONModal`, the `TitleBar` Help button (a
+      location-aware dashboard/composer overview) and `menu.ts`'s Help submenu now
+      open the `ElementHelp` modal — `components/ElementHelp/content.tsx` is the
+      single source of the copy, held by `src/__tests__/elementHelp.test.ts`.
+      Template-expression help stays in `VariableManager/VariableHelp.tsx`.
+- [ ] Static documentation site — can render `ElementHelp/content.tsx` and the
+      `VariableHelp` sheet rather than rewriting them, so the in-app help stays the
+      single source of truth.
 - [ ] A proper expressions page, including arithmetic, the method calls, and a
-      correction that `!=` is the inequality operator and `=/=` never was one
+      correction that `!=` is the inequality operator and `=/=` never was one —
+      the `VariableHelp` sheet is already most of it.
 
 ## 9. Inherited code TODOs
 

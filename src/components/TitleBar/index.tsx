@@ -25,6 +25,7 @@ import {
 } from '@ant-design/icons'
 
 import { ESGModal } from '../Modal'
+import { HelpModal } from '../ElementHelp'
 
 // An editable file rather than the inline component this replaced, so the mark
 // can be redrawn without touching code. See the notes inside it.
@@ -129,6 +130,7 @@ const TitleBar: React.FC = () => {
   const isFirstRun = useRef(true)
 
   const [esgModalVisible, setESGModalVisible] = useState(false),
+    [helpOpen, setHelpOpen] = useState(false),
     [appLocationTitle, setAppLocationTitle] = useState<
       'DASHBOARD' | 'COMPOSER'
     >('DASHBOARD')
@@ -154,26 +156,12 @@ const TitleBar: React.FC = () => {
         })
     },
     {
+      // The Help button opened docs.elmstory.com, which no longer resolves. It
+      // now opens the in-app overview for wherever the author is — the same
+      // content a docs site would carry, kept accurate against the code in
+      // ElementHelp/content.tsx.
       type: TITLE_BAR_BUTTON_TYPE.HELP,
-      onClick: () => {
-        let helpUrl
-
-        switch (app.location) {
-          case APP_LOCATION.DASHBOARD:
-            helpUrl =
-              'https://docs.elmstory.com/guides/production/dashboard/overview'
-            break
-          case APP_LOCATION.COMPOSER:
-            helpUrl =
-              'https://docs.elmstory.com/guides/production/composer/overview'
-            break
-          default:
-            helpUrl = 'https://docs.elmstory.com'
-            break
-        }
-
-        ipcRenderer.send(WINDOW_EVENT_TYPE.OPEN_EXTERNAL_LINK, [helpUrl])
-      }
+      onClick: () => setHelpOpen(true)
     },
     { type: TITLE_BAR_BUTTON_TYPE.UI_SCALE }
   ]
@@ -256,6 +244,18 @@ const TitleBar: React.FC = () => {
     )
   }, [])
 
+  // The native Help menu (rendered on macOS; the frameless window hides it
+  // elsewhere) opens the same in-app overview as the title bar's Help button.
+  useEffect(() => {
+    const onOpenHelp = () => setHelpOpen(true)
+
+    ipcRenderer.on(WINDOW_EVENT_TYPE.OPEN_HELP, onOpenHelp)
+
+    return () => {
+      ipcRenderer.removeListener(WINDOW_EVENT_TYPE.OPEN_HELP, onOpenHelp)
+    }
+  }, [])
+
   useEffect(() => {
     switch (pathname) {
       case APP_LOCATION.DASHBOARD:
@@ -284,6 +284,16 @@ const TitleBar: React.FC = () => {
       <ESGModal
         visible={esgModalVisible}
         onCancel={() => setESGModalVisible(false)}
+      />
+
+      <HelpModal
+        topic={
+          app.location === APP_LOCATION.COMPOSER
+            ? 'OVERVIEW_COMPOSER'
+            : 'OVERVIEW_DASHBOARD'
+        }
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
       />
 
       <div className={styles.titleBar}>

@@ -112,12 +112,24 @@ The same reasoning applies to `lib/saveStarterContent.ts`, whose generated
 storyworld shipped six dead `elmstory.com` links to every new author, and to the
 engine's `TitleCard` footer and console banner, which go out inside exported PWAs.
 
-**The dead links elsewhere are known and still there**: `ElementHelpButton`,
-`TitleBar`'s own Help button, `ExportWorldMenu`, `ImportJSONModal` and `menu.ts`'s
-Help submenu all still point at `docs.elmstory.com`. `VariableManager/VariableHelp.tsx`
-is the pattern for replacing one — an in-app sheet held to the real parser by
-`src/__tests__/variableHelpExamples.test.ts` — and it is the only accurate
-documentation in the product.
+**The `docs.elmstory.com` help links are gone — every one now opens in-app.**
+`ElementHelpButton`, `ExportWorldMenu` and `ImportJSONModal` route through the
+`ElementHelp` modal (`components/ElementHelp/content.tsx` is the one place the
+copy lives, `HELP_CONTENT` keyed by `HelpTopic`); `TitleBar`'s Help button opens a
+location-aware overview (`OVERVIEW_DASHBOARD` / `OVERVIEW_COMPOSER`); and
+`menu.ts`'s Help submenu is a single **Overview** item that sends
+`WINDOW_EVENT_TYPE.OPEN_HELP` to the renderer, which `TitleBar` listens for (the
+native menu is only rendered on macOS anyway). `src/__tests__/elementHelp.test.ts`
+holds every button-reachable topic to having a complete entry.
+
+`ElementHelp/content.tsx` is written against the code, not ported from the
+archived docs, and is the intended source for a future docs site — render the same
+entries rather than rewriting them. **Template-expression help is the exception**:
+it lives only in `VariableManager/VariableHelp.tsx`, held to the real parser by
+`src/__tests__/variableHelpExamples.test.ts`, and `content.tsx` points at it rather
+than duplicating it, so the two cannot drift. Together they are the only accurate
+documentation in the product. The `ElementHelp` help buttons for OBJECT and RECIPE
+are deliberately absent until those ship a UI.
 
 ## Authoring affordances that are easy to miss
 

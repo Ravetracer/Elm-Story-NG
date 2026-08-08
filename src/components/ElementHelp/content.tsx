@@ -15,6 +15,8 @@ import { ELEMENT_TYPE } from '../../data/types'
  */
 export type HelpTopic =
   | ELEMENT_TYPE
+  | 'OVERVIEW_DASHBOARD'
+  | 'OVERVIEW_COMPOSER'
   | 'EXPORT_JSON'
   | 'EXPORT_PWA'
   | 'IMPORT'
@@ -25,6 +27,102 @@ export interface HelpEntry {
 }
 
 export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
+  OVERVIEW_DASHBOARD: {
+    title: 'The dashboard',
+    body: (
+      <>
+        <p>
+          Where you pick a studio and open a storyworld. It is the first screen
+          the app opens on.
+        </p>
+        <ul>
+          <li>
+            A <strong>studio</strong> groups your storyworlds. Choose one from{' '}
+            <strong>Select studio…</strong> first — the storyworlds below belong
+            to it.
+          </li>
+          <li>
+            Click a storyworld to open it in the <strong>Composer</strong>, or
+            create a new one.
+          </li>
+          <li>
+            <strong>Import</strong> a storyworld from a <code>.json</code> export.
+            Its images and audio come from an <code>assets</code> folder beside
+            the file, so import through the picker rather than dragging the JSON
+            in alone.
+          </li>
+          <li>
+            Export a storyworld as JSON or as a playable web app (PWA) from its
+            menu.
+          </li>
+        </ul>
+      </>
+    )
+  },
+  OVERVIEW_COMPOSER: {
+    title: 'The composer',
+    body: (
+      <>
+        <p>
+          Where a storyworld is built. Four areas: the{' '}
+          <strong>storyworld outline</strong> on the left, the{' '}
+          <strong>editor</strong> in the middle, the{' '}
+          <strong>inspector</strong> on the right, and a live{' '}
+          <strong>Preview</strong> that plays what you have so far.
+        </p>
+        <h4>Outline</h4>
+        <p>
+          Folders hold scenes, scenes hold events. Click a scene to open its{' '}
+          <strong>scene map</strong>; click an event to edit its content. The
+          title bar above the outline opens the asset manager, the storyworld
+          map, the variable manager and interface text.
+        </p>
+        <h4>Scene map</h4>
+        <ul>
+          <li>
+            Nodes are events and jumps; lines are the <strong>paths</strong>{' '}
+            between them.
+          </li>
+          <li>
+            <strong>Cut, copy, paste, duplicate</strong> —{' '}
+            <code>Ctrl/Cmd+X/C/V/D</code>, or the toolbar.
+          </li>
+          <li>
+            <strong>Auto Layout</strong> arranges the whole scene;{' '}
+            <strong>Undo Auto Layout</strong> beside it reverts.
+          </li>
+        </ul>
+        <h4>Writing an event</h4>
+        <ul>
+          <li>
+            Type <code>/</code> for a menu — headings, lists, an image, a
+            character reference, an inline choice.
+          </li>
+          <li>
+            Type <code>{'{'}</code> for a template expression. The Variables tab&apos;s{' '}
+            <code>?</code> documents the expression language.
+          </li>
+        </ul>
+        <h4>Getting out of the way</h4>
+        <ul>
+          <li>
+            <strong>Distraction-free mode</strong> — <code>Ctrl/Cmd+Shift+F</code>{' '}
+            hides the panels around the writing column; <code>Escape</code> steps
+            back out.
+          </li>
+          <li>
+            <strong>UI size</strong> — the <code>Aa</code> button in the title
+            bar (or <code>Ctrl+Alt+</code> <code>+</code> / <code>-</code> /{' '}
+            <code>0</code>) scales the whole interface.
+          </li>
+        </ul>
+        <p>
+          The Preview reinstalls the storyworld each time it opens, so it always
+          reflects the current draft.
+        </p>
+      </>
+    )
+  },
   [ELEMENT_TYPE.WORLD]: {
     title: 'The storyworld',
     body: (

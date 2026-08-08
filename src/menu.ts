@@ -1,7 +1,6 @@
 import {
   app,
   Menu,
-  shell,
   BrowserWindow,
   MenuItemConstructorOptions,
   WebContents
@@ -195,22 +194,13 @@ export default class MenuBuilder {
       label: 'Help',
       submenu: [
         {
-          label: 'Learn More',
-          click() {
-            shell.openExternal('https://elmstorygames.itch.io/elm-story/')
-          }
-        },
-        {
-          label: 'Help',
-          click() {
-            shell.openExternal('https://elmstory.com/help/')
-          }
-        },
-        {
-          label: 'Community',
-          click() {
-            shell.openExternal('https://elmstory.com/community/')
-          }
+          // Opens the in-app overview, replacing the dead elmstory.com "Help"
+          // and "Community" links. Same reasoning as ESGModal: a link to a page
+          // the maintainers do not run is worse than none, and the help lives in
+          // the app now (ElementHelp).
+          label: 'Overview',
+          click: () =>
+            this.mainWindow.webContents.send(WINDOW_EVENT_TYPE.OPEN_HELP)
         }
       ]
     }
@@ -341,22 +331,10 @@ export default class MenuBuilder {
         label: 'Help',
         submenu: [
           {
-            label: 'Learn More',
-            click() {
-              shell.openExternal('https://elmstorygames.itch.io/elm-story/')
-            }
-          },
-          {
-            label: 'Help',
-            click() {
-              shell.openExternal('https://elmstory.com/help/')
-            }
-          },
-          {
-            label: 'Community',
-            click() {
-              shell.openExternal('https://elmstory.com/community/')
-            }
+            // See the note on the Darwin template's Help menu above.
+            label: 'Overview',
+            click: () =>
+              this.mainWindow.webContents.send(WINDOW_EVENT_TYPE.OPEN_HELP)
           }
         ]
       }
