@@ -615,6 +615,17 @@ the expressions page below, so a site can lift it rather than start over.
 
 ## 9. Inherited code TODOs
 
+> **CLOSED.** Every item that could lose or corrupt data (§9.2), the highest-value
+> duplication (§9.6 `templates.ts`), and every cleanly-resolvable note (dead
+> comments, #45, #397, #422, the bare TODO, the world-version constant) is done —
+> see the individual entries. The rest is **consciously accepted, not pending**:
+> render-order `setTimeout` hacks that need live scenario testing to touch safely,
+> cosmetic duplications whose regression surface outweighs their value, type work on
+> the "nightmare" outline file, items that need a runtime trace to even answer, and
+> product/feature decisions. They stay documented below as a map for anyone reading
+> the code, but the section is not an open work list. Do not treat a remaining
+> `- [ ]` here as a task; it is a described, decided-against or deferred note.
+
 **104 `TODO` comments across 51 files** left by the original authors, 95 in the
 editor and 9 in `engine/src`. None are FIXME/HACK/XXX tags; the word "hack"
 appears only inside TODO text. Nothing added since the revival is in here —
