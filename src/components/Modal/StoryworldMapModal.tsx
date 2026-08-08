@@ -7,6 +7,8 @@ import { NodeIndexOutlined } from '@ant-design/icons'
 
 import StoryworldMap from '../StoryworldMap'
 
+import { HelpButton } from '../ElementHelp'
+
 import styles from './styles.module.less'
 
 interface StoryworldMapModalProps extends ModalProps {
@@ -27,10 +29,13 @@ const StoryworldMapModal: React.FC<StoryworldMapModalProps> = ({
 }) => (
   <Modal
     title={
-      <>
-        <NodeIndexOutlined className={styles.icon} /> Storyworld Map
-        {subject ? ` — ${subject}` : ''}
-      </>
+      <span className={styles.modalTitleWithHelp}>
+        <span>
+          <NodeIndexOutlined className={styles.icon} /> Storyworld Map
+          {subject ? ` — ${subject}` : ''}
+        </span>
+        <HelpButton topic="STORYWORLD_MAP" />
+      </span>
     }
     visible={visible}
     // the map lays itself out on mount rather than remembering positions, so

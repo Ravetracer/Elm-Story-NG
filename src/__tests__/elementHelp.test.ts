@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { ELEMENT_TYPE } from '../data/types'
 
-import { HELP_CONTENT, HelpTopic } from '../components/ElementHelp/content'
+import {
+  HELP_CONTENT,
+  HELP_GROUPS,
+  HelpTopic
+} from '../components/ElementHelp/content'
 
 /**
  * The in-app help modal (`ElementHelp`) replaced the dead docs.elmstory.com
@@ -32,6 +36,12 @@ const REQUIRED_TOPICS: HelpTopic[] = [
   // title-bar Help button and the native Help menu
   'OVERVIEW_DASHBOARD',
   'OVERVIEW_COMPOSER',
+  // per-tool `?` buttons (asset manager, storyworld map, interface text) and
+  // the scene map (reachable from the Help hub)
+  'SCENE_MAP',
+  'STORYWORLD_MAP',
+  'ASSET_MANAGER',
+  'INTERFACE_TEXT',
   // export menu and import modal
   'EXPORT_JSON',
   'EXPORT_PWA',
@@ -46,5 +56,20 @@ describe('in-app help content', () => {
     expect(typeof entry?.title).toBe('string')
     expect(entry?.title.length).toBeGreaterThan(0)
     expect(entry?.body).toBeTruthy()
+  })
+
+  // The Help hub renders every topic in its nav. Each must resolve to something:
+  // a HELP_CONTENT entry, or EXPRESSIONS, which the hub renders from the shared
+  // VariableManager reference instead (so it has no HELP_CONTENT entry by design).
+  it('resolves every topic listed in the Help hub navigation', () => {
+    for (const group of HELP_GROUPS) {
+      expect(group.topics.length, `empty help group "${group.label}"`).toBeGreaterThan(0)
+
+      for (const topic of group.topics) {
+        const resolvable = topic === 'EXPRESSIONS' || Boolean(HELP_CONTENT[topic])
+
+        expect(resolvable, `Help hub topic "${topic}" has no content`).toBe(true)
+      }
+    }
   })
 })

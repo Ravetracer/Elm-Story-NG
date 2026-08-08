@@ -25,7 +25,7 @@ import {
 } from '@ant-design/icons'
 
 import { ESGModal } from '../Modal'
-import { HelpModal } from '../ElementHelp'
+import { HelpHub } from '../ElementHelp'
 
 // An editable file rather than the inline component this replaced, so the mark
 // can be redrawn without touching code. See the notes inside it.
@@ -286,8 +286,8 @@ const TitleBar: React.FC = () => {
         onCancel={() => setESGModalVisible(false)}
       />
 
-      <HelpModal
-        topic={
+      <HelpHub
+        initialTopic={
           app.location === APP_LOCATION.COMPOSER
             ? 'OVERVIEW_COMPOSER'
             : 'OVERVIEW_DASHBOARD'

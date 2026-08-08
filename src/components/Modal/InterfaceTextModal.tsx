@@ -7,6 +7,8 @@ import { TranslationOutlined } from '@ant-design/icons'
 
 import InterfaceTextManager from '../InterfaceTextManager'
 
+import { HelpButton } from '../ElementHelp'
+
 import styles from './styles.module.less'
 
 interface InterfaceTextModalProps extends ModalProps {
@@ -26,10 +28,13 @@ const InterfaceTextModal: React.FC<InterfaceTextModalProps> = ({
 }) => (
   <Modal
     title={
-      <>
-        <TranslationOutlined className={styles.icon} /> Interface Text
-        {subject ? ` — ${subject}` : ''}
-      </>
+      <span className={styles.modalTitleWithHelp}>
+        <span>
+          <TranslationOutlined className={styles.icon} /> Interface Text
+          {subject ? ` — ${subject}` : ''}
+        </span>
+        <HelpButton topic="INTERFACE_TEXT" />
+      </span>
     }
     visible={visible}
     // The draft is per opening. Closing without saving discards it, which is what

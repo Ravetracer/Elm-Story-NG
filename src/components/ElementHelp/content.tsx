@@ -17,6 +17,11 @@ export type HelpTopic =
   | ELEMENT_TYPE
   | 'OVERVIEW_DASHBOARD'
   | 'OVERVIEW_COMPOSER'
+  | 'SCENE_MAP'
+  | 'STORYWORLD_MAP'
+  | 'ASSET_MANAGER'
+  | 'INTERFACE_TEXT'
+  | 'EXPRESSIONS'
   | 'EXPORT_JSON'
   | 'EXPORT_PWA'
   | 'IMPORT'
@@ -120,6 +125,116 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
           The Preview reinstalls the storyworld each time it opens, so it always
           reflects the current draft.
         </p>
+      </>
+    )
+  },
+  SCENE_MAP: {
+    title: 'The scene map',
+    body: (
+      <>
+        <p>
+          The canvas for one scene. Nodes are its events and jumps; the lines
+          between them are <strong>paths</strong>.
+        </p>
+        <ul>
+          <li>
+            Drag from a node&apos;s right edge to another node to draw a path;
+            drag onto empty canvas to make a new event already joined to it.
+          </li>
+          <li>
+            <strong>Cut, copy, paste, duplicate</strong> events, jumps and the
+            paths between them — <code>Ctrl/Cmd+X/C/V/D</code>, or the toolbar. A
+            path only travels if both of its ends are in the selection.
+          </li>
+          <li>
+            <strong>Auto Layout</strong> arranges the whole scene;{' '}
+            <strong>Undo Auto Layout</strong> beside it puts it back.
+          </li>
+          <li>
+            A path never leaves the scene — only a <strong>jump</strong> crosses
+            into another scene.
+          </li>
+        </ul>
+      </>
+    )
+  },
+  STORYWORLD_MAP: {
+    title: 'The storyworld map',
+    body: (
+      <>
+        <p>
+          A map of the whole storyworld: every scene as a node, the jumps between
+          them as edges. Click a scene to open it.
+        </p>
+        <ul>
+          <li>
+            The graph is worked out from the jumps, not stored, and laid out
+            fresh each time — so it always matches the storyworld.
+          </li>
+          <li>
+            A scene with no jump leading into it is flagged as having{' '}
+            <strong>no way in</strong>; the storyworld&apos;s opening jump marks
+            where play begins.
+          </li>
+          <li>A jump with no destination leads nowhere and is not drawn.</li>
+        </ul>
+      </>
+    )
+  },
+  ASSET_MANAGER: {
+    title: 'The asset manager',
+    body: (
+      <>
+        <p>
+          Lists every image and audio file the storyworld uses, and lets you
+          import, assign and remove them.
+        </p>
+        <ul>
+          <li>
+            Kinds are fixed by where they are used: character mask, event image,
+            event and scene audio, and the storyworld cover and background. An
+            import asks which kind, because nothing on disk says.
+          </li>
+          <li>
+            Opened from a <strong>Choose</strong> — a mask, an event&apos;s image,
+            an audio profile — it filters to that one kind and assigns what you
+            pick.
+          </li>
+          <li>
+            Removing an asset sends it to the trash, so it can be restored.
+          </li>
+          <li>
+            An asset used inside an event&apos;s content cannot be removed here —
+            delete the image from the event instead, then it can be trashed.
+          </li>
+        </ul>
+      </>
+    )
+  },
+  INTERFACE_TEXT: {
+    title: 'Interface text',
+    body: (
+      <>
+        <p>
+          Every word the storyteller says that you did not write — the object
+          rail&apos;s <em>Take</em>, the choice modal&apos;s <em>Choose</em>, the
+          settings labels, and the rest.
+        </p>
+        <ul>
+          <li>
+            Override any of them with your own wording — to change a phrase or to
+            translate the whole interface.
+          </li>
+          <li>
+            A field left blank uses the default English, so you only fill in what
+            you want to change.
+          </li>
+          <li>
+            It is per storyworld and there is no language switch — the prose{' '}
+            <em>is</em> the storyworld, so a second language is a second
+            storyworld.
+          </li>
+        </ul>
       </>
     )
   },
@@ -424,3 +539,55 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
     )
   }
 }
+
+/**
+ * The Help hub's navigation — ordered groups of topics, browsed from the title
+ * bar's Help button. `EXPRESSIONS` has no `HELP_CONTENT` entry: the hub renders
+ * the shared reference from `VariableManager/VariableHelp.tsx` for it, so the
+ * expression documentation is not duplicated. It therefore carries its own nav
+ * label here.
+ */
+export const EXPRESSIONS_TITLE = 'Variables & expressions'
+
+export const HELP_GROUPS: { label: string; topics: HelpTopic[] }[] = [
+  {
+    label: 'Getting started',
+    topics: ['OVERVIEW_DASHBOARD', 'OVERVIEW_COMPOSER']
+  },
+  {
+    label: 'Tools',
+    topics: [
+      'SCENE_MAP',
+      'STORYWORLD_MAP',
+      'ASSET_MANAGER',
+      'INTERFACE_TEXT',
+      'EXPRESSIONS'
+    ]
+  },
+  {
+    label: 'Elements',
+    topics: [
+      ELEMENT_TYPE.WORLD,
+      ELEMENT_TYPE.FOLDER,
+      ELEMENT_TYPE.SCENE,
+      ELEMENT_TYPE.EVENT,
+      ELEMENT_TYPE.CHOICE,
+      ELEMENT_TYPE.PATH,
+      ELEMENT_TYPE.JUMP,
+      ELEMENT_TYPE.INPUT,
+      ELEMENT_TYPE.CONDITION,
+      ELEMENT_TYPE.EFFECT,
+      ELEMENT_TYPE.CHARACTER
+    ]
+  },
+  {
+    label: 'Import & export',
+    topics: ['IMPORT', 'EXPORT_JSON', 'EXPORT_PWA']
+  }
+]
+
+/** The nav/heading label for a topic — its entry title, or the expressions title. */
+export const helpTopicTitle = (topic: HelpTopic): string =>
+  topic === 'EXPRESSIONS'
+    ? EXPRESSIONS_TITLE
+    : HELP_CONTENT[topic]?.title ?? String(topic)

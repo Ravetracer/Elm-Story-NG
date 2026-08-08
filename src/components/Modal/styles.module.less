@@ -1,5 +1,14 @@
 @import '../../styles/variables';
 
+// A modal title with a help `?` at the far right. The label sits left, the
+// button right, clear of antd's own close button in the corner.
+.modalTitleWithHelp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 24px;
+}
+
 .modal {
   z-index: @modal-z-index;
   background: @glass-opacity;

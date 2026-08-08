@@ -570,14 +570,30 @@ the expressions page below, so a site can lift it rather than start over.
 
 - [x] Replace the dead `docs.elmstory.com` help links with in-app help. Every
       `ElementHelpButton` (all element types), the JSON/PWA export entries in
-      `ExportWorldMenu`, `ImportJSONModal`, the `TitleBar` Help button (a
-      location-aware dashboard/composer overview) and `menu.ts`'s Help submenu now
-      open the `ElementHelp` modal — `components/ElementHelp/content.tsx` is the
-      single source of the copy, held by `src/__tests__/elementHelp.test.ts`.
-      Template-expression help stays in `VariableManager/VariableHelp.tsx`.
-- [ ] Static documentation site — can render `ElementHelp/content.tsx` and the
-      `VariableHelp` sheet rather than rewriting them, so the in-app help stays the
-      single source of truth.
+      `ExportWorldMenu`, `ImportJSONModal`, the `TitleBar` Help button and
+      `menu.ts`'s Help submenu now open the `ElementHelp` help —
+      `components/ElementHelp/content.tsx` is the single source of the copy, held
+      by `src/__tests__/elementHelp.test.ts`. Template-expression help stays in
+      `VariableManager/VariableHelp.tsx`.
+- [x] In-app help expanded toward being the whole documentation, so the site
+      below is a rendering job rather than a rewrite:
+      - A browsable **Help hub** (`ElementHelp`'s `HelpHub`), opened from the
+        `TitleBar` Help button and the native Help menu — every topic grouped in
+        one place. `HELP_GROUPS` drives its nav.
+      - Per-tool `?` buttons on the asset manager, storyworld map and interface
+        text modals (`SCENE_MAP`/`STORYWORLD_MAP`/`ASSET_MANAGER`/`INTERFACE_TEXT`
+        topics), matching the variable manager's existing sheet.
+      - Overviews of the dashboard and the composer, the latter covering the
+        scene-map clipboard/auto-layout, the `/` and `{` triggers, distraction-free
+        mode and the UI-size shortcuts.
+      - A content-editor placeholder naming the `/` and `{` triggers — previously
+        the only cue for either was the archived docs.
+      - `VariableHelp` was split into a reusable `VariableHelpContent`, rendered
+        for the hub's Expressions topic, so the expression reference is still one
+        source held by `variableHelpExamples.test.ts`.
+- [ ] Static documentation site — can render `ElementHelp/content.tsx`,
+      `HELP_GROUPS` and the `VariableHelpContent` sheet rather than rewriting them,
+      so the in-app help stays the single source of truth.
 - [ ] A proper expressions page, including arithmetic, the method calls, and a
       correction that `!=` is the inequality operator and `=/=` never was one —
       the `VariableHelp` sheet is already most of it.

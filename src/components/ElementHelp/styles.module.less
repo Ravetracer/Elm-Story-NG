@@ -12,6 +12,76 @@
   }
 }
 
+// The Help hub: a grouped topic list on the left, the selected topic on the
+// right. The body reuses .helpBody below (and VariableManager's, for the shared
+// expression reference), so every topic reads as one voice.
+.helpHub {
+  :global .ant-modal-body {
+    padding: 0;
+  }
+}
+
+.hubLayout {
+  display: flex;
+  min-height: 440px;
+  max-height: 70vh;
+}
+
+.hubNav {
+  flex: 0 0 200px;
+  border-right: 1px solid hsl(0, 0%, 16%);
+  padding: 14px 8px;
+  overflow-y: auto;
+}
+
+.hubGroup {
+  margin-bottom: 14px;
+}
+
+.hubGroupLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(0, 0%, 45%);
+  padding: 0 8px 5px;
+}
+
+.hubTopic,
+.hubTopicActive {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: hsl(0, 0%, 68%);
+  padding: 4px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+
+  &:hover {
+    color: hsl(0, 0%, 90%);
+    background: hsl(0, 0%, 12%);
+  }
+}
+
+.hubTopicActive {
+  color: var(--highlight-color);
+  background: hsl(0, 0%, 12%);
+}
+
+.hubContent {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.hubTitle {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: hsl(0, 0%, 90%);
+}
+
 // The modal body. Mirrors VariableManager's help so the two read as one voice.
 .helpBody {
   font-size: 13px;

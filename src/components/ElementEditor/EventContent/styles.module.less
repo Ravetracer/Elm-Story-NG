@@ -107,6 +107,14 @@
       height: 100%;
       padding-top: 14px;
 
+      // Slate's empty-event placeholder — the only visible cue for the `/` and
+      // `{` triggers. Kept subtle so it reads as a hint, not as prose.
+      :global [data-slate-placeholder='true'] {
+        color: hsl(0, 0%, 55%);
+        opacity: 1 !important;
+        font-style: italic;
+      }
+
       .DraggableWrapper {
         &:hover .dragHandle {
           opacity: 1;

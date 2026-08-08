@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { Modal } from 'antd'
 import { QuestionCircleFilled } from '@ant-design/icons'
 
-import { HELP_CONTENT, HelpTopic } from './content'
+import { HELP_CONTENT, HELP_GROUPS, HelpTopic, helpTopicTitle } from './content'
+
+import { VariableHelpContent } from '../VariableManager/VariableHelp'
 
 import styles from './styles.module.less'
 
@@ -77,3 +79,81 @@ export const HelpButton: React.FC<{
 }
 
 HelpButton.displayName = 'HelpButton'
+
+/** The body of a hub topic: the shared expression reference, or a content entry. */
+const HubTopicBody: React.FC<{ topic: HelpTopic }> = ({ topic }) => {
+  if (topic === 'EXPRESSIONS') return <VariableHelpContent />
+
+  const entry = HELP_CONTENT[topic]
+
+  if (!entry) return null
+
+  return <div className={styles.helpBody}>{entry.body}</div>
+}
+
+/**
+ * The browsable Help hub, opened from the title bar's Help button and the native
+ * Help menu. A grouped list of every topic on the left, the selected one on the
+ * right. Single-topic `?` buttons still open `HelpModal` directly; this is the
+ * "all the help in one place" entry, and the intended source for a docs site.
+ */
+export const HelpHub: React.FC<{
+  open: boolean
+  initialTopic: HelpTopic
+  onClose: () => void
+}> = ({ open, initialTopic, onClose }) => {
+  const [topic, setTopic] = useState<HelpTopic>(initialTopic)
+
+  // Reopening from a different location (dashboard vs composer) starts on that
+  // location's overview rather than wherever the hub was last left.
+  useEffect(() => {
+    if (open) setTopic(initialTopic)
+  }, [open, initialTopic])
+
+  return (
+    <Modal
+      title="Help"
+      open={open}
+      footer={null}
+      onCancel={(event) => {
+        event.stopPropagation()
+
+        onClose()
+      }}
+      destroyOnClose
+      width={780}
+      className={styles.helpHub}
+    >
+      <div className={styles.hubLayout}>
+        <nav className={styles.hubNav}>
+          {HELP_GROUPS.map((group) => (
+            <div key={group.label} className={styles.hubGroup}>
+              <div className={styles.hubGroupLabel}>{group.label}</div>
+
+              {group.topics.map((groupTopic) => (
+                <button
+                  key={groupTopic}
+                  type="button"
+                  className={
+                    groupTopic === topic ? styles.hubTopicActive : styles.hubTopic
+                  }
+                  onClick={() => setTopic(groupTopic)}
+                >
+                  {helpTopicTitle(groupTopic)}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className={styles.hubContent}>
+          <h3 className={styles.hubTitle}>{helpTopicTitle(topic)}</h3>
+
+          <HubTopicBody topic={topic} />
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+HelpHub.displayName = 'HelpHub'

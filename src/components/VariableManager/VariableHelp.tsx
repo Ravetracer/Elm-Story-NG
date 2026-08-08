@@ -24,17 +24,13 @@ const Example: React.FC<{ code: string; note: string }> = ({ code, note }) => (
   </div>
 )
 
-const VariableHelp: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-  <div className={styles.VariableHelp}>
-    <div className={styles.helpHeader}>
-      <h3>Using variables</h3>
-
-      <Button size="small" type="text" onClick={onClose}>
-        <CloseOutlined />
-      </Button>
-    </div>
-
-    <div className={styles.helpBody}>
+/**
+ * The variable and expression reference itself, without the panel header. Shared
+ * by the inline sheet below and the Help hub (`ElementHelp`), so the expression
+ * documentation lives in exactly one place — see the module note above.
+ */
+export const VariableHelpContent: React.FC = () => (
+  <div className={styles.helpBody}>
       <p>
         A variable belongs to the storyworld and holds one value while it is being
         played. Every value is stored as text, whatever the declared type, so a
@@ -152,6 +148,25 @@ const VariableHelp: React.FC<{ onClose: () => void }> = ({ onClose }) => (
         </li>
       </ul>
     </div>
+)
+
+VariableHelpContent.displayName = 'VariableHelpContent'
+
+/**
+ * The inline sheet shown in the Variable Manager: the reference above, under a
+ * header with a close button.
+ */
+const VariableHelp: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+  <div className={styles.VariableHelp}>
+    <div className={styles.helpHeader}>
+      <h3>Using variables</h3>
+
+      <Button size="small" type="text" onClick={onClose}>
+        <CloseOutlined />
+      </Button>
+    </div>
+
+    <VariableHelpContent />
   </div>
 )
 

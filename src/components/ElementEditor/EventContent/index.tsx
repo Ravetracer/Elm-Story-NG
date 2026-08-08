@@ -983,6 +983,9 @@ const EventContent: React.FC<{
               >
                 <Editable
                   className={styles.editable}
+                  // The two trigger characters have no other visible cue; the
+                  // empty-event placeholder is where a new author sees them.
+                  placeholder="Type / for commands, or { to insert a variable…"
                   renderElement={renderElement}
                   renderLeaf={renderLeaf}
                   decorate={decorate}

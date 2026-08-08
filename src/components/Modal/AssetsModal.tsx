@@ -8,6 +8,8 @@ import { PictureOutlined } from '@ant-design/icons'
 import AssetManager from '../AssetManager'
 import { ASSET_KIND, ASSET_KINDS } from '../../lib/assets'
 
+import { HelpButton } from '../ElementHelp'
+
 import styles from './styles.module.less'
 
 interface AssetsModalProps extends ModalProps {
@@ -39,11 +41,14 @@ const AssetsModal: React.FC<AssetsModalProps> = ({
 }) => (
   <Modal
     title={
-      <>
-        <PictureOutlined className={styles.icon} />{' '}
-        {selectKind ? `Choose ${ASSET_KINDS[selectKind].label}` : 'Assets'}
-        {subject ? ` — ${subject}` : ''}
-      </>
+      <span className={styles.modalTitleWithHelp}>
+        <span>
+          <PictureOutlined className={styles.icon} />{' '}
+          {selectKind ? `Choose ${ASSET_KINDS[selectKind].label}` : 'Assets'}
+          {subject ? ` — ${subject}` : ''}
+        </span>
+        <HelpButton topic="ASSET_MANAGER" />
+      </span>
     }
     visible={visible}
     destroyOnClose
