@@ -997,14 +997,18 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       compiled pixels — which is precisely what `CLAUDE.md` records a `--ui-scale`
       custom property could *not* do, so the browser gets the thing the desktop
       build could not have.
-      - **One trap surfaced and is fixed:** CSS `zoom` breaks antd's dom-align
-        popup positioning (it writes layout-space `left/top` against zoom-scaled
-        rects), so at a non-default UI size the UI Size dropdown landed off-screen
-        and never reappeared — and no `getPopupContainer` fixes it (verified live).
-        The title bar's UI Size control is now a **CSS-positioned popover**, not an
-        antd `Dropdown`, so it is immune. Other antd popups in the composer share
-        the underlying limitation at non-default sizes in the browser; not yet hit,
-        left for if/when it bites.
+      - **The scaling mechanism is `transform: scale()`, not CSS `zoom`.** CSS
+        `zoom` breaks antd's dom-align popup positioning (it writes layout-space
+        `left/top` against zoom-scaled rects), so at a non-default UI size *every*
+        dropdown/select landed off-screen — and no `getPopupContainer` fixes it
+        (verified live). antd's dom-align *does* understand a transformed ancestor,
+        so the browser's `webFrame.setZoomFactor` stand-in scales `#root` with
+        `transform: scale()` instead. Popups portal to `<body>` (outside the scaled
+        `#root`), so they are positioned correctly at 1:1 and scaled in place by a
+        small injected stylesheet; modals stay at base size. react-flow drags 1:1
+        under the transform (measured). The UI Size control is also a CSS-positioned
+        popover rather than an antd `Dropdown`. All verified live at Largest on the
+        dashboard and in the composer. See `dev-doc/browser-build.md`.
 - [x] **Storage durability.** Origin storage is *evicted* (Safari ~7 idle days,
       Chromium under pressure), so a half-written novel can vanish. Two defences, in
       `src/lib/storageDurability.ts` (pure helpers tested by

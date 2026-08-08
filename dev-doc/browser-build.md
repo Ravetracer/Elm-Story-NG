@@ -147,23 +147,41 @@ maintainer's final live check.
   Electron window and do nothing in a browser tab, which has its own controls. The
   web build keeps UI Size and Help. (No native menu to drop: Electron's `Menu` is
   never created in the browser adapter.)
-- **CSS `zoom` breaks antd popup positioning — the UI Size menu is now a CSS
-  popover.** The web build scales the UI with CSS `zoom` on the document root
-  (`webFrame.setZoomFactor`'s browser stand-in). antd popups portal to
-  `document.body` and are placed by `dom-align`, which writes layout-space
-  `left/top` while reading zoom-scaled `getBoundingClientRect` values — so at a
-  non-default UI size the menu lands off-screen (measured: menu at x≈1560 in a
-  913-wide layout viewport at zoom 1.5). **No `getPopupContainer` fixes it** —
-  `document.body` (the default), the trigger's `parentElement`, and `#root` were
-  all verified off-screen live. Because the UI Size menu is our own chrome, it is
-  now a plain absolutely-positioned popover (`.uiScalePopover`, closed on
-  outside-click/Escape), which stays in one coordinate space and is immune. Verified
-  live at Large/Largest/Huge: opens on-screen under the button, applies + closes on
-  select, reopens correctly, resets to Default.
-  - **Known limitation:** other antd popups (tooltips, selects, the composer's
-    dropdowns) share the underlying dom-align/zoom mismatch at non-default UI sizes
-    in the browser. Not yet hit in practice; if it bites, the options are a
-    browser-only global mitigation or replacing the offending controls' positioning.
+- **UI scaling uses `transform: scale()`, NOT CSS `zoom`.** This is the crux and
+  was found empirically. antd positions every popup with `dom-align`, which
+  **understands a transformed ancestor but has no handling for CSS `zoom`** — under
+  `zoom` it writes layout-space `left/top` against zoom-scaled rects and every
+  dropdown/select lands off-screen (measured: the studio Select dropdown at x≈918 in
+  a 913-wide viewport at zoom 1.5; no `getPopupContainer` — body, parentElement,
+  `#root` — fixes it). Switching the browser's `webFrame.setZoomFactor` stand-in to
+  `transform: scale(factor)` on `#root` fixed it: the same dropdown then landed
+  right under its selector. The UI Size control's own CSS popover (below) predates
+  this and still works; it did not need reverting.
+  - **`#root` setup (in `electronBrowser.ts`'s `webFrame`):** while scaled, `#root`
+    is `position: fixed; top/left: 0` (the global `div { position: relative }` rule
+    otherwise leaves it offset in flow, and since it is the containing block for the
+    fixed title bar and durability banner, that offset pushed both off their edges),
+    `transform-origin: top left`, `width/height: calc(100vw|100vh / factor)` so it
+    fills the viewport once scaled, and html/body `overflow: hidden` while scaled.
+  - **Popups render at 1:1 in `<body>` (outside the scaled `#root`), so they are
+    scaled in place.** dom-align only positions correctly when the popup's
+    offsetParent is *unscaled* (verified: scaling `body` instead of `#root`
+    mis-aligned everything). So popups stay in body — positioned correctly — and a
+    small injected stylesheet (`#esg-popup-scale`) scales them from their top-left
+    corner via `transform: scale(var(--esg-ui-scale)) !important`, matching the app
+    size while keeping dom-align's placement. `--esg-ui-scale` is set on the (unscaled)
+    document root. `!important` beats antd's inline animation transform. Modals are
+    deliberately excluded (they are centred; a corner-anchored scale would shift
+    them), so they render at base size — the one visible inconsistency.
+  - **react-flow is fine under the transform** (the real worry): measured live, a
+    150px node drag at scale 1.5 moved the node 156 visual px — 1:1 with the cursor,
+    not amplified. Nodes render, hit-test and drag correctly.
+  - Verified live at Largest: dashboard (studio Select aligned + scaled, title bar
+    at top, banner at the viewport bottom, no scrollbar) and composer (three-panel
+    rc-dock layout scaled, scene map nodes render + drag correctly).
+- **The UI Size menu is a CSS popover, not an antd Dropdown** (`.uiScalePopover`,
+  closed on outside-click/Escape). It is our own chrome and positions with plain
+  CSS, so it was immune to the popup bug even before the transform switch.
 
 ## Remaining §10 work (as of 2026-08-08, v0.54.0)
 

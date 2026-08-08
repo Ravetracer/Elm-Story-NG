@@ -632,21 +632,85 @@ const shell = {
   openPath: async () => ''
 }
 
-const webFrame = {
-  // CSS zoom on the document root scales antd's compiled pixels, which a custom
-  // property could not — the browser gets what the desktop build could not have.
-  setZoomFactor: (factor: number) => {
-    ;(document.documentElement.style as CSSStyleDeclaration & {
-      zoom?: string
-    }).zoom = String(factor)
-  },
-  getZoomFactor: () => {
-    const zoom = (document.documentElement.style as CSSStyleDeclaration & {
-      zoom?: string
-    }).zoom
+// The browser stand-in for webFrame.setZoomFactor (the desktop's native page
+// zoom). It scales the whole app with `transform: scale()` on #root rather than
+// CSS `zoom`, and the difference is load-bearing: antd positions every popup
+// (dropdowns, selects, tooltips) with dom-align, which understands a *transformed*
+// ancestor but has no handling for `zoom` — under `zoom` it writes layout-space
+// left/top against zoom-scaled rects and lands the menu off-screen, so at a
+// non-default UI size no dropdown could be opened. Popups portal to <body>,
+// outside the scaled #root, so dom-align positions them correctly at 1:1; they
+// render unscaled, which is the accepted trade for having them work at all.
+//
+// #root is sized to the inverse of the factor so that, once scaled, it fills the
+// viewport exactly; html/body overflow is clipped while scaled because the
+// unscaled box can momentarily exceed the viewport.
+let webZoomFactor = 1
 
-    return zoom ? Number(zoom) : 1
-  }
+// antd popups (dropdowns, selects, tooltips, popovers, menus) portal to <body>,
+// which is outside the scaled #root, so they are positioned correctly by
+// dom-align but render at 1:1. Scaling them in place from their positioned
+// top-left corner — the corner dom-align pinned — keeps them aligned to their
+// trigger while matching the app's size. `!important` beats antd's inline
+// animation transform, which would otherwise fight it. Injected once, driven by
+// the --esg-ui-scale custom property set below. Modals are intentionally excluded
+// (they are centred, and scaling from a corner would shift them off-centre).
+const POPUP_SELECTORS = [
+  '.ant-dropdown',
+  '.ant-select-dropdown',
+  '.ant-picker-dropdown',
+  '.ant-cascader-dropdown',
+  '.ant-mentions-dropdown',
+  '.ant-tooltip',
+  '.ant-popover',
+  '.ant-menu-submenu-popup'
+]
+
+const ensurePopupScaleStyle = () => {
+  if (!document.head || document.getElementById('esg-popup-scale')) return
+
+  const style = document.createElement('style')
+
+  style.id = 'esg-popup-scale'
+  style.textContent = `${POPUP_SELECTORS.join(',')}{transform:scale(var(--esg-ui-scale,1)) !important;transform-origin:top left !important;}`
+
+  document.head.appendChild(style)
+}
+
+const webFrame = {
+  setZoomFactor: (factor: number) => {
+    webZoomFactor = factor
+
+    ensurePopupScaleStyle()
+    // read by the popup-scaling stylesheet; on document root, which is *not*
+    // transformed, so body-portalled popups can see it
+    document.documentElement.style.setProperty('--esg-ui-scale', String(factor))
+
+    const root = document.getElementById('root')
+
+    if (!root) return
+
+    const scaled = factor !== 1
+
+    // Pin #root to the viewport origin while scaled. The global `div { position:
+    // relative }` rule otherwise leaves it in flow, where it picks up a small top
+    // offset — and because #root is the containing block for the fixed title bar
+    // and durability banner, that offset pushes both off their edges. Fixed at
+    // (0,0), sized to the inverse of the factor, it scales to fill the viewport.
+    root.style.position = scaled ? 'fixed' : ''
+    root.style.top = scaled ? '0' : ''
+    root.style.left = scaled ? '0' : ''
+    root.style.transformOrigin = 'top left'
+    root.style.transform = scaled ? `scale(${factor})` : ''
+    root.style.width = scaled ? `calc(100vw / ${factor})` : ''
+    root.style.height = scaled ? `calc(100vh / ${factor})` : ''
+
+    const overflow = scaled ? 'hidden' : ''
+
+    document.documentElement.style.overflow = overflow
+    if (document.body) document.body.style.overflow = overflow
+  },
+  getZoomFactor: () => webZoomFactor
 }
 
 const clipboard = {
