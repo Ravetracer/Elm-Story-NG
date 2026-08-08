@@ -10,7 +10,15 @@ import { WINDOW_EVENT_TYPE } from '../../lib/events'
 
 import { AppContext } from '../../contexts/AppContext'
 
-import { Dropdown, Menu } from 'antd'
+import api from '../../api'
+import {
+  collateAssets,
+  isAssetUnused,
+  totalAssetBytes,
+  formatAssetBytes
+} from '../../lib/assets'
+
+import { Dropdown, Menu, Modal } from 'antd'
 import { QuestionCircleFilled } from '@ant-design/icons'
 import { ExportWorldModal } from '../Modal'
 import { HelpModal } from '../ElementHelp'
@@ -40,8 +48,55 @@ const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
 
   const [helpTopic, setHelpTopic] = useState<HelpTopic | null>(null)
 
+  // A PWA export copies the whole asset directory and the service worker
+  // precaches every file, so assets no element references bloat the download
+  // for every player. Warn before packing one, and leave the files for the
+  // author to clear in the asset manager — the one place assets are deleted —
+  // rather than dropping them silently here. Resolves true to proceed.
+  async function confirmUnusedAssets(): Promise<boolean> {
+    if (!world.id) return true
+
+    const worldId = world.id
+
+    const [files, characters, events, objects, scenes] = await Promise.all([
+      ipcRenderer.invoke(WINDOW_EVENT_TYPE.LIST_ASSETS, { studioId, worldId }),
+      api().characters.getCharactersByWorldRef(studioId, worldId),
+      api().events.getEventsByWorldRef(studioId, worldId),
+      api().objects.getObjectsByWorldRef(studioId, worldId),
+      api().scenes.getScenesByWorldRef(studioId, worldId)
+    ])
+
+    const unused = collateAssets(files, {
+      characters,
+      events,
+      objects,
+      scenes,
+      world
+    }).filter(isAssetUnused)
+
+    if (unused.length === 0) return true
+
+    return new Promise<boolean>((resolve) => {
+      Modal.confirm({
+        title: `${unused.length} unused ${
+          unused.length === 1 ? 'asset' : 'assets'
+        } in this storyworld`,
+        content: `They total ${formatAssetBytes(
+          totalAssetBytes(unused)
+        )} and would be included in the exported PWA and precached for every player. Clear them from the asset manager — the picture button in the storyworld outline — before exporting, or export anyway.`,
+        okText: 'Export anyway',
+        cancelText: 'Cancel',
+        onOk: () => resolve(true),
+        onCancel: () => resolve(false)
+      })
+    })
+  }
+
   async function exportWorld(type: WORLD_EXPORT_TYPE) {
     if (world.id) {
+      if (type === WORLD_EXPORT_TYPE.PWA && !(await confirmUnusedAssets()))
+        return
+
       setExportWorldModal({ ...exportWorldModal, visible: true })
 
       const worldDataAsString = await getWorldDataJSON(

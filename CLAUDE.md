@@ -242,6 +242,12 @@ state. This replaced the earlier behaviour where those four clears called
 `api().assets.removeAssetIfUnreferenced`; that helper still exists for the
 element-*deletion* cascades below.
 
+Because clearing leaves unused files behind, **a PWA export warns about them
+first** (`ExportWorldMenu`): it runs the same `collateAssets` + `isAssetUnused`
+join the manager uses and, if anything is unreferenced, offers to cancel and
+clean up rather than pack files that would bloat the download and be precached
+for every player. It never deletes — it points the author at the manager.
+
 Deleting the *owner* element still trashes its now-orphaned assets:
 `removeCharacter` its masks and `removeEvent` its dead image/audio (via
 `removeDeadImageAssets`/`removeDeadAudioAsset`, which pass `filterOutEventIds`
