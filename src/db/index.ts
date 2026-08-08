@@ -961,8 +961,13 @@ export class LibraryDatabase extends Dexie {
 
           await this.jumps.delete(jumpId)
         } else {
-          // TODO: WHY
-          logger.error(
+          // A missing jump is a no-op rather than a throw, matching removeEvent.
+          // removeJump runs inside removeScene's loop over the scene's child
+          // refs, so a dangling ref (a child id whose row is already gone) must
+          // not abort the cascade — throwing there would leave the rest of the
+          // scene's children behind as dangling refs, which is fatal on next
+          // open. Logged, not thrown, so the cascade completes.
+          logger.warn(
             `LibraryDatabase->removeJump->Unable to remove jump with ID: '${jumpId}'. Does not exist.`
           )
         }

@@ -739,7 +739,10 @@ const EventContent: React.FC<{
 
         switch (event.key) {
           case 'Escape':
-            // TODO: should hide command menu and toolbar first...
+            // processHotkey('esc') steps out one layer at a time — the command
+            // menu first, then distraction-free mode, then the editor — so the
+            // command menu is dismissed before anything else, which is what the
+            // original note here asked for.
             processHotkey('esc')
             break
           default:
