@@ -17,10 +17,14 @@
  * - **Window chrome** — quit/minimize/fullscreen have no browser equivalent and
  *   are no-ops; `OPEN_EXTERNAL_LINK`/`shell.openExternal` open a new tab; UI scale
  *   goes through CSS `zoom` on the document root (`webFrame.setZoomFactor`).
- * - **Export/import** — JSON export is a Blob download; PWA export and world
- *   import are not wired up yet and report so rather than hanging (§10 phase 2).
+ * - **Export/import** — JSON, ZIP and PWA export are all Blob downloads; import
+ *   accepts a `.json` or a `.zip`. A PWA export fetches the Storyteller engine
+ *   shipped under `/engine-dist`, runs the shared `lib/worldPWA` rewrite (the
+ *   same one `main.ts` runs from disk) and packs the playable app as a `.zip`.
  */
 import Dexie from 'dexie'
+import JSZip from 'jszip'
+import md5 from 'md5'
 
 import { WINDOW_EVENT_TYPE } from './events'
 import {
@@ -29,6 +33,8 @@ import {
   WORLD_ZIP_JSON,
   ZipAssetFile
 } from './worldZip'
+import { PWAContentAsset, rewritePWAFiles } from './worldPWA'
+import { WorldDataJSON } from './transport/types/0.8.0'
 
 type AnyRecord = Record<string, unknown>
 
@@ -177,6 +183,114 @@ const downloadBlob = (blob: Blob, filename: string) => {
 
   // give the download a tick to start before releasing the URL
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// The base URL the Storyteller engine is served under, resolved against the
+// document rather than the current route so a HashRouter path (/#/composer) or a
+// subpath deployment does not send the fetch to the wrong place.
+const engineDistBase = (): string =>
+  new URL('engine-dist/', window.location.href.split('#')[0]).href
+
+// Build a playable PWA the same way main.ts does on the desktop, but fetching the
+// engine over HTTP instead of copying it off disk and packing the result as a
+// .zip instead of writing a folder. The rewrite itself is the shared, tested
+// lib/worldPWA — this function is only the browser's I/O around it.
+const buildWorldPWA = async (json: string): Promise<Uint8Array> => {
+  const worldData = JSON.parse(json) as WorldDataJSON
+  const base = engineDistBase()
+
+  const fetchText = async (path: string): Promise<string> => {
+    const response = await fetch(`${base}${path}`)
+
+    if (!response.ok) {
+      throw new Error(`Could not fetch engine file "${path}" (${response.status})`)
+    }
+
+    return response.text()
+  }
+
+  const files: string[] = JSON.parse(await fetchText('files.json'))
+
+  const manifest: { 'index.html': { file: string } } = JSON.parse(
+    await fetchText('manifest.json')
+  )
+  const entryFile = manifest['index.html'].file
+
+  const [html, js, webmanifest, sw] = await Promise.all([
+    fetchText('index.html'),
+    fetchText(entryFile),
+    fetchText('manifest.webmanifest'),
+    fetchText('sw.js')
+  ])
+
+  // The world's own assets, which are absent from the built engine and precache.
+  const stored = await assetStore.assets
+    .where('[studioId+worldId]')
+    .equals([worldData._.studioId, worldData._.id])
+    .toArray()
+
+  const contentAssets: (PWAContentAsset & { bytes: ArrayBuffer })[] =
+    await Promise.all(
+      stored.map(async (asset) => {
+        const bytes = await asset.blob.arrayBuffer()
+
+        return {
+          id: asset.id,
+          ext: asset.ext,
+          revision: md5(new Uint8Array(bytes) as unknown as number[]),
+          bytes
+        }
+      })
+    )
+
+  const rewritten = rewritePWAFiles({
+    worldData,
+    entryFile,
+    html,
+    js,
+    webmanifest,
+    sw,
+    contentAssets,
+    md5,
+    onPrecacheError: (error) =>
+      console.error(
+        `[web] Unable to update the service worker precache manifest. The ` +
+          `exported storyworld may be served from a stale cache on update.`,
+        error
+      )
+  })
+
+  const rewrittenByPath: Record<string, string> = {
+    'index.html': rewritten.html,
+    [entryFile]: rewritten.js,
+    'manifest.webmanifest': rewritten.webmanifest,
+    'sw.js': rewritten.sw
+  }
+
+  const zip = new JSZip()
+
+  await Promise.all(
+    files
+      // manifest.json is a build artifact the desktop export removes too.
+      .filter((path) => path !== 'manifest.json' && path !== 'files.json')
+      .map(async (path) => {
+        if (path in rewrittenByPath) {
+          zip.file(path, rewrittenByPath[path])
+          return
+        }
+
+        const response = await fetch(`${base}${path}`)
+        zip.file(path, await response.arrayBuffer())
+      })
+  )
+
+  const contentFolder = zip.folder('assets')?.folder('content')
+
+  contentAssets.forEach((asset) =>
+    contentFolder?.file(`${asset.id}.${asset.ext}`, asset.bytes)
+  )
+
+  return zip.generateAsync({ type: 'uint8array' })
 }
 
 const invokeHandlers: Partial<Record<WINDOW_EVENT_TYPE, InvokeHandler>> = {
@@ -336,12 +450,22 @@ const invokeHandlers: Partial<Record<WINDOW_EVENT_TYPE, InvokeHandler>> = {
         `${title}.zip`
       )
     } else {
-      // PWA export needs the engine-dist assets fetched and rewritten in the
-      // browser — TODO.md §10 phase 2.
-      window.alert(
-        'Exporting a playable PWA from the browser build is not available yet. ' +
-          'Use the desktop app for a PWA export, or export a ZIP here.'
-      )
+      // A playable PWA, packed as a .zip the author unzips and serves. Built by
+      // fetching the shipped engine and running the same rewrite the desktop
+      // runs from disk (lib/worldPWA).
+      try {
+        const bundle = await buildWorldPWA(json)
+
+        downloadBlob(
+          new Blob([bundle as BlobPart], { type: 'application/zip' }),
+          `${title}_pwa.zip`
+        )
+      } catch (error) {
+        console.error('[web] PWA export failed', error)
+        window.alert(
+          'The PWA export could not be built. See the console for details.'
+        )
+      }
     }
 
     // let ExportWorldMenu close its progress modal

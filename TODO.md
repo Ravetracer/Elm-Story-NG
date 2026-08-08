@@ -977,11 +977,19 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       `.zip`. The desktop build gained the same ZIP export (`main.ts`, built from
       the `userData` asset directory through the *same* `lib/worldZip`), so a
       desktop export imports into the web build with its media — and a new
-      **Export ZIP** menu item offers it on both. Still open: **PWA export from
-      the browser** — it must fetch `engine-dist` as static assets (the web build
-      does not ship them yet), run the same near-pure replacement
-      (`lib/precache.ts`, `lib/compiler/format`) and emit a ZIP; the desktop PWA
-      export is unchanged.
+      **Export ZIP** menu item offers it on both. JSON export = bare `.json`
+      (structure only) on both.
+- [x] **PWA export from the browser.** The web build now ships the built
+      Storyteller engine (`vite.web.config.mts` copies `assets/engine-dist` into
+      `dist-web/engine-dist` and writes a `files.json` index; dev serves the same
+      from disk). At export time `electronBrowser.ts` fetches those files and runs
+      the **shared** `lib/worldPWA` rewrite — the same one `main.ts` runs from
+      disk — then packs the playable app as a `<title>_pwa.zip` with JSZip. The
+      rewrite (placeholder injection + Workbox precache patching, #379/#373) was
+      extracted from `main.ts` into `lib/worldPWA` so both builds cannot drift,
+      exactly as `lib/worldZip` does for the ZIP format; `md5` is injected so the
+      module is env-agnostic. Covered by `src/__tests__/worldPWA.test.ts`; the
+      engine fetch + rewrite targets verified live in a real browser.
 - [ ] **Chrome that has no browser equivalent.** Drop the window controls and the
       native menu. For UI scale, CSS `zoom` on `:root` does scale antd's compiled
       pixels — which is precisely what `CLAUDE.md` records a `--ui-scale` custom

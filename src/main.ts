@@ -29,13 +29,12 @@ import MenuBuilder from './menu'
 import contextMenu from 'electron-context-menu'
 import electronDebug from 'electron-debug'
 import fs, { outputFile } from 'fs-extra'
-import format from './lib/compiler/format'
 import md5 from 'md5'
-import { addPrecacheEntries, setPrecacheRevision } from './lib/precache'
 
 import { WINDOW_EVENT_TYPE } from './lib/events'
 import { AssetFile } from './lib/assets'
 import { buildWorldZip, ZipAssetFile } from './lib/worldZip'
+import { PWAContentAsset, rewritePWAFiles } from './lib/worldPWA'
 
 import {
   WorldId,
@@ -841,7 +840,7 @@ const createWindow = async () => {
                     await fs.readFile(`${savePathFull}/manifest.json`, 'utf8')
                   )
 
-                  let [html, js, webmanifest, sw] = await Promise.all([
+                  const [html, js, webmanifest, sw] = await Promise.all([
                     fs.readFile(`${savePathFull}/index.html`, 'utf8'),
                     fs.readFile(
                       `${savePathFull}/${manifest['index.html'].file}`,
@@ -851,85 +850,69 @@ const createWindow = async () => {
                     fs.readFile(`${savePathFull}/sw.js`, 'utf8')
                   ])
 
-                  const worldDescription =
-                    parsedWorldData._.description ||
-                    `${parsedWorldData._.title} is a storyworld made with Elm Story - NG.`
-
-                  html = html
-                    .replace(/___worldTitle___/g, parsedWorldData._.title)
-                    .replace(/___worldDescription___/g, worldDescription)
-                  js = js
-                    .replace('___worldId___', parsedWorldData._.id)
-                    .replace(
-                      '"___storytellerData___"',
-                      JSON.stringify(format(parsedWorldData))
-                    )
-                  webmanifest = webmanifest
-                    .replace(/___worldTitle___/g, parsedWorldData._.title)
-                    .replace('___worldDescription___', worldDescription)
-
-                  // #379, #373
-                  //
-                  // index.html and the entry chunk were both rewritten above,
-                  // so their precache revisions no longer describe their
-                  // contents. Failures here are reported and skipped rather
-                  // than thrown: a stale cache for returning visitors is a far
-                  // smaller problem than a damaged service worker or an export
-                  // that never completes.
-                  try {
-                    sw = setPrecacheRevision(sw, 'index.html', md5(html))
-                    sw = setPrecacheRevision(
-                      sw,
-                      manifest['index.html'].file,
-                      md5(js)
-                    )
-                  } catch (error) {
-                    logger.error(
-                      `Unable to update service worker precache revisions. The ` +
-                        `exported storyworld may be served from a stale cache ` +
-                        `on update. ${error}`
-                    )
-                  }
-
                   // Content assets are copied in after the engine was built, so
-                  // they are absent from the generated precache manifest.
+                  // they are absent from the generated precache manifest and
+                  // have to be added with their own revisions.
+                  const contentAssets: PWAContentAsset[] = []
+
                   try {
-                    const contentAssetsList = await fs.readdir(
+                    for (const filename of await fs.readdir(
                       `${savePathFull}/assets/content`
-                    )
+                    )) {
+                      const dot = filename.lastIndexOf('.')
 
-                    if (contentAssetsList.length > 0) {
-                      const assets = await Promise.all(
-                        contentAssetsList.map(async (assetFilename) => ({
-                          url: `assets/content/${assetFilename}`,
-                          revision: md5(
-                            await fs.readFile(
-                              `${savePathFull}/assets/content/${assetFilename}`
-                            )
+                      if (dot <= 0) continue
+
+                      contentAssets.push({
+                        id: filename.slice(0, dot),
+                        ext: filename.slice(dot + 1),
+                        revision: md5(
+                          await fs.readFile(
+                            `${savePathFull}/assets/content/${filename}`
                           )
-                        }))
-                      )
-
-                      sw = addPrecacheEntries(sw, 'manifest.webmanifest', assets)
+                        )
+                      })
                     }
                   } catch (error) {
                     logger.info(
                       `Skipping content asset precaching. Asset content does ` +
-                        `not exist or could not be added. ${error}`
+                        `not exist or could not be read. ${error}`
                     )
                   }
 
+                  // The pure rewrite is shared with the browser build's PWA
+                  // export (lib/worldPWA). #379, #373: a precache patch failure
+                  // is reported and skipped rather than thrown — a stale cache
+                  // for returning visitors is a far smaller problem than a
+                  // damaged service worker or an export that never completes.
+                  const rewritten = rewritePWAFiles({
+                    worldData: parsedWorldData,
+                    entryFile: manifest['index.html'].file,
+                    html,
+                    js,
+                    webmanifest,
+                    sw,
+                    contentAssets,
+                    md5,
+                    onPrecacheError: (error) =>
+                      logger.error(
+                        `Unable to update the service worker precache manifest. ` +
+                          `The exported storyworld may be served from a stale ` +
+                          `cache on update. ${error}`
+                      )
+                  })
+
                   await Promise.all([
-                    fs.writeFile(`${savePathFull}/index.html`, html),
+                    fs.writeFile(`${savePathFull}/index.html`, rewritten.html),
                     fs.writeFile(
                       `${savePathFull}/${manifest['index.html'].file}`,
-                      js
+                      rewritten.js
                     ),
                     fs.writeFile(
                       `${savePathFull}/manifest.webmanifest`,
-                      webmanifest
+                      rewritten.webmanifest
                     ),
-                    fs.writeFile(`${savePathFull}/sw.js`, sw),
+                    fs.writeFile(`${savePathFull}/sw.js`, rewritten.sw),
                     fs.remove(`${savePathFull}/manifest.json`)
                   ])
                 } catch (error) {
