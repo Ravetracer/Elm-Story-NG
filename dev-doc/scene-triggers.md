@@ -199,6 +199,11 @@ only runs on a real transition, so a resume stays silent while the persisted
   same way `removeVariable` already clears conditions/effects/inputs
   (`CLAUDE.md`, variable manager section). A trigger's `compare.variableId` is a
   fifth writer of a variable id — it belongs in that cascade.
+- **User-facing documentation ships with this UI slice**, since the help copy
+  describes controls that do not exist until then: a `HELP_CONTENT` topic in
+  `components/ElementHelp/content.tsx` (which the docs site renders too), a hub
+  entry in `HELP_GROUPS`, and a help button on the Triggers panel. Cover it in
+  `src/__tests__/elementHelp.test.ts`.
 
 ## Explicitly out of scope for v1
 
@@ -229,6 +234,20 @@ only runs on a real transition, so a resume stays silent while the persisted
   after the condition falls and rises; a resume of a bookmarked playthrough does
   **not** re-ring. Verify audio actually advances (`Howler.ctx.state`,
   `_howls[…].seek()`), not just that `play()` returned — bug class 5.
+
+## Build progress
+
+- **Slice 1 — types, schema, evaluator (done).** `TriggerData` (editor
+  `src/data/types.ts`, transport `0.8.0.ts`) and `EngineTriggerData` (engine
+  types); `triggers?` on the scene in all three plus the transport
+  `EngineSceneData`; `'triggers'` added to the compiler scenes pick; the optional
+  `triggers` block in `schema/0.8.0.json`; the pure `triggerFires` /
+  `triggerConditionHolds` in `engine/src/lib/state.ts`, covered by
+  `src/__tests__/sceneTriggers.test.ts` (18 tests). Typecheck clean both projects;
+  schema still validates. No engine wiring, no audio, no UI yet.
+- **Next — engine wiring:** call `triggerFires` in `gotoNextLiveEvent`, resolve
+  the destination scene's triggers, emit fired sounds as a transient signal.
+- **Then — audio one-shot**, then **the scene Triggers panel + help/docs**.
 
 ## Decisions (settled) and open implementation questions
 

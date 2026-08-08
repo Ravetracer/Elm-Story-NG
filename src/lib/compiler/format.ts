@@ -159,7 +159,12 @@ function format(worldData: WorldDataJSON): string {
       'message',
       'outputs'
     ]),
-    scenes: filterCollectionChildProps(scenes, ['audio', 'children', 'id']),
+    scenes: filterCollectionChildProps(scenes, [
+      'audio',
+      'children',
+      'id',
+      'triggers'
+    ]),
     variables: filterCollectionChildProps(variables, [
       'id',
       'initialValue',

@@ -285,6 +285,7 @@ export interface Scene extends Element {
   children: SceneChildRefs
   worldId: WorldId
   parent: SceneParentRef
+  triggers?: TriggerData[]
 }
 
 export enum PATH_CONDITIONS_TYPE {
@@ -326,6 +327,22 @@ export type VariableCompare = [
 ]
 
 export type VariableSet = [ElementId, SET_OPERATOR_TYPE, string, VARIABLE_TYPE]
+
+/**
+ * A scene trigger: fire an action on the rising edge of a variable condition,
+ * without the player taking a path. v1's only action is a one-shot `sound` (an
+ * mp3 asset id). `compare` is one or more path-style condition tuples folded by
+ * `conditionsType` (ALL default); `fireOnEntry` also fires on scene entry when the
+ * condition already holds. Stored inline on `Scene.triggers` — an unindexed Dexie
+ * property, so no migration. See `dev-doc/scene-triggers.md`.
+ */
+export interface TriggerData {
+  id: ElementId
+  compare: VariableCompare[]
+  conditionsType?: PATH_CONDITIONS_TYPE
+  fireOnEntry?: boolean
+  sound: ElementId
+}
 
 // Path Condition
 export interface Condition extends Element {

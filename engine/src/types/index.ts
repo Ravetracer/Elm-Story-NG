@@ -369,6 +369,7 @@ export interface SceneData {
   parent: SceneParentRef
   tags: string[]
   title: string
+  triggers?: EngineTriggerData[]
   updated: number
 }
 
@@ -798,10 +799,28 @@ export interface EnginePathCollection {
   [pathId: string]: EnginePathData
 }
 
+/**
+ * A scene trigger: fire an action on the rising edge of a variable condition,
+ * without the player taking a path. v1's only action is a one-shot `sound`.
+ *
+ * `compare` is one or more of the same tuple a path condition uses, folded by
+ * `conditionsType` (ALL default). `fireOnEntry` also fires the trigger on scene
+ * entry when the condition already holds. Evaluated by `triggerFires` in
+ * `lib/state.ts`; see `dev-doc/scene-triggers.md`.
+ */
+export interface EngineTriggerData {
+  id: ElementId
+  compare: VariableCompare[]
+  conditionsType?: PATH_CONDITIONS_TYPE
+  fireOnEntry?: boolean
+  sound: ElementId
+}
+
 export interface EngineSceneData {
   audio?: AudioProfile
   children: SceneChildRefs
   id: ElementId
+  triggers?: EngineTriggerData[]
   worldId: WorldId
 }
 

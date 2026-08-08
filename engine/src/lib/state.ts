@@ -4,8 +4,10 @@ import {
   COMPARE_OPERATOR_TYPE,
   EngineLiveEventMessageData,
   EngineLiveEventStateCollection,
+  EngineTriggerData,
   EngineVariableData,
   ENGINE_LIVE_EVENT_MESSAGE_TYPE,
+  PATH_CONDITIONS_TYPE,
   SET_OPERATOR_TYPE,
   VARIABLE_SCOPE,
   VARIABLE_TYPE,
@@ -103,6 +105,74 @@ export const compareNumbers = (
     default:
       return undefined
   }
+}
+
+/**
+ * Whether a trigger's condition set holds against a variable state.
+ *
+ * Folds `trigger.compare` by `conditionsType` (ALL default) using the same shared
+ * `variableCompareHolds`, and drops "no opinion" results exactly as `isPathOpen`
+ * does — so a two-condition trigger with one unevaluable ordering comparison
+ * folds only the evaluable one.
+ *
+ * **The empty case fails closed, unlike `isPathOpen`.** `isPathOpen` treats no
+ * conditions as open (`[].every()` is `true`), because an authored path with no
+ * gate should always be takeable. A trigger is the opposite: it must not fire a
+ * sound on the strength of a comparison nobody could evaluate, and a trigger with
+ * no evaluable condition is meaningless rather than "always true". So an empty
+ * aggregate returns `false`.
+ */
+export const triggerConditionHolds = (
+  trigger: EngineTriggerData,
+  state: EngineLiveEventStateCollection
+): boolean => {
+  const aggregate: boolean[] = []
+
+  trigger.compare.forEach((compare) => {
+    // An unresolvable variable is dropped, not pushed as false — matching the
+    // three-valued handling the shared evaluator documents.
+    const entry = state[compare[0]]
+
+    if (!entry) return
+
+    const holds = variableCompareHolds(compare, entry.type, entry.value)
+
+    if (holds !== undefined) aggregate.push(holds)
+  })
+
+  if (aggregate.length === 0) return false
+
+  return (trigger.conditionsType ?? PATH_CONDITIONS_TYPE.ALL) ===
+    PATH_CONDITIONS_TYPE.ALL
+    ? aggregate.every((value) => value === true)
+    : aggregate.some((value) => value === true)
+}
+
+/**
+ * Whether a scene trigger fires across a transition.
+ *
+ * Fires on the rising edge of its condition (false last event, true now), so it
+ * rings once and stays quiet while the condition holds. `fireOnEntry` additionally
+ * fires it on scene entry when the condition already holds — the two are OR'd into
+ * one boolean, so an entry that is also a rising edge fires exactly once. The
+ * falling edge re-arms it for free, which is what makes it resettable without a
+ * stored "played" flag; see `dev-doc/scene-triggers.md`.
+ *
+ * Pure over the two persisted states — the previous live event's stored `state`
+ * and the freshly computed `nextState` — which is what makes it testable without
+ * a database.
+ */
+export const triggerFires = (
+  trigger: EngineTriggerData,
+  prevState: EngineLiveEventStateCollection,
+  nextState: EngineLiveEventStateCollection,
+  isSceneEntry: boolean
+): boolean => {
+  if (!triggerConditionHolds(trigger, nextState)) return false
+
+  const prevHolds = triggerConditionHolds(trigger, prevState)
+
+  return !prevHolds || (Boolean(trigger.fireOnEntry) && isSceneEntry)
 }
 
 /**

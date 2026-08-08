@@ -474,6 +474,19 @@ export interface PathCollection {
 
 export type AudioProfile = [string, boolean] // asset_id, looping
 
+/**
+ * A scene trigger — see `src/data/types.ts` and `dev-doc/scene-triggers.md`. An
+ * optional inline array on the scene; the schema names it optional so a world
+ * written before the field imports unchanged.
+ */
+export interface TriggerData {
+  id: ElementId
+  compare: VariableCompare[]
+  conditionsType?: PATH_CONDITIONS_TYPE
+  fireOnEntry?: boolean
+  sound: ElementId
+}
+
 export interface SceneData {
   audio?: AudioProfile
   children: SceneChildRefs
@@ -486,6 +499,7 @@ export interface SceneData {
   parent: SceneParentRef
   tags: string[]
   title: string
+  triggers?: TriggerData[]
   updated: number
 }
 
@@ -837,6 +851,7 @@ export interface EnginePathCollection {
 export interface EngineSceneData {
   children: SceneChildRefs
   id: ElementId
+  triggers?: TriggerData[]
   worldId: WorldId
 }
 
