@@ -86,7 +86,12 @@ const SceneDetails: React.FC<{ studioId: StudioId; sceneId: ElementId }> = ({
                       }
                     })
 
-                    // TODO: Is this necessary?
+                    // Necessary: ELEMENT_RENAME above only sets renamedElement
+                    // (consumed by the outline and tabs); it does not touch
+                    // composer.selectedWorldOutlineElement, whose cached title
+                    // the title displays read. This panel is the selected
+                    // scene's inspector, so refresh that snapshot or the name
+                    // goes stale. Mirrors WorldOutline's OnEditElementTitle.
                     composerDispatch({
                       type: COMPOSER_ACTION_TYPE.WORLD_OUTLINE_SELECT,
                       selectedWorldOutlineElement: {

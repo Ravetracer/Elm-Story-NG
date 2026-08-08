@@ -104,7 +104,9 @@ const Metadata: React.FC<{
           const { format, common } = await parseBlob(audioBlob),
             cover = selectCover(common.picture)
 
-          // TODO: we shouldn't get this unless the designer expands the info box
+          // This only runs when the info box is expanded: AudioProfile renders
+          // this component inside a `<Collapse destroyInactivePanel>`, so it is
+          // unmounted while the panel is collapsed and the parse never fires.
           setMetadata({
             album: common.album,
             artist: common.artist,

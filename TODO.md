@@ -829,13 +829,25 @@ Cheap to resolve, and each one currently costs a reader time.
       which suggests yes, but `WORLD_OUTLINE_SELECT` is dispatched from 23 sites
       and any one could pass an EVENT. Answer it by logging the reducer, not by
       reading.
-- [ ] `SceneProperties/index.tsx:89`: `Is this necessary?` on a dispatch after a
-      scene rename
-- [ ] `WorldOutline/index.tsx:1286`, `:1336`: `sets tree data twice`
-- [ ] `hooks/useVariables.ts`, `useScenes.ts`, `useEvents.ts`, `useFolders.ts`,
-      lines 17–18 and 25–26 — the same pair of questions four times: *sort by how
-      the user ordered them, or don't sort and let the editor track order?*
-      Answer it once. Everything the outline shows is ordered by these hooks.
+- [x] `SceneProperties/index.tsx`: `Is this necessary?` — answered **yes**. The
+      preceding `ELEMENT_RENAME` only sets `renamedElement` in the reducer; it
+      does not touch `selectedWorldOutlineElement`, whose cached title the title
+      displays read. The panel is the selected scene's inspector, so the second
+      dispatch keeps that title fresh. Mirrors WorldOutline's OnEditElementTitle.
+      Comment now records the answer.
+- [ ] `WorldOutline/index.tsx:1286`, `:1336`: `sets tree data twice`. Checked:
+      the main tree-build effect runs on `[]` (mount only), so the following
+      `WORLD_OUTLINE_SELECT` does **not** trigger a full rebuild — at most a
+      lightweight selection-highlight patch. The note overstates it; it is a
+      cold-path (element-add) micro-redundancy. Confirming the exact second write
+      needs a runtime trace, so left as-is rather than restructured.
+- [x] `hooks/useVariables.ts`, `useScenes.ts`, `useEvents.ts`, `useFolders.ts` —
+      the *sort by user order or track order?* question, answered: the outline is
+      **not** ordered by these hooks. `createWorldOutlineTreeData` orders each
+      node's children from the stored `children` arrays (the author's manual
+      drag-order); these hooks sort by title only for the flat lists and pickers
+      that also read them, where alphabetical is right. So the sort neither sets
+      nor fights outline order. All four comments now record this.
 - [ ] `WorldVariables/index.tsx:171`: `consider preserving the operator in certain
       cases` when a variable is retyped (#314). Now a variable-manager question —
       see `CLAUDE.md`, "The variable manager".
@@ -856,8 +868,10 @@ Cheap to resolve, and each one currently costs a reader time.
       deliberately unbuilt pending demand (`unless this gets requested enough`,
       `only if designers decide they want ES to make this choice`). Product
       decisions, not defects.
-- [ ] `AudioProfile/Metadata.tsx:107`: mp3 metadata parsed even when the info box
-      is collapsed
+- [x] `AudioProfile/Metadata.tsx`: mp3 metadata parsed even when the info box is
+      collapsed — already handled. `AudioProfile` renders `Metadata` inside a
+      `<Collapse destroyInactivePanel>`, so it is unmounted while collapsed and
+      the parse never fires until the box is expanded. Comment corrected.
 - [ ] `AlignDropdown.tsx:39`: `handle elements at the end that don't support
       alignment`
 - [ ] `lib/serialization.ts:50`: `show missing pic if doesn't exist` — a missing

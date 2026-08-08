@@ -14,8 +14,9 @@ const useVariables = (
     undefined
   )
 
-  // TODO: sort by how user has ordered them in the editor?
-  // TODO:...or don't sort and let editor track order?
+  // Sorted by title for the variable manager's list and the condition/effect
+  // pickers. There is no manual variable order to preserve, so alphabetical is
+  // the order everywhere variables are listed.
   if (variables) variables.sort((a, b) => (a.title > b.title ? 1 : -1))
 
   return variables

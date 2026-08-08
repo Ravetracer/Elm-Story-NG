@@ -14,8 +14,11 @@ const useEvents = (
     undefined
   )
 
-  // TODO: sort by how user has ordered them in the editor?
-  // TODO:...or don't sort and let editor track order?
+  // Sorted by title for the flat lists and pickers that read this (element
+  // dropdowns, the managers). The storyworld outline does NOT use this order:
+  // createWorldOutlineTreeData builds each node's children from the stored
+  // `children` arrays — the author's manual arrangement — so this sort neither
+  // sets nor fights outline order.
   if (events) events.sort((a, b) => (a.title > b.title ? 1 : -1))
 
   return events

@@ -124,8 +124,9 @@ const TitleBar: React.FC = () => {
   const { pathname } = useLocation()
   const { app, appDispatch } = useContext(AppContext)
   /**
-   * TODO: this is used to prevent toggling out of full screen
-   * on development reload
+   * Prevents the mount effect below from toggling the window out of fullscreen
+   * on a development hot reload, where the component remounts while the window
+   * is unchanged. Not a task — this documents why the ref exists.
    */
   const isFirstRun = useRef(true)
 
