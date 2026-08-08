@@ -11,11 +11,10 @@ import { cloneDeep } from 'lodash-es'
 import { v4 as uuid } from 'uuid'
 
 import {
-  useStoreState,
+  useStore,
   useStoreActions,
   Node,
-  useUpdateNodeInternals,
-  FlowElement
+  useUpdateNodeInternals
 } from 'react-flow-renderer'
 
 import {
@@ -55,7 +54,6 @@ import EventCharacterRefGrid from './EventCharacterRefGrid'
 import styles from './styles.module.less'
 
 import api from '../../../api'
-import { NodeData } from '.'
 
 // Mirrors the part of rc-menu's MenuInfo this file uses. domEvent is a keyboard
 // event when the item is activated from the keyboard rather than clicked, which
@@ -585,15 +583,26 @@ const EventNode: React.FC<NodeProps<{
 
   const updateNodeInternals = useUpdateNodeInternals()
 
-  const events = useStoreState((state) =>
-      state.nodes.filter(
-        (node: Node<{ type: ELEMENT_TYPE }>) =>
-          node?.data?.type === ELEMENT_TYPE.EVENT
-      )
-    ),
-    setSelectedElement = useStoreActions(
-      (actions) => actions.setSelectedElements
-    )
+  // react-flow's node list is read on demand from the store rather than
+  // subscribed to. It is only ever used inside click handlers and
+  // validateConnection, never in render, and a `useStoreState` subscription
+  // re-rendered every EventNode on each of react-flow's mount-time node
+  // measurements — up to nodes×nodes renders on a scene open. `useStore`
+  // returns the redux store without subscribing, so measurements no longer
+  // churn the nodes. Reading at call time also drops the latent staleness the
+  // old subscription had (it was not in validateConnection's deps).
+  const store = useStore(),
+    getEventNodes = () =>
+      store
+        .getState()
+        .nodes.filter(
+          (node: Node<{ type: ELEMENT_TYPE }>) =>
+            node?.data?.type === ELEMENT_TYPE.EVENT
+        )
+
+  const setSelectedElement = useStoreActions(
+    (actions) => actions.setSelectedElements
+  )
 
   const { composer, composerDispatch } = useContext(ComposerContext)
 
@@ -610,8 +619,6 @@ const EventNode: React.FC<NodeProps<{
       validSource: false
     })
 
-  const nodes: FlowElement<NodeData>[] = useStoreState((state) => state.nodes)
-
   const isPassthroughEvent =
       event && event.choices.length === 0 && event.type !== EVENT_TYPE.INPUT,
     isInputEvent = event?.type === EVENT_TYPE.INPUT,
@@ -621,6 +628,8 @@ const EventNode: React.FC<NodeProps<{
     (_event?: React.MouseEvent<HTMLDivElement, MouseEvent>): boolean => {
       const { sceneId, nodeId, handleId, handleType, targetNodeId } =
         composer.selectedSceneMapConnectStartData || {}
+
+      const nodes = store.getState().nodes
 
       let valid = false
 
@@ -951,7 +960,7 @@ const EventNode: React.FC<NodeProps<{
                             composer.selectedSceneMapEvent !== eventId &&
                               setSelectedElement([
                                 cloneDeep(
-                                  events.find(
+                                  getEventNodes().find(
                                     (eventNode) => eventNode.id === eventId
                                   )
                                 )
@@ -1078,7 +1087,7 @@ const EventNode: React.FC<NodeProps<{
                         event.id &&
                           setSelectedElement([
                             cloneDeep(
-                              events.find(
+                              getEventNodes().find(
                                 (eventNode) => eventNode.id === event.id
                               )
                             )

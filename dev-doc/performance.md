@@ -116,17 +116,41 @@ scene tabs accumulate (compounding cost = per-tab work × open tabs).
 
 ### Open — the block-time levers (need react-flow work, do with live verification)
 
-4. **The react-flow measurement amplifier.** `EventNode.tsx` subscribes to the
-   entire `state.nodes` twice (`useStoreState`, for `events` and `nodes`), used
-   only inside event handlers (`validateConnection`, choice `onSelect`). On mount,
-   react-flow measures 27 nodes and mutates `state.nodes` each time, so every node
-   re-renders on every measurement — up to ~27×27 renders. Reading nodes
-   on-demand instead of subscribing would cut this. **Risk:** react-flow-renderer
-   9.7.4 carries two stores (legacy easy-peasy `useStoreState`/`useStoreActions`
-   the app uses, plus a zustand `useStore`/`useStoreApi`); mixing them or swapping
-   subscription for `getState()` is the trap-rich territory `CLAUDE.md` warns
-   about (`onlyRenderVisibleElements`, node measurement → the "missing nodes"
-   correctness bug). Do it deliberately, verify node count live before/after.
+4. **The react-flow measurement amplifier — DONE in 0.43.5.** `EventNode.tsx`
+   subscribed to the entire `state.nodes` twice (`useStoreState`, for `events` and
+   `nodes`), used **only** inside event handlers (`validateConnection`, choice
+   `onSelect`, add-choice). On mount, react-flow measures 27 nodes and mutates
+   `state.nodes` each time, so every node re-rendered on every measurement — up to
+   ~27×27 renders — each re-render re-firing that node's own effects
+   (`choicesByEventRef` live query, `updateNodeInternals`). The fix: read the node
+   list on demand instead of subscribing.
+
+   - **The store is redux + react-redux, not easy-peasy/zustand** (the earlier note
+     was wrong). react-flow-renderer 9.7.4 exports `useStore()`, which returns the
+     redux `Store` instance and — being react-redux's `useStore` — **never
+     subscribes and never re-renders**. Both subscriptions collapse to one
+     `const store = useStore()`; the handlers read `store.getState().nodes` at call
+     time. Reading fresh also drops a latent staleness the old code had
+     (`nodes` was never in `validateConnection`'s dep array).
+   - **Measured live** (Fr. Wittgenstein, close→reopen cold, dev, ×3–4 each; wall =
+     time from outline click to 27 nodes in the DOM):
+
+     | version | wall to 27 nodes | long-task ms |
+     | --- | --- | --- |
+     | old (subscription) | **~1465–1803 ms** | ~176–356 |
+     | new (on-demand read) | **~677–1077 ms** | ~78–265 |
+
+     Every new run beat every old run — a **~35–50 % (≈500–700 ms) drop in
+     time-to-rendered-scene**. Long-task (main-thread block) time overlaps and is
+     *not* a clean win: the block is dominated by react-flow's own node measurement
+     and per-node serialization (#5), as this doc predicted. What the amplifier cost
+     was **settling time** — spurious re-renders re-triggering per-node effects and
+     Dexie round-trips, each below the 50 ms long-task threshold but serializing to
+     push out convergence.
+   - **Correctness verified live**: 27/27 nodes render (no dropped nodes — the
+     `onlyRenderVisibleElements`/measurement regression class), and the changed
+     handler path works end-to-end (clicking a choice row selects its node via
+     `store.getState().nodes`, no exception).
 5. **Stagger / cap the per-node serialization.** `EventSnippet` preview is
    `leading:true` so all 27 serialize on mount (`lib/serialization.ts`, per-node
    IPC). Spreading it across frames would break up the long task. Only worth it if
