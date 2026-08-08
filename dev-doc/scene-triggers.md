@@ -60,16 +60,21 @@ placements, an unindexed property, so **no Dexie version bump** (the v12 note in
 //   [variableId, COMPARE_OPERATOR_TYPE, value, VARIABLE_TYPE]
 export interface TriggerData {
   id: ElementId
-  compare: VariableCompare   // the "when"
-  sound: ElementId           // mp3 asset id — the "do" (one action, v1)
+  compare: VariableCompare[]            // the "when" — one or more, combined by conditionsType
+  conditionsType?: PATH_CONDITIONS_TYPE // ALL (AND) default; ANY reuses the path enum
+  fireOnEntry?: boolean                 // also fire on scene entry if already true; default false
+  sound: ElementId                      // mp3 asset id — the "do" (one action, v1)
 }
 
 // on Scene / SceneData / EngineSceneData:
 triggers?: TriggerData[]
 ```
 
-One condition per trigger in v1 (no `ALL`/`ANY` group — that is a path concept
-and a trigger with two conditions can be split into two triggers, or deferred).
+**`compare` is an array**, folded by `conditionsType` — `ALL` (AND) is the
+default and the only mode v1's UI exposes; the field exists so `ANY` (OR) is a
+later toggle, not a data change. The fold is the same one `isPathOpen` already
+does (`engine/src/lib/api.ts:1574-1576`), so the runtime reuses it. `fireOnEntry`
+is covered under scene-entry semantics below.
 
 ## The seams (add the field five places)
 
@@ -85,9 +90,11 @@ precedent (optional field, no schema version bump):
 | transport type | `src/lib/transport/types/0.8.0.ts` (`SceneData`) | add optional `triggers?` |
 | transport schema | `src/lib/transport/schema/0.8.0.json:688` (`scenes` block) | add optional `triggers` array; **the `_` block is `additionalProperties: false`, so an unnamed exported field makes the app refuse to import its own export** |
 
-The schema `TriggerData` mirrors the `conditions` entry's `compare` (a 4-tuple,
-`prefixItems`) plus a `sound` string and an `id` string. `triggers` is optional,
-so worlds written before the field import unchanged. Add coverage to
+The schema `TriggerData` is an `id` string, a `compare` **array** of the
+`conditions` 4-tuple (`prefixItems`), an optional `conditionsType` enum
+(`ALL`/`ANY`), an optional `fireOnEntry` boolean, and a `sound` string.
+`triggers` is optional, so worlds written before the field import unchanged. Add
+coverage to
 `src/__tests__/validateWorldData.test.ts` (a named-and-valid trigger imports; an
 unknown extra property is still rejected).
 
@@ -105,27 +112,40 @@ the point the new live event is saved (`:191-217`):
    *scene* feature, active while the player is in it.
 2. `prevState` = the departing live event's stored `state` (already re-read at
    `:108`). `nextState` = the value just computed.
-3. For each trigger, evaluate its `compare` against both with the existing pure
-   evaluator `variableCompareHolds` (`engine/src/lib/state.ts:57`). Treat its
-   three-valued result — `boolean | undefined` — as: `undefined` → **not** true.
-4. **Rising edge** = `nextHolds === true && prevHolds !== true` → collect
-   `trigger.sound`.
-5. Hand the collected sound ids to the mixer as a **transient** signal (below).
+3. For each trigger, evaluate its `compare` array against both states with the
+   existing pure evaluator `variableCompareHolds` (`engine/src/lib/state.ts:57`),
+   dropping `undefined` results and folding by `conditionsType` (`ALL`/`ANY`) —
+   the same aggregation as `isPathOpen` (`engine/src/lib/api.ts:1574-1576`). Call
+   the folded booleans `prevHolds` / `nextHolds`.
+4. **Fire** when the rising edge is crossed **or** the author opted into entry:
+   `nextHolds && (!prevHolds || (trigger.fireOnEntry && isSceneEntry))`.
+   The two are OR'd into one boolean, so an entry that is also a rising edge fires
+   exactly once. `isSceneEntry` = the departing live event's `sceneId` differs
+   from the destination's — the same test `processSceneScopeOnEntry`
+   (`engine/src/lib/api.ts:844-865`) already computes for the scope reset.
+5. Collect `trigger.sound` for every trigger that fired (**no cap** — all
+   qualifying sounds play), and hand the ids to the mixer as a **transient**
+   signal (below).
 
 `variableCompareHolds` is currently only called from `isPathOpen`
 (`engine/src/lib/api.ts:1497`), i.e. reactively to a path crossing. This adds a
 second caller; the evaluator itself is unchanged.
 
-### Scene-entry semantics (a known, accepted edge)
+### Scene-entry semantics (`fireOnEntry`)
 
-Rising edge is evaluated across the transition regardless of scene boundary. If
-the player **enters** the office with the condition already true (e.g. a non-scene
-counter already past threshold), `prevHolds` is true, so **no rising edge, no
-fire**. For a `SCENE`-scoped counter this never arises — the counter resets to 0
-on entry (`resetSceneScopedVariables`, `engine/src/lib/state.ts:193`), the
-condition is false on the entering event, and the first qualifying move inside the
-scene is the rising edge. v1 documents this rather than special-casing "fire on
-entry".
+Rising edge is evaluated across every in-scene transition regardless of scene
+boundary. If the player **enters** the scene with the condition already true,
+`prevHolds` is true, so a pure rising-edge trigger does **not** fire. For a
+`SCENE`-scoped counter this is moot — it resets to 0 on entry
+(`resetSceneScopedVariables`, `engine/src/lib/state.ts:193`), so the condition is
+false on the entering event and the first qualifying move inside the scene is the
+rising edge (the author's "leave only after the call is done" construct).
+
+But an author may want exactly the entry case — walk in from the toilet and the
+phone is already ringing. `fireOnEntry` (default **false**) is that opt-in: when
+set, the trigger also fires on the scene-entry transition if `nextHolds` is true,
+even without a rising edge. It does not re-fire on later in-scene moves (those are
+governed by the rising edge as normal), so it still rings once per entry.
 
 ## Playback (the one genuinely new runtime primitive)
 
@@ -168,8 +188,10 @@ only runs on a real transition, so a resume stays silent while the persisted
 ## Editor UI (scope for v1)
 
 - A **Triggers** panel in the **scene's** properties (where scene `audio` is
-  edited today). Per trigger: a condition row (reuse the condition builder from
-  `ElementProperties/PathProperties`) plus a sound picker.
+  edited today). Per trigger: one or more condition rows combined with **AND**
+  (reuse the condition builder from `ElementProperties/PathProperties`; the
+  `ALL`/`ANY` toggle stays hidden in v1), a **"also fire when entering the
+  scene"** checkbox (`fireOnEntry`), and a sound picker.
 - The sound picker is the audio `AssetsModal` (the same picker behind scene/event
   audio), storing **only** the asset id — no looping flag; a trigger sound is
   always a one-shot.
@@ -185,15 +207,21 @@ only runs on a real transition, so a resume stays silent while the persisted
   is already expressible with a conditional path, so deferred. If added later,
   the runtime primitives exist: `applyVariableSets` (set), `findDestinationEvent`
   + `gotoNextLiveEvent` (jump), the `ending`/STORY_OVER path (end).
-- **Multi-condition triggers** (`ALL`/`ANY`). One condition each for now.
+- **`ANY` (OR) in the UI.** Multiple conditions are supported and stored, but the
+  editor exposes only `ALL` (AND) in v1; the runtime fold already handles `ANY`,
+  so exposing it later is a UI toggle.
 - **Scene ducking** while a trigger sound plays.
 
 ## Test plan
 
 - **Pure:** rising-edge detection — `false→true` fires, `true→true` does not,
   `true→false` re-arms, `false→false` silent; `undefined` compare (ordering op on
-  a STRING) treated as not-true. A NUMBER holding `0` handled correctly (the
-  falsy-substitution family of bugs). New `src/__tests__/sceneTriggers.test.ts`.
+  a STRING) treated as not-true; a NUMBER holding `0` handled correctly (the
+  falsy-substitution family of bugs). **AND fold** — a two-condition trigger fires
+  only when both hold, and the edge is on the *folded* value (one condition
+  flipping while the other stays false does not fire). **`fireOnEntry`** — fires
+  on entry when already true and set, does not on entry when unset, does not
+  re-fire on the next in-scene move. New `src/__tests__/sceneTriggers.test.ts`.
 - **Transport:** a scene with a trigger round-trips export→import; the schema
   rejects an unknown extra property (`validateWorldData.test.ts`).
 - **Runtime (must be an exported PWA — the composer reinstalls on open):** the
@@ -202,13 +230,18 @@ only runs on a real transition, so a resume stays silent while the persisted
   **not** re-ring. Verify audio actually advances (`Howler.ctx.state`,
   `_howls[…].seek()`), not just that `play()` returned — bug class 5.
 
-## Open decisions for review
+## Decisions (settled) and open implementation questions
+
+Settled with the author:
+
+- **All qualifying sounds fire**, no cap — two on one transition play in parallel.
+- **Multiple conditions, AND** (`ALL`) in v1; `ANY` stored-but-hidden.
+- **`fireOnEntry` is a per-trigger opt-in**, default off (pure rising edge).
+
+Still to confirm during implementation:
 
 1. **Fire signal transport** — engine-context state vs. reusing the
    `ENGINE_DEVTOOLS_LIVE_EVENTS` bus. Context is simpler and works identically in
    PWA and composer; the bus is composer-only. Leaning context.
-2. **Multiple sounds in one transition** — if two triggers rise on the same
-   event, play both in parallel (WebAudio allows it) vs. cap at one. Leaning
-   "play both".
-3. **Sound picker reuse** — confirm the audio `AssetsModal` can return a bare
+2. **Sound picker reuse** — confirm the audio `AssetsModal` can return a bare
    asset id without the looping-flag wrapper, or whether a thin variant is needed.
