@@ -825,12 +825,17 @@ instead of awaited).
 
 The rest, in rough order of what it would buy:
 
-- [ ] **`engine/src/lib/templates.ts:1`: `move to own package`.** The authors'
-      own answer to the duplication `CLAUDE.md` warns about under "Template
-      expressions": `templates.ts` exists twice and a fix applied to one file
-      makes node previews and the storyteller disagree. Sharing it — a package, a
-      generated copy, or an import like the two modules that already reach into
-      `engine/src` — is the fix, and it is the highest-value item in this group.
+- [~] **`engine/src/lib/templates.ts:1`: `move to own package`.** The drift
+      *surface* is now near-eliminated rather than the files merged: the editor
+      copy carried ~15 eval-time `logger.info` debug calls the engine copy did not,
+      which was most of the diff (and a small per-render cost). Those are gone, so
+      the two files now differ **only** in the three intentional lines — the
+      `VARIABLE_TYPE` import path and the "game" vs "world" wording of two error
+      messages — with a header on each pointing at the other. Any real divergence
+      is now diff-obvious. Full single-sourcing (a shared package) stays blocked by
+      the two projects' separate `VARIABLE_TYPE` enum declarations having distinct
+      TypeScript identity; noted in both headers. Verified by `templates.test.ts` +
+      `variableHelpExamples.test.ts` (45 assertions) still passing.
 - [ ] `lib/contentEditor/index.ts:146` (`dupe code (isAlignActive)`), `:518`
       (`dupe code; breakout filtering`), and `:299`–`:300`
       (`this should return true with / is types`, `reuse match code for other

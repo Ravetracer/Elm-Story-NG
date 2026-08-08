@@ -1,5 +1,7 @@
-import logger from './logger'
-
+// This file is intentionally a near-duplicate of engine/src/lib/templates.ts —
+// see CLAUDE.md, "Template expressions". They differ only in this import path
+// (../data/types vs ../types) and the "game" vs "world" wording of two error
+// messages; keep them otherwise identical so any real divergence is diff-obvious.
 import * as acorn from 'acorn'
 
 import { VARIABLE_TYPE } from '../data/types'
@@ -820,16 +822,12 @@ export function getProcessedTemplate(
           case '==':
           case '!=':
             if (foundLeftVariable && foundRightVariable) {
-              logger.info(`templates->foundLeftVariable|foundRightVariable`)
 
               // booleans
               if (
                 foundLeftVariable.type === VARIABLE_TYPE.BOOLEAN &&
                 foundRightVariable.type === VARIABLE_TYPE.BOOLEAN
               ) {
-                logger.info(
-                  `templates->foundLeftVariable|foundRightVariable->booleans`
-                )
 
                 value =
                   operator === '=='
@@ -854,9 +852,6 @@ export function getProcessedTemplate(
                 foundLeftVariable.value &&
                 foundRightVariable.value
               ) {
-                logger.info(
-                  `templates->foundLeftVariable|foundRightVariable->strings|numbers`
-                )
 
                 value =
                   operator === '=='
@@ -871,16 +866,12 @@ export function getProcessedTemplate(
             }
 
             if (foundLeftVariable && !foundRightVariable) {
-              logger.info(`templates->foundLeftVariable|!foundRightVariable`)
 
               // booleans
               if (
                 foundLeftVariable.type === VARIABLE_TYPE.BOOLEAN &&
                 typeof rightVariable?.value === 'boolean'
               ) {
-                logger.info(
-                  `templates->foundLeftVariable|!foundRightVariable->booleans`
-                )
 
                 value =
                   operator === '=='
@@ -904,9 +895,6 @@ export function getProcessedTemplate(
                 foundLeftVariable.type === VARIABLE_TYPE.NUMBER &&
                 typeof rightVariable?.value === 'number'
               ) {
-                logger.info(
-                  `templates->foundLeftVariable|!foundRightVariable->numbers`
-                )
 
                 value =
                   operator === '=='
@@ -921,9 +909,6 @@ export function getProcessedTemplate(
 
               // strings
               if (!value && foundLeftVariable.value && rightVariable?.value) {
-                logger.info(
-                  `templates->foundLeftVariable|!foundRightVariable->strings`
-                )
 
                 value =
                   operator === '=='
@@ -938,16 +923,12 @@ export function getProcessedTemplate(
             }
 
             if (!foundLeftVariable && foundRightVariable) {
-              logger.info(`templates->!foundLeftVariable|foundRightVariable`)
 
               // booleans
               if (
                 foundRightVariable.type === VARIABLE_TYPE.BOOLEAN &&
                 typeof leftVariable?.value === 'boolean'
               ) {
-                logger.info(
-                  `templates->!foundLeftVariable|foundRightVariable->booleans`
-                )
 
                 value =
                   operator === '=='
@@ -971,9 +952,6 @@ export function getProcessedTemplate(
                 foundRightVariable.type === VARIABLE_TYPE.NUMBER &&
                 typeof leftVariable?.value === 'number'
               ) {
-                logger.info(
-                  `templates->!foundLeftVariable|foundRightVariable->numbers`
-                )
 
                 value =
                   operator === '=='
@@ -988,9 +966,6 @@ export function getProcessedTemplate(
 
               // strings
               if (!value && foundRightVariable.value && leftVariable?.value) {
-                logger.info(
-                  `templates->!foundLeftVariable|foundRightVariable->strings`
-                )
 
                 value =
                   operator === '=='

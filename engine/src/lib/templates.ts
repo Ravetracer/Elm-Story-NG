@@ -1,4 +1,9 @@
-// TODO: move to own package
+// This file is intentionally a near-duplicate of src/lib/templates.ts — see
+// CLAUDE.md, "Template expressions". They differ only in this import path
+// (../types vs ../data/types) and the "world" vs "game" wording of two error
+// messages; keep them otherwise identical so any real divergence is diff-obvious.
+// (Sharing them via a package would resolve the duplication but is blocked by the
+// two projects' separate VARIABLE_TYPE enum declarations having distinct identity.)
 import * as acorn from 'acorn'
 
 import { VARIABLE_TYPE } from '../types'
