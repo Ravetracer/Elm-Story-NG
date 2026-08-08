@@ -81,7 +81,8 @@ const useAudioTrack = ({
   source,
   loop,
   paused,
-  volume
+  volume,
+  onEnd
 }: {
   type: AudioTrackType
   source?: string
@@ -89,6 +90,9 @@ const useAudioTrack = ({
   loop?: boolean
   paused: boolean
   volume?: number
+  // Fired when a non-looping sound finishes playing. Used to lift the scene
+  // duck once a one-shot event clip (a door closing) has run its course.
+  onEnd?: () => void
 }) => {
   const { engine } = useContext(EngineContext)
 
@@ -102,6 +106,12 @@ const useAudioTrack = ({
       const audio = source
         ? new Howl({ src: source, loop, autoplay: true, html5: false })
         : undefined
+
+      // Howler emits 'end' only on natural completion (and once per loop),
+      // never on stop(), so a cross-faded-out track does not trigger this — only
+      // a clip that plays to its end. Looping tracks are excluded so an ambient
+      // event track keeps the scene ducked rather than lifting it every loop.
+      if (audio && onEnd && !loop) audio.on('end', onEnd)
 
       if (!track[0].source) {
         setTrack([{ source, audio, primary: true }, { ...track[1] }])
@@ -256,6 +266,23 @@ export const useAudioMixer = ({
       string | undefined
     >(undefined)
 
+  // The scene ducks while an event is playing audio, then rises again on its
+  // own once a one-shot clip finishes — rather than staying ducked until the
+  // next event, which is what happened when the scene volume was tied directly
+  // to `profiles.event`. A short effect (a door closing) makes room and the
+  // scene music returns; a looping event track keeps the duck (it never ends).
+  const [eventAudioDucking, setEventAudioDucking] = useState(false)
+
+  const onEventAudioEnd = useCallback(() => setEventAudioDucking(false), [])
+
+  const eventAudioId = profiles.event?.[0]
+
+  // Duck when an event brings audio (keyed on the id, a primitive, so a new
+  // `profiles` object with the same audio does not re-duck after a clip ended).
+  useEffect(() => {
+    setEventAudioDucking(Boolean(eventAudioId))
+  }, [eventAudioId])
+
   const processEvent = (event: Event) => {
     const { detail } = event as CustomEvent<EngineDevToolsLiveEvent>
 
@@ -375,7 +402,7 @@ export const useAudioMixer = ({
       muted,
       loop: profiles.scene?.[1],
       paused,
-      volume: muted ? -1 : profiles.event ? 0.3 : 1
+      volume: muted ? -1 : eventAudioDucking ? 0.3 : 1
     }),
     eventTrack = useAudioTrack({
       type: 'EVENT',
@@ -392,7 +419,8 @@ export const useAudioMixer = ({
       muted,
       loop: profiles.event?.[1],
       paused,
-      volume: muted ? -1 : 1
+      volume: muted ? -1 : 1,
+      onEnd: onEventAudioEnd
     })
 
   return { sceneTrack, eventTrack }
