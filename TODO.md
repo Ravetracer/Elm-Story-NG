@@ -768,11 +768,16 @@ instead of awaited).
 
 ### 9.6 Duplication the authors flagged themselves
 
-The stylesheet half is mechanical: six `// TODO: combine with duplicates in other
-property panels` in `EventProperties/styles.module.less:3`, `:66`, `:89`,
-`SceneProperties/styles.module.less:2`, `JumpProperties/styles.module.less:2` and
-`EventTypeSelect/styles.module.less:2`, plus `combine with JumpSelect` at
-`EventProperties/styles.module.less:28`. One shared partial retires all seven.
+- [x] The stylesheet half is mechanical: six `// TODO: combine with duplicates in
+      other property panels` across `EventProperties`, `SceneProperties`,
+      `JumpProperties` and `EventTypeSelect`. Retired with two parametric Less
+      mixins — `.propertySubPanel()` and `.propertySubHeader()` in
+      `src/styles/mixins.less` — that each panel now includes. Verified live: the
+      sub-panel headers still compute to 12px uppercase, black background, 24px
+      height, a 1px `hsl(0,0%,15%)` border and a 2px radius. The seventh,
+      `combine with JumpSelect` at `EventProperties/styles.module.less`, is left:
+      the `JumpSelect` component it referred to no longer exists, so there is no
+      counterpart to merge with.
 
 The rest, in rough order of what it would buy:
 
