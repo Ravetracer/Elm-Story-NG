@@ -194,8 +194,12 @@ maintainer's final live check.
 
 ## Remaining §10 work (as of 2026-08-08, v0.54.0)
 
-- **web→desktop ZIP import (deferred).** Desktop imports `.json` + sibling `assets/`
-  only; add ZIP import to `main.ts` for the full 4-way round-trip. Not requested yet.
+- **web→desktop ZIP import — done (v0.55.0).** Desktop `IMPORT_WORLD_GET_JSON` now
+  offers `.json` and `.zip`. A `.zip` is unpacked with `lib/worldZip` to a temp dir
+  (`storyworld.json` + `assets/`) and its JSON path returned, so `IMPORT_WORLD_ASSETS`
+  copies the extracted `assets` folder unchanged — the same folder-copy the `.json`
+  path uses. The full four-way round-trip (desktop⇄browser, export⇄import) now holds.
+  Nothing left open on §10 (desktop import is the maintainer's live check).
 
 ## Verifying
 

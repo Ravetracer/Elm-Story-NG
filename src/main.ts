@@ -33,7 +33,13 @@ import md5 from 'md5'
 
 import { WINDOW_EVENT_TYPE } from './lib/events'
 import { AssetFile } from './lib/assets'
-import { buildWorldZip, ZipAssetFile } from './lib/worldZip'
+import {
+  buildWorldZip,
+  parseWorldZip,
+  WORLD_ZIP_ASSETS_DIR,
+  WORLD_ZIP_JSON,
+  ZipAssetFile
+} from './lib/worldZip'
 import { PWAContentAsset, rewritePWAFiles } from './lib/worldPWA'
 
 import {
@@ -669,17 +675,51 @@ const createWindow = async () => {
         ): Promise<{ worldData?: WorldDataJSON; jsonPath?: string }> => {
           if (mainWindow) {
             const result = await dialog.showOpenDialog(mainWindow, {
-              title: `Select storyworld JSON to import`,
-              properties: ['openFile']
+              title: `Select storyworld JSON or ZIP to import`,
+              properties: ['openFile'],
+              filters: [
+                { name: 'Storyworld', extensions: ['json', 'zip'] },
+                { name: 'Storyworld JSON', extensions: ['json'] },
+                { name: 'Storyworld ZIP', extensions: ['zip'] }
+              ]
             })
 
             if (!result.canceled) {
+              const chosenPath = result.filePaths[0]
+
+              // A .zip is the portable bundle (world JSON + assets), the same
+              // format the web build reads and writes via lib/worldZip. Extract it
+              // to a temp directory and hand back a JSON path inside it, so
+              // IMPORT_WORLD_ASSETS copies the extracted `assets` folder exactly as
+              // it does for a .json sitting beside one — no second code path.
+              if (chosenPath.toLowerCase().endsWith('.zip')) {
+                const { worldData, assets } = await parseWorldZip(
+                  await fs.readFile(chosenPath)
+                )
+
+                const importDirectory = `${app.getPath(
+                  'temp'
+                )}/esg-import-${Date.now()}`.replace(/\\/g, '/')
+                const jsonPath = `${importDirectory}/${WORLD_ZIP_JSON}`
+
+                await fs.outputFile(jsonPath, JSON.stringify(worldData))
+
+                await Promise.all(
+                  assets.map((asset) =>
+                    fs.outputFile(
+                      `${importDirectory}/${WORLD_ZIP_ASSETS_DIR}/${asset.id}.${asset.ext}`,
+                      Buffer.from(asset.data as ArrayBuffer)
+                    )
+                  )
+                )
+
+                return { worldData: worldData as WorldDataJSON, jsonPath }
+              }
+
               try {
                 return {
-                  worldData: JSON.parse(
-                    await fs.readFile(result.filePaths[0], 'utf8')
-                  ),
-                  jsonPath: result.filePaths[0]
+                  worldData: JSON.parse(await fs.readFile(chosenPath, 'utf8')),
+                  jsonPath: chosenPath
                 }
               } catch (error) {
                 throw error

@@ -52,10 +52,11 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
             create a new one.
           </li>
           <li>
-            <strong>Import</strong> a storyworld from a <code>.json</code> export.
-            Its images and audio come from an <code>assets</code> folder beside
-            the file, so import through the picker rather than dragging the JSON
-            in alone.
+            <strong>Import</strong> a storyworld from a <code>.json</code> or a
+            <code>.zip</code> export. A <code>.zip</code> carries its images and
+            audio inside it; a <code>.json</code>&apos;s come from an{' '}
+            <code>assets</code> folder beside the file, so import through the
+            picker rather than dragging the JSON in alone.
           </li>
           <li>
             Export a storyworld as JSON or as a playable web app (PWA) from its
@@ -544,11 +545,14 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
     body: (
       <>
         <p>
-          Imports a storyworld from a <code>.json</code> file exported by Elm
-          Story. Older versions are upgraded automatically on import.
+          Imports a storyworld from a <code>.json</code> or a <code>.zip</code>{' '}
+          exported by Elm Story. Older versions are upgraded automatically on
+          import.
         </p>
         <p>
-          Assets are copied from an <code>assets</code> folder beside the chosen
+          A <code>.zip</code> is the portable bundle: it carries the world&apos;s
+          images and audio inside it. A <code>.json</code> is structure only — its
+          assets are copied from an <code>assets</code> folder beside the chosen
           file, so import through the dashboard&apos;s picker rather than dragging
           the JSON in alone.
         </p>

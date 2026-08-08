@@ -971,6 +971,16 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       (Chromium/Edge only); `jszip` is now a direct dependency. Verified live:
       importing a real ZIP created the studio and world, wrote all 7 assets to
       IndexedDB, and they resolved to blob URLs on screen.
+- [x] **ZIP import on the desktop too — the full four-way round-trip.** Desktop
+      `IMPORT_WORLD_GET_JSON` now offers `.json` **and** `.zip` in the file picker.
+      A `.zip` is unpacked with the shared `lib/worldZip`, written to a temp
+      directory (`storyworld.json` + an `assets` folder), and its JSON path handed
+      back — so `IMPORT_WORLD_ASSETS` copies the extracted assets with the exact
+      same folder-copy it uses for a `.json` sitting beside an `assets` dir, no
+      second code path. A bundle now moves freely in all four directions between the
+      desktop and browser builds. The renderer import pipeline was already
+      format-agnostic (it only receives `worldData` + a `jsonPath`), so nothing
+      there changed.
 - [x] **Export — JSON and ZIP, no main process.** JSON export is a `Blob` +
       `<a download>` (structure only); **ZIP export** bundles the JSON and the
       world's IndexedDB assets via the shared `lib/worldZip` and downloads one
