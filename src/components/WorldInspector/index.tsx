@@ -37,6 +37,18 @@ const TAB_TYPE = {
   VARIABLES: 'VARIABLES'
 }
 
+const AddComponentIcon: React.FC = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 14 14"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M8 4H6V8H2V10H6V14H8V10H12V8H8V4Z" fill="white" />
+  </svg>
+)
+
 const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
   studioId,
   world
@@ -57,6 +69,30 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
   const openVariablesModal = (help = false, add = false) =>
     setVariablesModal({ visible: true, help, add })
 
+  const addCharacter = async () => {
+    if (!world.id) return
+
+    // TODO: change to lib method
+    const character = await api().characters.saveCharacter(studioId, {
+      description: undefined,
+      worldId: world.id,
+      masks: [{ type: CHARACTER_MASK_TYPE.NEUTRAL, active: true }],
+      refs: [],
+      tags: [],
+      title: uniqueNamesGenerator({
+        dictionaries: [names, names],
+        length: 2,
+        separator: ' '
+      })
+    })
+
+    character.id &&
+      composerDispatch({
+        type: COMPOSER_ACTION_TYPE.OPEN_CHARACTER_MODAL,
+        characterId: character.id
+      })
+  }
+
   const [defaultLayout] = useState<LayoutData>({
     dockbox: {
       mode: 'horizontal',
@@ -68,61 +104,10 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
               tabs: [
                 {
                   id: TAB_TYPE.CHARACTERS,
-                  title: (
-                    <div>
-                      Characters
-                      {world.id && (
-                        <span
-                          className={styles.tabAddComponentButton}
-                          onClick={async () => {
-                            if (world.id) {
-                              // TODO: change to lib method
-                              const character = await api().characters.saveCharacter(
-                                studioId,
-                                {
-                                  description: undefined,
-                                  worldId: world.id,
-                                  masks: [
-                                    {
-                                      type: CHARACTER_MASK_TYPE.NEUTRAL,
-                                      active: true
-                                    }
-                                  ],
-                                  refs: [],
-                                  tags: [],
-                                  title: uniqueNamesGenerator({
-                                    dictionaries: [names, names],
-                                    length: 2,
-                                    separator: ' '
-                                  })
-                                }
-                              )
-
-                              character.id &&
-                                composerDispatch({
-                                  type:
-                                    COMPOSER_ACTION_TYPE.OPEN_CHARACTER_MODAL,
-                                  characterId: character.id
-                                })
-                            }
-                          }}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 14 14"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M8 4H6V8H2V10H6V14H8V10H12V8H8V4Z"
-                              fill="white"
-                            />
-                          </svg>
-                        </span>
-                      )}
-                    </div>
-                  ),
+                  // Add/manage/help actions live in the panel's `panelExtra`
+                  // below, which rc-dock renders only for the active tab — so
+                  // they cannot fire from an inactive tab's title (#92).
+                  title: <div>Characters</div>,
                   minHeight: 32,
                   content: (
                     <>
@@ -138,47 +123,10 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
                 },
                 {
                   id: TAB_TYPE.VARIABLES,
-                  title: (
-                    <div>
-                      Variables
-                      {world.id && (
-                        <Tooltip title="Manage Variables..." mouseEnterDelay={1}>
-                          <span
-                            className={styles.tabManageButton}
-                            onClick={() => openVariablesModal()}
-                          >
-                            <UnorderedListOutlined />
-                          </span>
-                        </Tooltip>
-                      )}
-                      {world.id && (
-                        <span
-                          className={styles.tabAddComponentButton}
-                          onClick={() => {
-                            // TODO: Fire only when tab is active #92
-                            if (!world.id) return
-
-                            // the panel is an index now, so a new variable is
-                            // named and nameable in the manager
-                            openVariablesModal(false, true)
-                          }}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 14 14"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M8 4H6V8H2V10H6V14H8V10H12V8H8V4Z"
-                              fill="white"
-                            />
-                          </svg>
-                        </span>
-                      )}
-                    </div>
-                  ),
+                  // #92 fixed: the manage/add/help actions moved to `panelExtra`
+                  // below, which rc-dock renders only for the active tab, so they
+                  // no longer fire from this title while another tab is active.
+                  title: <div>Variables</div>,
                   minHeight: 32,
                   content: (
                     <>
@@ -197,36 +145,77 @@ const WorldInspector: React.FC<{ studioId: StudioId; world: World }> = ({
               panelLock: {
                 // @ts-ignore: poor ts defs
                 panelExtra: (panelData, context) => {
-                  // The variables help is in the app rather than behind a link:
-                  // ElementHelpButton opens docs.elmstory.com, which no longer
-                  // resolves. The remaining element types still point there.
+                  // Every tab's actions live here rather than in its title,
+                  // because rc-dock renders `panelExtra` only for the *active*
+                  // tab — so add/manage/help cannot fire from an inactive tab
+                  // (#92). The variables help stays in the app rather than behind
+                  // a link (ElementHelpButton opens docs.elmstory.com, which no
+                  // longer resolves; the remaining element types still point
+                  // there).
                   if (panelData.activeId === TAB_TYPE.VARIABLES)
                     return (
-                      <div
-                        className={helpButtonStyles.ElementHelpButton}
-                        onClick={(event) => {
-                          event.stopPropagation()
+                      <>
+                        <Tooltip
+                          title="Manage Variables..."
+                          mouseEnterDelay={1}
+                        >
+                          <span
+                            className={styles.tabManageButton}
+                            onClick={(event) => {
+                              event.stopPropagation()
 
-                          openVariablesModal(true)
-                        }}
-                      >
-                        <QuestionCircleFilled />
-                      </div>
+                              openVariablesModal()
+                            }}
+                          >
+                            <UnorderedListOutlined />
+                          </span>
+                        </Tooltip>
+
+                        <span
+                          className={styles.tabAddComponentButton}
+                          onClick={(event) => {
+                            event.stopPropagation()
+
+                            // the panel is an index now, so a new variable is
+                            // named and nameable in the manager
+                            openVariablesModal(false, true)
+                          }}
+                        >
+                          <AddComponentIcon />
+                        </span>
+
+                        <div
+                          className={helpButtonStyles.ElementHelpButton}
+                          onClick={(event) => {
+                            event.stopPropagation()
+
+                            openVariablesModal(true)
+                          }}
+                        >
+                          <QuestionCircleFilled />
+                        </div>
+                      </>
                     )
 
-                  let componentType: ELEMENT_TYPE | undefined
+                  if (panelData.activeId === TAB_TYPE.CHARACTERS)
+                    return (
+                      <>
+                        <span
+                          className={styles.tabAddComponentButton}
+                          onClick={(event) => {
+                            event.stopPropagation()
 
-                  switch (panelData.activeId) {
-                    case TAB_TYPE.CHARACTERS:
-                      componentType = ELEMENT_TYPE.CHARACTER
-                      break
-                    default:
-                      break
-                  }
+                            addCharacter()
+                          }}
+                        >
+                          <AddComponentIcon />
+                        </span>
 
-                  return componentType ? (
-                    <ElementHelpButton type={componentType} />
-                  ) : null
+                        <ElementHelpButton type={ELEMENT_TYPE.CHARACTER} />
+                      </>
+                    )
+
+                  return null
                 }
               }
             }

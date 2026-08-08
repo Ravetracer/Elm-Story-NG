@@ -727,8 +727,13 @@ Traceable to `elmstorygames/feedback`, which makes them the authors' own triage.
       documented reason. Re-check what remains before reopening it.
 - [ ] **#397** — `EventProperties/index.tsx:270`: `it might be necessary to check
       choices in the future`, on the effect that clears `event.ending`.
-- [ ] **#92** — `WorldInspector/index.tsx:156`: `Fire only when tab is active`.
-      Adding a variable from an inactive tab still fires.
+- [x] **#92** — `WorldInspector`: `Fire only when tab is active`. The add,
+      manage and help actions were in each tab's title, which rc-dock renders for
+      every tab in the bar, so the add `+` fired even when its tab was inactive.
+      Moved them into the panel's `panelExtra`, which rc-dock renders only for the
+      *active* tab — the pattern the help `?` already used. Titles are now plain
+      text; verified live that an inactive tab exposes no buttons and the active
+      tab's `+`/manage/help work.
 - [ ] **#132** — `WorldOutline/index.tsx:488`: `stack hack`, a `setTimeout(…, 1)`
       to order two dispatches.
 - [ ] **#422** — `engine/src/components/Installer.tsx:79`: `this is set again
