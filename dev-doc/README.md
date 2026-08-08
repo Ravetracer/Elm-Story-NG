@@ -22,6 +22,7 @@ folder.
 | [docs-site.md](docs-site.md) | The public landing + documentation + tutorial site (§8): build, structure, and how it stays in sync with the in-app help |
 | [DESIGN.md](DESIGN.md) | The settled rationale behind the 0.8.0 persisted shape — why each field/table is what it is (the retired roadmap's design pass, kept for the "why") |
 | [0.7.1-archive.md](0.7.1-archive.md) | Forensic record of what the 0.7.1 upstream archive did and did not contain, plus the dead-code cleanup notes it surfaced |
+| [scene-triggers.md](scene-triggers.md) | **Design (not built):** scene-scoped reactive triggers — fire a one-shot sound on the rising edge of a variable condition; the seams, the edge-detection insight, and the audio one-shot |
 
 ## Conventions
 
