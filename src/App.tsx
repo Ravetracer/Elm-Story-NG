@@ -5,12 +5,15 @@ import { usePageVisibility } from 'react-page-visibility'
 import { WINDOW_EVENT_TYPE, ZOOM_UI_TYPE } from './lib/events'
 import { applyUIScale, saveUIScale } from './lib/uiScale'
 
+import { IS_WEB_BUILD } from './lib/storageDurability'
+
 import { AppContext, APP_ACTION_TYPE } from './contexts/AppContext'
 
 import Routes from './routes'
 
 import TitleBar from './components/TitleBar'
 import AppMenu from './components/AppMenu'
+import StorageBanner from './components/StorageBanner'
 
 import './App.global.less'
 
@@ -57,6 +60,10 @@ const App: React.FC = () => {
 
           <TitleBar />
           <AppMenu />
+
+          {/* Web build only: the origin's IndexedDB can be evicted, so this
+              requests persistence and nags to export re-importable backups. */}
+          {IS_WEB_BUILD && <StorageBanner />}
         </>
       )}
     </>

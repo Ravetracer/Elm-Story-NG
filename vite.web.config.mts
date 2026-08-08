@@ -95,7 +95,9 @@ export default defineConfig(({ mode }) => ({
     // A few dependencies expect Node's globals; the app itself only reads
     // process.env.NODE_ENV (in logger.ts).
     'process.env.NODE_ENV': JSON.stringify(mode),
-    global: 'globalThis'
+    global: 'globalThis',
+    // This is the browser build; the storage-durability chrome is web-only.
+    __ESG_WEB__: JSON.stringify(true)
   },
 
   css: {

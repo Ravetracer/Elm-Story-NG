@@ -995,13 +995,27 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       pixels — which is precisely what `CLAUDE.md` records a `--ui-scale` custom
       property could *not* do, so the browser gets the thing the desktop build
       could not have.
-- [ ] **Storage durability, which is not optional.** Origin storage is *evicted*:
-      Safari clears it after roughly seven days without a visit, Chromium evicts
-      under pressure. Someone's half-written novel can vanish with no warning and no
-      recovery. `navigator.storage.persist()`, a visible "last exported" indicator
-      and nagging automatic export are load-bearing features of a browser build, not
-      extras. This is also the honest argument for keeping the desktop build the
-      recommended one and the browser build the try-it-now door.
+- [x] **Storage durability.** Origin storage is *evicted* (Safari ~7 idle days,
+      Chromium under pressure), so a half-written novel can vanish. Two defences, in
+      `src/lib/storageDurability.ts` (pure helpers tested by
+      `src/__tests__/storageDurability.test.ts`) and surfaced by a slim, web-only
+      bottom bar `components/StorageBanner`:
+      - **`navigator.storage.persist()`** is requested once on web startup, moving
+        the origin out of the evictable bucket. The browser may decline (no user
+        engagement), which is why a *persistence warning* banner shows while it is
+        not granted, with an **Enable persistence** button that re-requests.
+      - Because it may decline, a **re-importable export is the real backup**: a
+        per-world last-export timestamp (recorded on JSON/ZIP export, **not** PWA —
+        a PWA is a playable app, not re-importable) drives a composer *backup
+        reminder* when a world was never backed up or is a day stale, with a
+        one-click **Export backup ZIP**. It never downloads without the click —
+        browsers throttle/pile up silent downloads and unattended files are hostile
+        (chosen over the "nagging *automatic* export" the note first proposed).
+      Web-only throughout: a build-time `__ESG_WEB__` flag (Vite `define` in both
+      configs) compiles the whole thing out of the desktop renderer, which keeps its
+      own persistent storage. See `dev-doc/browser-build.md`. This remains the honest
+      argument for the desktop build as the recommended one and the browser build as
+      the try-it-now door.
 
 **Rejected: a PHP backend with logins.** Considered and dropped. Recorded because
 the reasoning outlives the idea: shared PHP hosting cannot hold a WebSocket

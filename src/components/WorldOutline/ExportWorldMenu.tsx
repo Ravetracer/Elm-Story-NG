@@ -7,6 +7,7 @@ import getWorldDataJSON from '../../lib/getWorldDataJSON'
 import { World, WORLD_EXPORT_TYPE } from '../../data/types'
 import { StudioId } from '../../lib/transport/types/0.5.1'
 import { WINDOW_EVENT_TYPE } from '../../lib/events'
+import { IS_WEB_BUILD, recordWorldExport } from '../../lib/storageDurability'
 
 import { AppContext } from '../../contexts/AppContext'
 
@@ -116,6 +117,16 @@ const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
           type,
           data: worldDataAsString
         })
+
+        // A JSON or ZIP export is a re-importable backup, so it clears the web
+        // build's durability nag for this world. A PWA is a playable app, not
+        // re-importable, so it does not count as a backup.
+        if (
+          IS_WEB_BUILD &&
+          world.id &&
+          (type === WORLD_EXPORT_TYPE.JSON || type === WORLD_EXPORT_TYPE.ZIP)
+        )
+          recordWorldExport(world.id, Date.now())
 
         setExportWorldModal({ ...exportWorldModal, visible: false })
       }, 1000)

@@ -1,0 +1,80 @@
+@import '../../styles/variables';
+
+// A slim bottom bar. Bottom rather than below the title bar because the routes
+// are absolutely positioned against the title bar's height; a top banner would
+// mean reworking every route's offset, a bottom one sits over the gutter. Below
+// modals (@modal-z-index) so a dialog is never covered by it.
+.storageBanner {
+  position: fixed;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  z-index: (@modal-z-index - 1);
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+
+  font-size: 12px;
+  color: hsl(0, 0%, 92%);
+
+  background: @glass-opacity;
+  backdrop-filter: @glass-blur;
+  border-top: 2px solid var(--highlight-color);
+
+  .icon {
+    flex: 0 0 auto;
+    font-size: 16px;
+    color: var(--highlight-color);
+  }
+
+  &.warning {
+    border-top-color: hsl(38, 100%, 55%);
+
+    .icon {
+      color: hsl(38, 100%, 55%);
+    }
+  }
+
+  .message {
+    flex: 1 1 auto;
+    line-height: 1.4;
+  }
+
+  button {
+    flex: 0 0 auto;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+    border: 1px solid transparent;
+    transition: opacity 0.2s, background 0.2s;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  .primary {
+    background: var(--highlight-color);
+    color: hsl(0, 0%, 100%);
+
+    &:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+  }
+
+  .secondary {
+    background: transparent;
+    color: hsl(0, 0%, 70%);
+    border-color: hsl(0, 0%, 30%);
+
+    &:hover {
+      color: hsl(0, 0%, 92%);
+      border-color: hsl(0, 0%, 45%);
+    }
+  }
+}

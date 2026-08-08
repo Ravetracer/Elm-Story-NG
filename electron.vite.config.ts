@@ -34,6 +34,11 @@ export default defineConfig({
     // The renderer sources were never moved into a src/renderer directory, so
     // the existing layout is kept and Vite is pointed at it instead.
     root: resolve(__dirname, 'src'),
+    // This is the desktop renderer; the web-only storage-durability chrome
+    // compiles out. See src/lib/storageDurability.ts and vite.web.config.mts.
+    define: {
+      __ESG_WEB__: JSON.stringify(false)
+    },
     build: {
       outDir: resolve(__dirname, 'out/renderer'),
       sourcemap: true,

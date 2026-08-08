@@ -101,14 +101,50 @@ pure core:
   maintainer's manual check (he owns PWA-export verification). The pieces beneath it
   are each covered.
 
-## Remaining §10 work (as of 2026-08-08, v0.52.0)
+## Storage durability (web-only, done v0.53.0)
 
-- **Storage durability (not optional).** Origin storage is evicted (Safari ~7 days
-  idle, Chromium under pressure). Add `navigator.storage.persist()`, a "last
-  exported" indicator, a nagging auto-export. This is why the desktop build stays
-  the recommended one and the browser build the try-it-now door.
-- **Chrome with no browser equivalent.** Hide/drop the inert window controls and the
-  native menu in the web build.
+The desktop app keeps a storyworld in Electron's own persistent storage; the
+browser build keeps it in an **origin's** IndexedDB, which the browser evicts
+(Safari ~7 idle days, Chromium under pressure) with no warning. Two defences live
+in `src/lib/storageDurability.ts` and surface through the web-only bottom bar
+`components/StorageBanner`:
+
+1. **`requestPersistentStorage()`** calls `navigator.storage.persist()` once on
+   web startup (idempotent — returns early if already persisted). It can be
+   declined, so `getStorageStatus()` reads `persisted()` + `estimate()` and the
+   banner shows a **persistence warning** with an *Enable persistence* re-request
+   while not granted.
+2. Because it can be declined, a re-importable export is the real backup. A
+   per-world last-export timestamp lives in `localStorage['esg-world-last-export']`
+   (`recordWorldExport`/`getWorldLastExport`), written on **JSON/ZIP** export
+   (`ExportWorldMenu` and the banner) but **not PWA** (a PWA is a playable app, not
+   re-importable). `isBackupStale` (pure, tested) drives a composer **backup
+   reminder** — never-exported or >`BACKUP_STALE_MS` (1 day) — with a one-click
+   *Export backup ZIP* (`getWorldDataJSON` → `EXPORT_WORLD_START` ZIP, then record).
+   No silent downloads (browsers throttle them; unattended files are hostile).
+
+The persistence warning takes precedence over the reminder — one message at a
+time. Both banner messages are gated on `app.selectedStudioId`/`selectedWorldId`/
+`location` from `AppContext`, which the composer sets (`WorldBox` dispatches
+`GAME_SELECT` + pushes `COMPOSER`; `TitleBar` sets `location` from the pathname).
+
+**Web-only via a build-time flag.** `__ESG_WEB__` is a Vite `define` — `true` in
+`vite.web.config.mts`, `false` in `electron.vite.config.ts`'s renderer — so
+`IS_WEB_BUILD` (a `typeof`-guarded read, safe under Vitest where the define is
+absent) compiles the whole feature out of the desktop renderer. Declared in
+`src/declaration.d.ts`. App.tsx renders `<StorageBanner />` behind that flag.
+
+Verified live: on the dashboard with `persisted:false` the warning banner renders
+(amber border, fixed bottom, usage shown, Enable/Dismiss), Dismiss hides it, and
+the flag is inlined (no `__ESG_WEB__` token in the bundle). The composer reminder
+is built from already-verified parts (ZIP export, `isBackupStale`) and is the
+maintainer's final live check.
+
+## Remaining §10 work (as of 2026-08-08, v0.53.0)
+
+- **Chrome with no browser equivalent.** Hide/drop the inert window controls
+  (quit/minimize/fullscreen) and the native menu in the web build. `__ESG_WEB__` is
+  now available to gate that too.
 - **web→desktop ZIP import (deferred).** Desktop imports `.json` + sibling `assets/`
   only; add ZIP import to `main.ts` for the full 4-way round-trip. Not requested yet.
 
