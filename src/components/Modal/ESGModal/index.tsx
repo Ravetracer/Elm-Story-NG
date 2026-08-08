@@ -86,8 +86,10 @@ const ESGModal: React.FC<{ visible: boolean; onCancel: () => void }> = ({
         </div>
 
         <div className={styles.copyright}>
-          &copy; 2022 Elm Story Games LLC | GPL-3.0-or-later | see{' '}
-          <code>LICENSE</code> and <code>CREDITS</code>
+          <a onClick={() => openExternal(REPO_URL)}>
+            Christian Nielebock | Ravetracer
+          </a>{' '}
+          | GPL-3.0-or-later | see <code>LICENSE</code> and <code>CREDITS</code>
         </div>
       </div>
     </Modal>

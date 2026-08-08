@@ -44,11 +44,16 @@ The product is **Elm Story - NG**. The rename exists so nobody mistakes this for
 work by the original authors, which means the distinction it draws is the whole
 point of it:
 
-- **The product name changed; the authors' name did not.** "Elm Story - NG"
-  replaces "Elm Story" wherever it names the application. "Elm Story Games" and
-  "Elm Story Games LLC" stay exactly as they are in the copyright line,
-  `CREDITS` and `README.md`, because there they are attribution rather than
-  branding. Renaming attribution would misattribute it.
+- **The product name changed; the original authors' attribution is preserved
+  where it is attribution.** "Elm Story - NG" replaces "Elm Story" wherever it
+  names the application. "Elm Story Games" and "Elm Story Games LLC" stay exactly
+  as they are in `CREDITS`, `README.md` and `LICENSE`, because there they record
+  who wrote the original — renaming that would misattribute it. **The About box
+  (`ESGModal`) is the maintainer's own call and no longer names them:** its
+  copyright line now credits **Christian Nielebock | Ravetracer** (linked to the
+  repo) rather than the LLC, and drops the `©`. The originals are still credited in
+  the files above, so this removes branding from the app's face without erasing
+  attribution.
 - **The `package.json` `author` fields are the one exception, by the
   maintainer's decision.** Both now name **Ravetracer** (`me@ravetracer.de`), the
   reviver who maintains this fork, with the original **Elm Story Games** entry
