@@ -642,9 +642,10 @@ grep -rnE 'TODO|FIXME|HACK|XXX' --include='*.ts' --include='*.tsx' --include='*.
   "The import upgrade chain". Only the last two are live shapes, and changing
   either is a transport schema plus up to two migrations, so it belongs in
   section 2/3 if it is ever wanted at all.
-- **`api/studios.ts:24` and `:35`** ("Link studios to cloud accounts", "How does
-  this affect cloud accounts?") are dead by decision — the cloud platform is
-  under "Not included" below. Worth deleting rather than carrying.
+- **`api/studios.ts` cloud-account TODOs — deleted.** ("Link studios to cloud
+  accounts", "How does this affect cloud accounts?") were dead by decision (the
+  cloud platform is under "Not included" below), so they are gone rather than
+  carried.
 - **`transport/types/0.6.0.ts:327` and `0.7.0.ts:341`**
   (`// TODO: following duped from Storyteller`) are the same frozen-schema case:
   the duplication is deliberate insulation, not an oversight.
@@ -754,11 +755,16 @@ Ranked. These are the reason this section is worth having.
 
 Traceable to `elmstorygames/feedback`, which makes them the authors' own triage.
 
-- [ ] **#45** — `SceneMap/index.tsx:730`, `:737`, `:761`: multiple jumps, events
-      and choices cannot be removed from the scene map; the node cases are
-      commented out and only paths are deleted. **Partly superseded**: the
-      clipboard's cut path does remove several elements, sequentially and for the
-      documented reason. Re-check what remains before reopening it.
+- [x] **#45** — resolved as superseded + documented. The `onElementsRemove` (the
+      scene map's Delete key) only removes **paths**; the event/jump node cases were
+      commented-out, stale, buggy code (`Promise.all` over `removeEvent`, the old
+      `passages` API). Removing event and jump *nodes* is already possible through
+      **Cut (Ctrl+X)**, which goes via the scene-map clipboard — the one path that
+      removes them sequentially and re-reads `Scene.children`, avoiding the
+      shared-array lost-update trap that leaves fatal dangling child refs. Wiring
+      the Delete key to duplicate that would re-open the hazard for no new
+      capability, so the dead code is gone and the deliberate decision is documented
+      in place.
 - [ ] **#397** — `EventProperties/index.tsx:270`: `it might be necessary to check
       choices in the future`, on the effect that clears `event.ending`.
 - [x] **#92** — `WorldInspector`: `Fire only when tab is active`. The add,
@@ -847,11 +853,14 @@ The rest, in rough order of what it would buy:
       dimensions and format now live in `ASSET_KINDS` in `lib/assets.ts`.
 - [ ] `engine/src/components/LiveEventStream.tsx:110`: `duplicate from API`
 - [ ] `WorldLibrary/index.tsx:48`: `dupe from dashboard`
+- [x] `lib/saveStarterContent.ts` (`Move to defines/types` — a hardcoded
+      `'0.0.1'`): done. New worlds all start at this version through
+      `saveStarterContent`, so it is now the exported `DEFAULT_WORLD_VERSION`
+      constant in `data/types.ts`.
 - [ ] `JumpTo/index.tsx:75` (`abstract`), `CharacterInfo.tsx:125` (`breakout`),
       `EventContent/index.tsx:689` (`combine`), `WorldInspector/index.tsx:77`
       (`change to lib method`), `engine/src/components/Event.tsx:48`
-      (`move to event`), `lib/saveStarterContent.ts:50`
-      (`Move to defines/types` — a hardcoded `'0.0.1'`)
+      (`move to event`) — small local extractions, cosmetic.
 
 ### 9.7 Types
 
@@ -866,7 +875,8 @@ The rest, in rough order of what it would buy:
 - [ ] `lib/compiler/format.ts:40`: `fix types`
 - [ ] `data/types.ts:192`: `add variable ID` on `Character` — a schema change, so
       section 2/3 if it is ever wanted
-- [ ] `SceneMap/index.tsx:1262`: a bare `// TODO` on a node's `data`
+- [x] `SceneMap/index.tsx`: the bare `// TODO` on a jump node's `data` — content-
+      free, removed.
 
 ### 9.8 Open questions the authors never answered
 

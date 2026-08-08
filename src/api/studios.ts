@@ -21,7 +21,6 @@ export async function getGameRefs(studioId: StudioId): Promise<WorldId[]> {
 
 /**
  * Saves app studio.
- * TODO: Link studios to cloud accounts.
  * @returns id on promise resolve
  */
 export async function saveStudio(studio: Studio): Promise<StudioId> {
@@ -32,7 +31,6 @@ export async function saveStudio(studio: Studio): Promise<StudioId> {
 
 /**
  * Delete app studio.
- * TODO: How does this affect cloud accounts?
  */
 export async function removeStudio(studioId: StudioId) {
   try {

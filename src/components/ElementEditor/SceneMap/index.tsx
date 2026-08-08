@@ -874,17 +874,16 @@ const SceneMap: React.FC<{
 
       elements.map((element) => {
         switch (element.data.type) {
-          // TODO: #45
-          // case ELEMENT_TYPE.JUMP:
-          //   jumpRefs.push(element.id)
-          //   break
+          // #45: react-flow's remove (the Delete key) only removes paths here.
+          // Removing event and jump *nodes* is done through Cut (Ctrl+X), which
+          // goes via the scene-map clipboard — the one place that removes them
+          // sequentially and re-reads Scene.children, avoiding the shared-array
+          // lost-update trap that leaves fatal dangling child refs. Duplicating
+          // that here for the Delete key would re-open that hazard for no new
+          // capability, so node deletion is deliberately not wired to this path.
           case ELEMENT_TYPE.PATH:
             routeRefs.push(element.id)
             break
-          // TODO: #45
-          // case ELEMENT_TYPE.EVENT:
-          //   passageRefs.push(element.id)
-          //   break
           default:
             logger.info('Unknown element type.')
             return
@@ -905,25 +904,6 @@ const SceneMap: React.FC<{
       )
     }
 
-    // TODO: issue #45
-    // It's not currently possible to remove multiple jumps, passages, choices from SceneMap
-
-    // const clonedScene = cloneDeep(scene)
-
-    // if (clonedScene && clonedScene.id) {
-    //   await Promise.all([
-    //     api().scenes.saveChildRefsToScene(
-    //       studioId,
-    //       clonedScene.id,
-    //       clonedScene.passages.filter(
-    //         (passageRef) => !passageRefs.includes(passageRef)
-    //       )
-    //     ),
-    //     passageRefs.map(async (passageRef) => {
-    //       await api().passages.removeEvent(studioId, passageRef)
-    //     })
-    //   ])
-    // }
   }
 
   /*
@@ -1598,7 +1578,6 @@ const SceneMap: React.FC<{
         jump.id &&
           nodes.push({
             id: jump.id,
-            // TODO
             data: {
               studioId,
               sceneId,

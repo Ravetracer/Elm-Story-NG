@@ -37,6 +37,11 @@ export enum WORLD_TEMPLATE {
   OPEN_WORLD = 'OPEN_WORLD'
 }
 
+// The version a newly created storyworld starts at — its own authored version
+// (World.version), not the app release or the transport schema. Every new world
+// is created through saveStarterContent, so this is its single source.
+export const DEFAULT_WORLD_VERSION = '0.0.1'
+
 export enum VARIABLE_TYPE {
   STRING = 'STRING',
   NUMBER = 'NUMBER',

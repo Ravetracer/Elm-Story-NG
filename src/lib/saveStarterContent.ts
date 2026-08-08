@@ -8,7 +8,8 @@ import {
   Event,
   EVENT_TYPE,
   WORLD_TEMPLATE,
-  PATH_CONDITIONS_TYPE
+  PATH_CONDITIONS_TYPE,
+  DEFAULT_WORLD_VERSION
 } from '../data/types'
 
 import api from '../api'
@@ -47,8 +48,7 @@ export default async ({
       template: WORLD_TEMPLATE.ADVENTURE,
       title: worldTitle,
       tags: [],
-      // TODO: Move to defines/types.
-      version: '0.0.1'
+      version: DEFAULT_WORLD_VERSION
     }),
     api().scenes.saveScene(studioId, {
       id: sceneId,
