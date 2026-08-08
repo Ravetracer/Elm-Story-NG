@@ -913,6 +913,12 @@
         &:last-of-type {
           margin-bottom: 0;
         }
+
+        // a chosen image whose file is gone — same warning cue as a missing link
+        &.event-content-preview-image-missing {
+          outline: 1px dashed var(--warning-message-color);
+          outline-offset: -1px;
+        }
       }
 
       div {

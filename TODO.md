@@ -699,9 +699,11 @@ Ranked. These are the reason this section is worth having.
       but are wrapped in a Dexie `transaction`, which tracks the started operations
       and commits only once they finish, so they are correct-by-transaction and
       were left alone. Bug class written up in `CLAUDE.md`.
-- [ ] **`db/index.ts:848`, `removeJump`: `// TODO: WHY`.** Removing a
-      non-existent jump logs an error and resolves rather than throwing. Decide
-      which it is; the comment is the author admitting they did not.
+- [x] **`db/index.ts`, `removeJump`: `// TODO: WHY`.** Answered: a missing jump
+      logs and resolves rather than throwing, matching `removeEvent`, because
+      `removeJump` runs inside `removeScene`'s child-ref loop and throwing on a
+      dangling ref would abort the cascade and strand the rest as dangling refs
+      (fatal on next open). Documented in place; log downgraded error → warn.
 - [ ] **`WorldOutline/index.tsx:446`: `// TODO: Move the item back to original
       position?`** A failed drag rethrows with the tree already moved, so the UI
       and the database disagree until a rebuild.
@@ -813,8 +815,10 @@ The rest, in rough order of what it would buy:
       items are untyped, in the file the authors also labelled
       `this is a fucking nightmare lol` (`:161`) and `Can't we do this better?
       *hic*` (`:1242`)
-- [ ] `WorldOutline/index.tsx:1495`: `list for checking supported types`, an
-      inline `!== ELEMENT_TYPE.CHARACTER`
+- [x] `WorldOutline/index.tsx`: `list for checking supported types` — the inline
+      `!== ELEMENT_TYPE.CHARACTER` is now a membership check against
+      `OUTLINE_ELEMENT_TYPES` (FOLDER, SCENE, EVENT, JUMP), so a removedElement
+      dispatch for anything not in the tree is ignored rather than reaching in.
 - [ ] `lib/compiler/format.ts:40`: `fix types`
 - [ ] `data/types.ts:192`: `add variable ID` on `Character` — a schema change, so
       section 2/3 if it is ever wanted
@@ -874,15 +878,20 @@ Cheap to resolve, and each one currently costs a reader time.
       the parse never fires until the box is expanded. Comment corrected.
 - [ ] `AlignDropdown.tsx:39`: `handle elements at the end that don't support
       alignment`
-- [ ] `lib/serialization.ts:50`: `show missing pic if doesn't exist` — a missing
-      asset renders as nothing in a node preview
+- [x] `lib/serialization.ts`: `show missing pic if doesn't exist`. The premise
+      was stale — a missing image already fell back to the select-placeholder, not
+      nothing — but that read the same as an empty slot. A chosen image whose file
+      is gone (e.g. trashed from the asset manager) now gets a distinct
+      `event-content-preview-image-missing` cue (dashed warning outline), matching
+      the missing-link treatment.
 - [ ] `SceneMap/index.tsx:480`: `Support multiple selected jump and passages?`
 - [ ] `saveStarterContent.ts:46`: `Enable user-defined once more templates are
       supported` — the starter world is hardcoded to `ADVENTURE`. Related to the
       template database in section 4.5.
 - [ ] `CharacterInfo.tsx:348`: `dominate mask`
-- [ ] `TitleBar/index.tsx:120`: not a task — it documents why `isFirstRun` exists
-      (preventing a full-screen toggle on a development reload). Keep, reword.
+- [x] `TitleBar/index.tsx`: the `isFirstRun` note was reworded from a misleading
+      `TODO:` into a plain comment explaining why the ref exists (it stops the
+      mount effect toggling fullscreen on a dev hot reload). Not a task.
 - [ ] `engine/src/components/LiveEvent.tsx:129` (`handles input loopback`),
       `Event.tsx:49` (`only used with EventInput?`),
       `LiveEventStream.tsx:207` (`get specific jump based on type or title`) —

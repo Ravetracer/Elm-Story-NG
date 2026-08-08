@@ -48,7 +48,6 @@ const serializeDescendantToText = async (
         !node.url ? 'event-content-preview-link-missing' : ''
       }">${node.children[0].text}</span>`
     case ELEMENT_FORMATS.IMG:
-      // TODO: show missing pic if doesn't exist
       const [path, exists]: [string, boolean] = await ipcRenderer.invoke(
         WINDOW_EVENT_TYPE.GET_ASSET,
         {
@@ -59,7 +58,14 @@ const serializeDescendantToText = async (
         }
       )
 
-      return `<div class="event-content-preview-image" style="background-image: url(${
+      // A chosen image whose file is gone — e.g. trashed from the asset manager —
+      // shows a distinct missing state rather than the same placeholder as an
+      // unassigned slot, mirroring the missing-link treatment above.
+      const imageMissing = !exists && Boolean(node.asset_id)
+
+      return `<div class="event-content-preview-image${
+        imageMissing ? ' event-content-preview-image-missing' : ''
+      }" style="background-image: url(${
         exists ? path.replaceAll('"', "'") : getSvgUrl(ImageSelectPlaceholder)
       });"></div>`
     case ELEMENT_FORMATS.CHARACTER:

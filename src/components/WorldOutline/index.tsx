@@ -55,6 +55,16 @@ export type OnEditElementTitle = (
   complete: boolean | false
 ) => void
 
+// The element types the storyworld outline actually shows as tree items, so a
+// removedElement dispatch for anything else (a character, variable, object …)
+// is ignored rather than reaching into the tree for an item that was never there.
+const OUTLINE_ELEMENT_TYPES: ELEMENT_TYPE[] = [
+  ELEMENT_TYPE.FOLDER,
+  ELEMENT_TYPE.SCENE,
+  ELEMENT_TYPE.EVENT,
+  ELEMENT_TYPE.JUMP
+]
+
 const addItemToTree = (
   treeData: TreeData,
   parentId: ElementId,
@@ -1492,7 +1502,8 @@ const WorldOutline: React.FC<{ studioId: StudioId; world: World }> = ({
       if (
         treeData &&
         composer.removedElement.id &&
-        composer.removedElement.type !== ELEMENT_TYPE.CHARACTER // TODO: list for checking supported types
+        composer.removedElement.type &&
+        OUTLINE_ELEMENT_TYPES.includes(composer.removedElement.type)
       ) {
         logger.info(
           `Removing element from outline with ID: ${composer.removedElement.id}`
