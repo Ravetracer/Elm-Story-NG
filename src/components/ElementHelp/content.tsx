@@ -23,6 +23,7 @@ export type HelpTopic =
   | 'INTERFACE_TEXT'
   | 'EXPRESSIONS'
   | 'EXPORT_JSON'
+  | 'EXPORT_ZIP'
   | 'EXPORT_PWA'
   | 'IMPORT'
 
@@ -503,6 +504,22 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
         <p>
           The file can be re-imported here — it comes back named{' '}
           <code>&lt;title&gt; (Imported)</code>.
+        </p>
+      </>
+    )
+  },
+  EXPORT_ZIP: {
+    title: 'Export ZIP',
+    body: (
+      <>
+        <p>
+          Exports the storyworld as a single <code>.zip</code> — the JSON plus its
+          images and audio in one file.
+        </p>
+        <p>
+          It is the portable bundle: a ZIP exported from the desktop app imports
+          into the browser build with its media intact, and back again. A plain
+          JSON export carries the data only.
         </p>
       </>
     )

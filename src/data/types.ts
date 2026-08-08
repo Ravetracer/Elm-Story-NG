@@ -8,7 +8,10 @@ export enum PLATFORM_TYPE {
 
 export enum WORLD_EXPORT_TYPE {
   JSON = 'JSON',
-  PWA = 'PWA'
+  PWA = 'PWA',
+  // A single .zip carrying the world JSON plus its assets — the portable bundle
+  // that round-trips between the desktop and web builds. See lib/worldZip.ts.
+  ZIP = 'ZIP'
 }
 
 export enum ELEMENT_TYPE {

@@ -23,8 +23,24 @@
 import Dexie from 'dexie'
 
 import { WINDOW_EVENT_TYPE } from './events'
+import {
+  buildWorldZip,
+  parseWorldZip,
+  WORLD_ZIP_JSON,
+  ZipAssetFile
+} from './worldZip'
 
 type AnyRecord = Record<string, unknown>
+
+// Assets unpacked from a .zip import, held between IMPORT_WORLD_GET_JSON (which
+// reads the archive) and IMPORT_WORLD_ASSETS (which writes them once the world's
+// studioId/worldId are known). Null for a plain .json import, which has none.
+let pendingImportAssets: ZipAssetFile[] | null = null
+
+// A filesystem-safe filename from a storyworld title, for a download.
+const safeFilename = (title: string): string =>
+  (title || 'storyworld').replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '') ||
+  'storyworld'
 
 // ---------------------------------------------------------------------------
 // Platform
@@ -282,16 +298,49 @@ const invokeHandlers: Partial<Record<WINDOW_EVENT_TYPE, InvokeHandler>> = {
   },
 
   [WINDOW_EVENT_TYPE.EXPORT_WORLD_START]: async ({ type, data }) => {
-    if (type === 'JSON') {
-      const blob = new Blob([data as string], { type: 'application/json' })
+    const json = data as string
+    const meta = (() => {
+      try {
+        return (JSON.parse(json) as { _?: AnyRecord })._ ?? {}
+      } catch {
+        return {}
+      }
+    })()
+    const title = safeFilename(meta.title as string)
 
-      downloadBlob(blob, 'storyworld.json')
+    if (type === 'JSON') {
+      // Structure only — a lone JSON, matching the desktop's .json output. Use
+      // the ZIP export to carry the assets.
+      downloadBlob(
+        new Blob([json], { type: 'application/json' }),
+        `${title}.json`
+      )
+    } else if (type === 'ZIP') {
+      const stored = await assetStore.assets
+        .where('[studioId+worldId]')
+        .equals([meta.studioId as string, meta.id as string])
+        .toArray()
+
+      const assets = await Promise.all(
+        stored.map(async (asset) => ({
+          id: asset.id,
+          ext: asset.ext,
+          data: await asset.blob.arrayBuffer()
+        }))
+      )
+
+      const bundle = await buildWorldZip(json, assets)
+
+      downloadBlob(
+        new Blob([bundle as BlobPart], { type: 'application/zip' }),
+        `${title}.zip`
+      )
     } else {
-      // PWA export needs the engine-dist assets fetched and zipped in the
+      // PWA export needs the engine-dist assets fetched and rewritten in the
       // browser — TODO.md §10 phase 2.
       window.alert(
         'Exporting a playable PWA from the browser build is not available yet. ' +
-          'Use the desktop app for a PWA export, or export JSON here.'
+          'Use the desktop app for a PWA export, or export a ZIP here.'
       )
     }
 
@@ -300,26 +349,68 @@ const invokeHandlers: Partial<Record<WINDOW_EVENT_TYPE, InvokeHandler>> = {
   },
 
   [WINDOW_EVENT_TYPE.IMPORT_WORLD_GET_JSON]: async () => {
-    const file = await pickFile('.json,application/json')
+    const file = await pickFile('.json,.zip,application/json,application/zip')
 
     // Cancelled — the caller treats an absent worldData as "nothing imported".
-    if (!file) return { worldData: undefined, jsonPath: undefined }
+    if (!file) {
+      pendingImportAssets = null
 
-    // A browser file input hands over one file with no sibling assets directory,
-    // so this imports the storyworld data only; its images and audio are not
-    // carried and read as missing until the ZIP interchange lands (§10 phase 2).
-    // jsonPath is undefined, so IMPORT_WORLD_ASSETS below is a no-op. A JSON.parse
-    // failure surfaces as the caller's "corrupt or empty" error, which is right.
-    const text = await file.text()
+      return { worldData: undefined, jsonPath: undefined }
+    }
 
-    return { worldData: JSON.parse(text), jsonPath: undefined }
+    // A .zip is the portable bundle (world JSON + assets); a bare .json carries
+    // the structure only, its media reading as missing. Either way worldData is
+    // validated and upgraded by importWorldData downstream; a bad file surfaces
+    // as the caller's "corrupt or empty" error.
+    if (file.name.toLowerCase().endsWith('.zip')) {
+      const { worldData, assets } = await parseWorldZip(await file.arrayBuffer())
+
+      // held for IMPORT_WORLD_ASSETS, which runs once the world exists
+      pendingImportAssets = assets
+
+      return { worldData, jsonPath: WORLD_ZIP_JSON }
+    }
+
+    pendingImportAssets = null
+
+    return { worldData: JSON.parse(await file.text()), jsonPath: undefined }
   },
 
-  [WINDOW_EVENT_TYPE.IMPORT_WORLD_ASSETS]: async () => {
-    // No filesystem to copy an assets directory from; browser imports carry no
-    // assets yet (see IMPORT_WORLD_GET_JSON). The ZIP interchange (§10 phase 2)
-    // will write the unpacked blobs to the asset store here.
-    return
+  [WINDOW_EVENT_TYPE.IMPORT_WORLD_ASSETS]: async ({ studioId, worldId }) => {
+    // Only a .zip import stashes assets; a .json import leaves this a no-op.
+    if (!pendingImportAssets?.length) {
+      pendingImportAssets = null
+
+      return
+    }
+
+    const assets = pendingImportAssets
+    pendingImportAssets = null
+
+    for (const asset of assets) {
+      const key = assetKey(
+        studioId as string,
+        worldId as string,
+        asset.id,
+        asset.ext
+      )
+      const blob = new Blob([asset.data as BlobPart], {
+        type: mimeForExt(asset.ext)
+      })
+
+      await assetStore.assets.put({
+        key,
+        studioId: studioId as string,
+        worldId: worldId as string,
+        id: asset.id,
+        ext: asset.ext,
+        blob,
+        bytes: blob.size,
+        modified: Date.now()
+      })
+
+      revokeObjectUrl(key)
+    }
   }
 }
 

@@ -961,22 +961,27 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       problem: blob URLs are seekable because the browser knows the length, so the
       `Accept-Ranges` / 206 / unseekable-MP3 handling described in `CLAUDE.md` has
       nothing to do here.
-- [~] **Import interchange.** JSON import works in the browser now:
-      `IMPORT_WORLD_GET_JSON` opens a file picker (`<input type=file>` clicked
-      inside the import gesture) and returns the parsed world data; the rest of
-      the pipeline (validate, upgrade chain, create studio, persist) runs
-      unchanged. Verified live: importing `0-7-test.json` created the studio and
-      world and opened its composer. **Assets are not carried** — a lone JSON has
-      no sibling `assets` directory — so images and audio read as missing until a
-      single **ZIP** interchange (JSON + assets) is added alongside the ZIP
-      *export* below (phase 2). ZIP remains the chosen answer over
-      `showDirectoryPicker()` (Chromium/Edge only). `jszip` is present but only as
-      a transitive dep; the ZIP work should add it as a direct dependency.
-- [ ] **Export without a main process.** Both JSON and PWA export currently go
-      through `EXPORT_WORLD_START`. JSON becomes a `Blob` plus `<a download>`; PWA
-      becomes fetch `engine-dist` as static assets, run the same replacement, emit a
-      ZIP. The replacement logic is already near-pure and tested (`lib/precache.ts`,
-      `lib/compiler/format`), so this is plumbing rather than rewriting.
+- [x] **Import interchange — the ZIP round-trip.** `IMPORT_WORLD_GET_JSON` opens
+      a file picker (`<input type=file>` clicked inside the import gesture) that
+      accepts a `.json` (structure only) or a `.zip` (the portable bundle: world
+      JSON + assets). A `.zip` is unpacked with `lib/worldZip`; its assets are
+      held and written to the IndexedDB store by `IMPORT_WORLD_ASSETS` once the
+      world exists. The rest of the pipeline (validate, upgrade chain, create
+      studio, persist) is unchanged. ZIP was chosen over `showDirectoryPicker()`
+      (Chromium/Edge only); `jszip` is now a direct dependency. Verified live:
+      importing a real ZIP created the studio and world, wrote all 7 assets to
+      IndexedDB, and they resolved to blob URLs on screen.
+- [x] **Export — JSON and ZIP, no main process.** JSON export is a `Blob` +
+      `<a download>` (structure only); **ZIP export** bundles the JSON and the
+      world's IndexedDB assets via the shared `lib/worldZip` and downloads one
+      `.zip`. The desktop build gained the same ZIP export (`main.ts`, built from
+      the `userData` asset directory through the *same* `lib/worldZip`), so a
+      desktop export imports into the web build with its media — and a new
+      **Export ZIP** menu item offers it on both. Still open: **PWA export from
+      the browser** — it must fetch `engine-dist` as static assets (the web build
+      does not ship them yet), run the same near-pure replacement
+      (`lib/precache.ts`, `lib/compiler/format`) and emit a ZIP; the desktop PWA
+      export is unchanged.
 - [ ] **Chrome that has no browser equivalent.** Drop the window controls and the
       native menu. For UI scale, CSS `zoom` on `:root` does scale antd's compiled
       pixels — which is precisely what `CLAUDE.md` records a `--ui-scale` custom

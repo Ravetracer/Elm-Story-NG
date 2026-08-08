@@ -44,6 +44,7 @@ const REQUIRED_TOPICS: HelpTopic[] = [
   'INTERFACE_TEXT',
   // export menu and import modal
   'EXPORT_JSON',
+  'EXPORT_ZIP',
   'EXPORT_PWA',
   'IMPORT'
 ]

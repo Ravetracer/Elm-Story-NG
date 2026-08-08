@@ -31,6 +31,7 @@ import styles from './styles.module.less'
 // is rendered outside the Dropdown so closing the menu does not unmount it.
 const EXPORT_HELP_TOPIC: Record<WORLD_EXPORT_TYPE, HelpTopic> = {
   [WORLD_EXPORT_TYPE.JSON]: 'EXPORT_JSON',
+  [WORLD_EXPORT_TYPE.ZIP]: 'EXPORT_ZIP',
   [WORLD_EXPORT_TYPE.PWA]: 'EXPORT_PWA'
 }
 
@@ -94,7 +95,11 @@ const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
 
   async function exportWorld(type: WORLD_EXPORT_TYPE) {
     if (world.id) {
-      if (type === WORLD_EXPORT_TYPE.PWA && !(await confirmUnusedAssets()))
+      // ZIP and PWA both bundle the assets, so both warn about unused ones.
+      if (
+        (type === WORLD_EXPORT_TYPE.PWA || type === WORLD_EXPORT_TYPE.ZIP) &&
+        !(await confirmUnusedAssets())
+      )
         return
 
       setExportWorldModal({ ...exportWorldModal, visible: true })
@@ -156,6 +161,19 @@ const ExportWorldMenu: React.FC<{ studioId: StudioId; world: World }> = ({
                   event.stopPropagation()
 
                   setHelpTopic(EXPORT_HELP_TOPIC[WORLD_EXPORT_TYPE.JSON])
+                }}
+              >
+                <QuestionCircleFilled />
+              </span>
+            </Menu.Item>
+            <Menu.Item onClick={() => exportWorld(WORLD_EXPORT_TYPE.ZIP)}>
+              Export ZIP{' '}
+              <span
+                className={styles.HelpButton}
+                onClick={(event) => {
+                  event.stopPropagation()
+
+                  setHelpTopic(EXPORT_HELP_TOPIC[WORLD_EXPORT_TYPE.ZIP])
                 }}
               >
                 <QuestionCircleFilled />

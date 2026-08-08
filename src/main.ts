@@ -35,6 +35,7 @@ import { addPrecacheEntries, setPrecacheRevision } from './lib/precache'
 
 import { WINDOW_EVENT_TYPE } from './lib/events'
 import { AssetFile } from './lib/assets'
+import { buildWorldZip, ZipAssetFile } from './lib/worldZip'
 
 import {
   WorldId,
@@ -772,6 +773,46 @@ const createWindow = async () => {
                 } catch (error) {
                   throw error
                 }
+              }
+
+              if (worldType === WORLD_EXPORT_TYPE.ZIP) {
+                // The portable bundle: the JSON plus its assets in one .zip,
+                // via the shared format in lib/worldZip so a desktop export
+                // imports into the web build with its media. Written as a single
+                // file rather than a folder.
+                const assetsDir = `${userDataPath}/assets/${parsedWorldData._.studioId}/${parsedWorldData._.id}`.replace(
+                  /\\/g,
+                  '/'
+                )
+
+                const assets: ZipAssetFile[] = []
+
+                try {
+                  for (const entry of await fs.readdir(assetsDir)) {
+                    const dot = entry.lastIndexOf('.')
+
+                    if (dot <= 0) continue
+
+                    const entryStats = await fs.stat(`${assetsDir}/${entry}`)
+
+                    if (!entryStats.isFile()) continue
+
+                    assets.push({
+                      id: entry.slice(0, dot),
+                      ext: entry.slice(dot + 1),
+                      data: await fs.readFile(`${assetsDir}/${entry}`)
+                    })
+                  }
+                } catch (error) {
+                  logger.info(`Assets don't exist. Skipping...`)
+                }
+
+                const bundle = await buildWorldZip(worldDataAsString, assets)
+
+                await fs.outputFile(
+                  `${savePathBase}/${fullWorldFolderName}.zip`,
+                  bundle
+                )
               }
 
               if (worldType === WORLD_EXPORT_TYPE.PWA) {
