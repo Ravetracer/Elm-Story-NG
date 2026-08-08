@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom'
 
 import { WINDOW_EVENT_TYPE } from '../../lib/events'
 import { UI_SCALES, uiScalePercentage } from '../../lib/uiScale'
+import { IS_WEB_BUILD } from '../../lib/storageDurability'
 import { PLATFORM_TYPE } from '../../data/types'
 
 import {
@@ -13,7 +14,6 @@ import {
   APP_LOCATION
 } from '../../contexts/AppContext'
 
-import { Dropdown, Menu } from 'antd'
 import {
   CheckOutlined,
   CloseOutlined,
@@ -132,30 +132,46 @@ const TitleBar: React.FC = () => {
 
   const [esgModalVisible, setESGModalVisible] = useState(false),
     [helpOpen, setHelpOpen] = useState(false),
+    [uiScaleOpen, setUiScaleOpen] = useState(false),
     [appLocationTitle, setAppLocationTitle] = useState<
       'DASHBOARD' | 'COMPOSER'
     >('DASHBOARD')
 
+  // The UI Size menu is a CSS-positioned popover rather than an antd Dropdown
+  // because the web build scales the whole UI with CSS `zoom`, under which
+  // antd's dom-align positioning writes layout-space coordinates against
+  // zoom-scaled rects and lands the menu off-screen — so at a non-default size
+  // it never reappeared. Plain absolute positioning stays in one coordinate
+  // space and is unaffected. The anchor ref closes it on an outside click.
+  const uiScaleAnchorRef = useRef<HTMLDivElement>(null)
+
   const titleBarButtonData = [
-    {
-      type: TITLE_BAR_BUTTON_TYPE.QUIT,
-      onClick: () => ipcRenderer.send(WINDOW_EVENT_TYPE.QUIT)
-    },
-    {
-      type: TITLE_BAR_BUTTON_TYPE.MINIMIZE,
-      onClick: () => ipcRenderer.send(WINDOW_EVENT_TYPE.MINIMIZE)
-    },
-    {
-      type: app.fullscreen
-        ? TITLE_BAR_BUTTON_TYPE.FLOATING
-        : TITLE_BAR_BUTTON_TYPE.FULLSCREEN,
-      onClick: () =>
-        appDispatch({
-          type: app.fullscreen
-            ? APP_ACTION_TYPE.FLOATING
-            : APP_ACTION_TYPE.FULLSCREEN
-        })
-    },
+    // Quit, minimize and fullscreen drive the Electron window and are inert in a
+    // browser tab, which has its own controls — so they are dropped from the web
+    // build rather than shown doing nothing.
+    ...(IS_WEB_BUILD
+      ? []
+      : [
+          {
+            type: TITLE_BAR_BUTTON_TYPE.QUIT,
+            onClick: () => ipcRenderer.send(WINDOW_EVENT_TYPE.QUIT)
+          },
+          {
+            type: TITLE_BAR_BUTTON_TYPE.MINIMIZE,
+            onClick: () => ipcRenderer.send(WINDOW_EVENT_TYPE.MINIMIZE)
+          },
+          {
+            type: app.fullscreen
+              ? TITLE_BAR_BUTTON_TYPE.FLOATING
+              : TITLE_BAR_BUTTON_TYPE.FULLSCREEN,
+            onClick: () =>
+              appDispatch({
+                type: app.fullscreen
+                  ? APP_ACTION_TYPE.FLOATING
+                  : APP_ACTION_TYPE.FULLSCREEN
+              })
+          }
+        ]),
     {
       // The Help button opened docs.elmstory.com, which no longer resolves. It
       // now opens the in-app overview for wherever the author is — the same
@@ -185,48 +201,71 @@ const TitleBar: React.FC = () => {
       visibleButtonData.length * TITLE_BAR_BUTTON_WIDTH +
       1
 
-  const uiScaleMenu = (
-    <Menu
-      className={styles.uiScaleMenu}
-      onClick={({ key }) =>
-        appDispatch({
-          type: APP_ACTION_TYPE.SET_UI_SCALE,
-          uiScale: Number.parseFloat(`${key}`)
-        })
-      }
+  const uiScalePopover = (
+    <div
+      className={styles.uiScalePopover}
+      // Align the 200px popover to whichever side its 23px button sits on so it
+      // stays on-screen: the window controls are mirrored per platform.
+      style={{ [buttonsOnLeft ? 'left' : 'right']: 0 }}
     >
-      {/* antd's Dropdown clones the menu with selectable: false, so the active
-          size is marked by a check of its own rather than by selectedKeys */}
-      <Menu.ItemGroup title="UI Size">
-        {UI_SCALES.map(({ label, scale }) => (
-          <Menu.Item key={`${scale}`}>
-            <div
-              className={`${styles.uiScaleRow} ${
-                scale === app.uiScale ? styles.uiScaleRowActive : ''
-              }`}
-            >
-              <span className={styles.uiScaleCheck}>
-                {scale === app.uiScale && <CheckOutlined />}
-              </span>
-              <span className={styles.uiScaleLabel}>{label}</span>
-              <span className={styles.uiScalePercentage}>
-                {uiScalePercentage(scale)}
-              </span>
-            </div>
-          </Menu.Item>
-        ))}
-      </Menu.ItemGroup>
+      <div className={styles.uiScaleGroupTitle}>UI Size</div>
 
-      <Menu.Divider />
+      {UI_SCALES.map(({ label, scale }) => (
+        <div
+          key={scale}
+          className={styles.uiScaleItem}
+          onClick={() => {
+            appDispatch({ type: APP_ACTION_TYPE.SET_UI_SCALE, uiScale: scale })
+            setUiScaleOpen(false)
+          }}
+        >
+          <div
+            className={`${styles.uiScaleRow} ${
+              scale === app.uiScale ? styles.uiScaleRowActive : ''
+            }`}
+          >
+            <span className={styles.uiScaleCheck}>
+              {scale === app.uiScale && <CheckOutlined />}
+            </span>
+            <span className={styles.uiScaleLabel}>{label}</span>
+            <span className={styles.uiScalePercentage}>
+              {uiScalePercentage(scale)}
+            </span>
+          </div>
+        </div>
+      ))}
+
+      <div className={styles.uiScaleDivider} />
 
       {/* the View menu these accelerators live on is not rendered: the window
           is frameless, so this is the only place they are written down */}
-      <Menu.Item key="hint" className={styles.uiScaleHint} disabled>
+      <div className={styles.uiScaleHint}>
         {app.platform === PLATFORM_TYPE.MACOS ? 'Cmd' : 'Ctrl'}+Alt+ + / &minus;
         / 0
-      </Menu.Item>
-    </Menu>
+      </div>
+    </div>
   )
+
+  // Close the UI Size popover on an outside click or Escape while it is open.
+  useEffect(() => {
+    if (!uiScaleOpen) return
+
+    const onPointerDown = (event: MouseEvent) => {
+      if (!uiScaleAnchorRef.current?.contains(event.target as Node))
+        setUiScaleOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setUiScaleOpen(false)
+    }
+
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [uiScaleOpen])
 
   useEffect(() => {
     if (isFirstRun.current) {
@@ -321,14 +360,17 @@ const TitleBar: React.FC = () => {
         >
           {orderedButtonData.map(({ type, onClick }) =>
             type === TITLE_BAR_BUTTON_TYPE.UI_SCALE ? (
-              <Dropdown
+              <div
                 key={type}
-                overlay={uiScaleMenu}
-                trigger={['click']}
-                placement={buttonsOnLeft ? 'bottomLeft' : 'bottomRight'}
+                className={styles.uiScaleAnchor}
+                ref={uiScaleAnchorRef}
               >
-                <TitleBarButton type={type} />
-              </Dropdown>
+                <TitleBarButton
+                  type={type}
+                  onClick={() => setUiScaleOpen((open) => !open)}
+                />
+                {uiScaleOpen && uiScalePopover}
+              </div>
             ) : (
               <TitleBarButton key={type} type={type} onClick={onClick} />
             )

@@ -140,11 +140,33 @@ the flag is inlined (no `__ESG_WEB__` token in the bundle). The composer reminde
 is built from already-verified parts (ZIP export, `isBackupStale`) and is the
 maintainer's final live check.
 
-## Remaining §10 work (as of 2026-08-08, v0.53.0)
+## Window chrome + the CSS-zoom popover trap (web-only, done v0.54.0)
 
-- **Chrome with no browser equivalent.** Hide/drop the inert window controls
-  (quit/minimize/fullscreen) and the native menu in the web build. `__ESG_WEB__` is
-  now available to gate that too.
+- **Inert window controls dropped.** `TitleBar` builds its button list with the
+  quit/minimize/fullscreen controls only when `!IS_WEB_BUILD` — they drive the
+  Electron window and do nothing in a browser tab, which has its own controls. The
+  web build keeps UI Size and Help. (No native menu to drop: Electron's `Menu` is
+  never created in the browser adapter.)
+- **CSS `zoom` breaks antd popup positioning — the UI Size menu is now a CSS
+  popover.** The web build scales the UI with CSS `zoom` on the document root
+  (`webFrame.setZoomFactor`'s browser stand-in). antd popups portal to
+  `document.body` and are placed by `dom-align`, which writes layout-space
+  `left/top` while reading zoom-scaled `getBoundingClientRect` values — so at a
+  non-default UI size the menu lands off-screen (measured: menu at x≈1560 in a
+  913-wide layout viewport at zoom 1.5). **No `getPopupContainer` fixes it** —
+  `document.body` (the default), the trigger's `parentElement`, and `#root` were
+  all verified off-screen live. Because the UI Size menu is our own chrome, it is
+  now a plain absolutely-positioned popover (`.uiScalePopover`, closed on
+  outside-click/Escape), which stays in one coordinate space and is immune. Verified
+  live at Large/Largest/Huge: opens on-screen under the button, applies + closes on
+  select, reopens correctly, resets to Default.
+  - **Known limitation:** other antd popups (tooltips, selects, the composer's
+    dropdowns) share the underlying dom-align/zoom mismatch at non-default UI sizes
+    in the browser. Not yet hit in practice; if it bites, the options are a
+    browser-only global mitigation or replacing the offending controls' positioning.
+
+## Remaining §10 work (as of 2026-08-08, v0.54.0)
+
 - **web→desktop ZIP import (deferred).** Desktop imports `.json` + sibling `assets/`
   only; add ZIP import to `main.ts` for the full 4-way round-trip. Not requested yet.
 

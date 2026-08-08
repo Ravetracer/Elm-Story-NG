@@ -990,11 +990,21 @@ Remaining below: export/import round-trip (phase 2) and durability + chrome
       exactly as `lib/worldZip` does for the ZIP format; `md5` is injected so the
       module is env-agnostic. Covered by `src/__tests__/worldPWA.test.ts`; the
       engine fetch + rewrite targets verified live in a real browser.
-- [ ] **Chrome that has no browser equivalent.** Drop the window controls and the
-      native menu. For UI scale, CSS `zoom` on `:root` does scale antd's compiled
-      pixels — which is precisely what `CLAUDE.md` records a `--ui-scale` custom
-      property could *not* do, so the browser gets the thing the desktop build
-      could not have.
+- [x] **Chrome that has no browser equivalent.** The web build drops the window
+      controls (quit/minimize/fullscreen) from `TitleBar`, gated on `IS_WEB_BUILD`,
+      leaving UI Size and Help; the native menu is Electron-only and never created
+      in a browser tab. For UI scale, CSS `zoom` on the document root scales antd's
+      compiled pixels — which is precisely what `CLAUDE.md` records a `--ui-scale`
+      custom property could *not* do, so the browser gets the thing the desktop
+      build could not have.
+      - **One trap surfaced and is fixed:** CSS `zoom` breaks antd's dom-align
+        popup positioning (it writes layout-space `left/top` against zoom-scaled
+        rects), so at a non-default UI size the UI Size dropdown landed off-screen
+        and never reappeared — and no `getPopupContainer` fixes it (verified live).
+        The title bar's UI Size control is now a **CSS-positioned popover**, not an
+        antd `Dropdown`, so it is immune. Other antd popups in the composer share
+        the underlying limitation at non-default sizes in the browser; not yet hit,
+        left for if/when it bites.
 - [x] **Storage durability.** Origin storage is *evicted* (Safari ~7 idle days,
       Chromium under pressure), so a half-written novel can vanish. Two defences, in
       `src/lib/storageDurability.ts` (pure helpers tested by

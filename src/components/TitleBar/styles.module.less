@@ -87,8 +87,46 @@
  * The picker's own type is deliberately not the smallest in the app — an author
  * who cannot read the UI has to be able to read the fix for it.
  */
-.uiScaleMenu {
+// The UI Size control is a CSS-positioned popover rather than an antd Dropdown:
+// the web build scales the UI with CSS `zoom`, which throws off antd's JS
+// (dom-align) popup positioning. Plain absolute positioning is immune. See the
+// note in index.tsx.
+.uiScaleAnchor {
+  position: relative;
+  grid-row: 1;
+  width: 23px;
+}
+
+.uiScalePopover {
+  position: absolute;
+  top: 44px;
+  z-index: @modal-z-index;
   min-width: 200px;
+  padding: 4px 0px;
+
+  background: @glass-opacity;
+  backdrop-filter: @glass-blur;
+  border: 1px solid hsl(0, 0%, 0%);
+  border-radius: 4px;
+  .shadow();
+
+  color: hsl(0, 0%, 92%);
+  cursor: default;
+
+  .uiScaleGroupTitle {
+    padding: 6px 12px;
+    font-size: 11px;
+    color: hsl(0, 0%, 55%);
+  }
+
+  .uiScaleItem {
+    padding: 5px 12px;
+    cursor: pointer;
+
+    &:hover {
+      background: hsla(0, 0%, 100%, 0.08);
+    }
+  }
 
   .uiScaleRow {
     display: flex;
@@ -119,9 +157,16 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .uiScaleDivider {
+    height: 1px;
+    margin: 4px 0px;
+    background: hsla(0, 0%, 100%, 0.1);
+  }
+
   .uiScaleHint {
+    padding: 4px 12px;
     font-size: 11px;
     text-align: center;
-    cursor: default;
+    color: hsl(0, 0%, 55%);
   }
 }
