@@ -7,9 +7,10 @@ import { useStudios } from '../../hooks'
 import { AppContext, APP_ACTION_TYPE } from '../../contexts/AppContext'
 
 import { Button, Select } from 'antd'
-import { EditOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
 
 import { SaveStudioModal } from '../Modal'
+import confirmRemoveStudio from './confirmRemoveStudio'
 
 import styles from './styles.module.less'
 
@@ -125,15 +126,40 @@ const StudioSelect: React.FC<StudioSelectProps> = ({
               )}
             </Select>
             {app.selectedStudioId && (
-              <Button
-                type="primary"
-                style={{ marginRight: 6, borderRadius: 2 }}
-                onClick={() =>
-                  setSaveStudioModal({ visible: true, edit: true })
-                }
-              >
-                <EditOutlined />
-              </Button>
+              <>
+                <Button
+                  type="primary"
+                  style={{ marginRight: 6, borderRadius: 2 }}
+                  title="Edit studio"
+                  onClick={() =>
+                    setSaveStudioModal({ visible: true, edit: true })
+                  }
+                >
+                  <EditOutlined />
+                </Button>
+                {/*
+                 * Deleting a studio was reachable only from inside the edit modal,
+                 * which is not where anyone looks for it — least of all after
+                 * emptying a studio of its worlds. It is offered here too, and both
+                 * routes go through the same confirmation.
+                 */}
+                <Button
+                  danger
+                  style={{ marginRight: 6, borderRadius: 2 }}
+                  title="Delete studio"
+                  onClick={() =>
+                    selectedStudio &&
+                    confirmRemoveStudio(selectedStudio, () =>
+                      appDispatch({
+                        type: APP_ACTION_TYPE.STUDIO_SELECT,
+                        selectedStudioId: undefined
+                      })
+                    )
+                  }
+                >
+                  <DeleteOutlined />
+                </Button>
+              </>
             )}
           </>
         )}

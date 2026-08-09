@@ -5,6 +5,7 @@ import { StudioId, Studio } from '../../data/types'
 import { Modal, ModalProps, Form, Input, Button } from 'antd'
 
 import api from '../../api'
+import confirmRemoveStudio from '../StudioSelect/confirmRemoveStudio'
 
 interface SaveStudioModalProps extends ModalProps {
   studio?: Studio
@@ -32,11 +33,11 @@ const SaveStudioModal: React.FC<SaveStudioModalProps> = ({
         key="remove"
         danger
         style={{ position: 'absolute', left: '16px' }}
-        onClick={async () => {
-          studio?.id && (await api().studios.removeStudio(studio.id))
-
-          onRemove && onRemove()
-        }}
+        // Deleting a studio drops its whole library, so it asks first — the same
+        // confirmation the dashboard's delete button uses.
+        onClick={() =>
+          studio && confirmRemoveStudio(studio, () => onRemove && onRemove())
+        }
       >
         Remove
       </Button>

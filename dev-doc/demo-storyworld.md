@@ -48,6 +48,49 @@ data choices, each load-bearing:
   character has a mask of that type carrying an `assetId`. The default NEUTRAL mask
   has no image, so a non-neutral mood mask holds the portrait.
 
+## No gated choice is ever a silent dead end
+
+The first cut of this world gated three choices and put nothing behind them, which
+read as broken rather than as locked: the departure from the market simply did
+nothing, and entering the temple unlit produced the engine's bare
+**"Unable to return. Missing path."** Every gate now comes in a pair — the open path,
+and a fallback carrying the *inverse* conditions that leads somewhere explaining
+what is missing and offering the way back:
+
+| choice | open when | otherwise |
+| --- | --- | --- |
+| Set out for the temple | ALL: `clues>=2`, `hasMap`, `hasTorch`, `hasFlint` | ANY of those unmet → **Not Yet Ready**, a live checklist |
+| Step into the labyrinth | object condition: Lit Torch in inventory | `torchLit == false` → **Not Without Light** |
+
+The fallback uses `PATH_CONDITIONS_TYPE.ANY` over the negated conditions, which is
+how "not (a and b and c)" is expressed with the condition model as it stands.
+
+**The checklist is why the market gate reads variables rather than object
+conditions.** A template expression can only see variables, so the torch, flint and
+map each set a boolean through `takeEffects` (`hasTorch`, `hasFlint`, `hasMap`) and
+*Not Yet Ready* prints `{ hasTorch ? … : … }` per line. The lit-torch gate stays an
+object condition so the world still demonstrates one.
+
+Two more rules the same pass established:
+
+- **Ask-once conversations close themselves.** Talking to Itzel, asking Finch and
+  buying supplies each set a boolean and carry the matching `== false` condition, so
+  the choice disappears once used instead of repeating with no effect. Finch's answer
+  is a real event (`What Finch Knows`) rather than a loop back onto his opening line.
+- **A `Choice` belongs to exactly one event.** `EventChoices` looks choices up with
+  `.where({ eventId })`, so an option offered from two events needs **one row per
+  event**. Reusing a single choice id across two events makes it render on the owner
+  and silently vanish on the other — which is what happened to "Return to the
+  market" on the unlit-entry event.
+
+## Getting back to what you skipped
+
+Scene transitions used to be one-way, so a player who left Finch's study without the
+codex could never satisfy the departure gate. Two jumps exist purely to undo that:
+`jBackToStudy` (market → study) and `jBackToMarket` (temple entrance → market, also
+offered from *Not Without Light*). Anything the world requires must stay reachable
+from wherever the requirement is discovered.
+
 ## The art — `src/lib/demo/media.ts` (generated)
 
 Three character portraits and five object icons are **base64-embedded** in

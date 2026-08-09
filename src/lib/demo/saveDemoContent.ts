@@ -15,7 +15,8 @@ import {
   OBJECT_LOCATION_TYPE,
   RECIPE_OUTPUT_DESTINATION,
   WORLD_TEMPLATE,
-  DEFAULT_WORLD_VERSION
+  DEFAULT_WORLD_VERSION,
+  INVENTORY_LOCATION_KEY
 } from '../../data/types'
 
 import { WINDOW_EVENT_TYPE } from '../events'
@@ -38,9 +39,15 @@ import api from '../../api'
  *
  * Everything is deterministic: every element id is generated up front so choices,
  * paths, conditions, effects and object conditions can all reference one another.
- * The three character portraits and five object icons are bundled as base64 in
+ * The three character portraits and eight object icons are bundled as base64 in
  * `media.ts` and written to disk through the normal SAVE_ASSET path, so the demo
  * ships its own art with no filesystem or network access at seed time.
+ *
+ * **No dead end is ever silent.** Every gated choice has a second path underneath it
+ * carrying the inverse conditions, leading somewhere that explains what is missing
+ * and offers the way back. An author reading this world should see that pattern
+ * repeated: a closed choice with nothing behind it produces the engine's bare
+ * "Unable to return. Missing path." and reads as a bug to a player.
  */
 
 // --- Slate content helpers -------------------------------------------------
@@ -77,9 +84,9 @@ const dataUrlToArrayBuffer = (dataUrl: string): ArrayBuffer => {
 /**
  * Writes a bundled base64 image to `userData/assets/<studio>/<world>/<id>.<ext>`
  * under the kind's extension and returns the asset id. The bytes are stored as
- * imported (a PNG under a `.jpeg`/`.webp` name); every read site loads assets
- * through an `<img>`/`background-image`, which sniffs the content, so the picture
- * renders while the extension stays the one the read site asks for.
+ * imported (a JPEG under a `.webp` name, say); every read site loads assets through
+ * an `<img>`/`background-image`, which sniffs the content, so the picture renders
+ * while the extension stays the one the read site asks for.
  */
 const seedAsset = async (
   studioId: StudioId,
@@ -118,16 +125,22 @@ export default async function saveDemoContent(
     sMuseum = uuid()
 
   // Events
-  const e1 = uuid(),
-    e2 = uuid(),
-    e3 = uuid(),
-    e4 = uuid(),
-    e5 = uuid(),
-    e6 = uuid(),
-    e7 = uuid(),
-    e8 = uuid(),
-    e9 = uuid(),
-    e10 = uuid()
+  const e1 = uuid(), // A Quiet Afternoon
+    e2 = uuid(), // The Call
+    e2b = uuid(), // The Grant
+    e2a = uuid(), // Sealed with a Word
+    e2c = uuid(), // Mérida
+    e3 = uuid(), // The Professor
+    e3a = uuid(), // What Finch Knows
+    e4 = uuid(), // Mercado de Mérida
+    e4b = uuid(), // Not Yet Ready
+    e5 = uuid(), // A Door of Darkness
+    e5a = uuid(), // Not Without Light
+    e6 = uuid(), // A Fork in the Dark
+    e7 = uuid(), // Carved Doorways
+    e8 = uuid(), // Lost in the Dark (lose)
+    e9 = uuid(), // The Pedestal
+    e10 = uuid() // Home at the Museum (win)
 
   // Jumps (scene -> scene)
   const jStudy = uuid(),
@@ -135,7 +148,9 @@ export default async function saveDemoContent(
     jEntrance = uuid(),
     jLaby = uuid(),
     jChamber = uuid(),
-    jMuseum = uuid()
+    jMuseum = uuid(),
+    jBackToStudy = uuid(), // market -> Finch, for anything left behind
+    jBackToMarket = uuid() // temple -> market, same reason
 
   // Characters
   const cVargas = uuid(),
@@ -146,9 +161,14 @@ export default async function saveDemoContent(
   const vFunds = uuid(),
     vClues = uuid(),
     vMetGuide = uuid(),
+    vFinchTold = uuid(),
     vTorchLit = uuid(),
     vTorchFuel = uuid(),
-    vIdolTaken = uuid()
+    vIdolTaken = uuid(),
+    vHasMap = uuid(),
+    vHasTorch = uuid(),
+    vHasFlint = uuid(),
+    vBoughtSupplies = uuid()
 
   // Objects & recipe
   const oTorch = uuid(),
@@ -156,34 +176,60 @@ export default async function saveDemoContent(
     oLitTorch = uuid(),
     oCodex = uuid(),
     oIdol = uuid(),
+    oMap = uuid(),
+    oRope = uuid(),
+    oWater = uuid(),
     rLight = uuid()
 
   // Choices
   const chAnswer = uuid(),
-    chAccept = uuid(),
+    chAccept = uuid(), // inline, in the prose of The Call
     chAskGrant = uuid(),
+    chAcceptAfterGrant = uuid(),
+    chFly = uuid(),
+    chKnock = uuid(),
     chAskFinch = uuid(),
-    chToMarket = uuid(),
+    chToMarket = uuid(), // from The Professor
+    chToMarket2 = uuid(), // from What Finch Knows
     chTalkItzel = uuid(),
     chBuy = uuid(),
     chToTemple = uuid(),
+    chBackToStudy = uuid(),
+    chBackToStalls = uuid(),
     chEnterLaby = uuid(),
-    chLeft = uuid(),
-    chRight = uuid(),
-    chJaguar = uuid(),
-    chSerpent = uuid(),
+    chBackToEntrance = uuid(),
+    // A Choice belongs to exactly one event — `EventChoices` looks them up with
+    // `.where({ eventId })` — so an option offered from two events needs one row
+    // per event rather than one row reused.
+    chBackToMarket = uuid(),
+    chBackToMarket2 = uuid(),
+    chLeft = uuid(), // inline
+    chRight = uuid(), // inline
+    chJaguar = uuid(), // inline
+    chSerpent = uuid(), // inline
     chLeave = uuid()
 
   // Paths
   const pAnswer = uuid(),
     pAccept = uuid(),
     pAskGrant = uuid(),
+    pAcceptAfterGrant = uuid(),
+    pFly = uuid(),
+    pKnock = uuid(),
     pAskFinch = uuid(),
     pToMarket = uuid(),
+    pToMarket2 = uuid(),
     pTalkItzel = uuid(),
     pBuy = uuid(),
     pToTemple = uuid(),
+    pNotReady = uuid(),
+    pBackToStudy = uuid(),
+    pBackToStalls = uuid(),
     pEnterLaby = uuid(),
+    pNoLight = uuid(),
+    pBackToEntrance = uuid(),
+    pBackToMarket = uuid(),
+    pBackToMarket2 = uuid(),
     pLeftLoop = uuid(),
     pLeftLose = uuid(),
     pRight = uuid(),
@@ -194,7 +240,8 @@ export default async function saveDemoContent(
 
   const NUM = VARIABLE_TYPE.NUMBER,
     BOOL = VARIABLE_TYPE.BOOLEAN,
-    ALL = PATH_CONDITIONS_TYPE.ALL
+    ALL = PATH_CONDITIONS_TYPE.ALL,
+    ANY = PATH_CONDITIONS_TYPE.ANY
 
   // -- World --------------------------------------------------------------
   const world = await api().worlds.saveWorld(studioId, {
@@ -223,54 +270,20 @@ export default async function saveDemoContent(
   })
 
   // -- Assets (need the worldId) -----------------------------------------
-  const aVargas = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.vargas,
-      ASSET_KIND.CHARACTER_MASK
-    ),
-    aFinch = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.finch,
-      ASSET_KIND.CHARACTER_MASK
-    ),
-    aItzel = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.itzel,
-      ASSET_KIND.CHARACTER_MASK
-    ),
-    aTorch = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.torch,
-      ASSET_KIND.OBJECT_IMAGE
-    ),
-    aFlint = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.flint,
-      ASSET_KIND.OBJECT_IMAGE
-    ),
-    aLitTorch = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.litTorch,
-      ASSET_KIND.OBJECT_IMAGE
-    ),
-    aCodex = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.codex,
-      ASSET_KIND.OBJECT_IMAGE
-    ),
-    aIdol = await seedAsset(
-      studioId,
-      worldId,
-      DEMO_MEDIA.idol,
-      ASSET_KIND.OBJECT_IMAGE
-    )
+  const mask = (m: string) => seedAsset(studioId, worldId, m, ASSET_KIND.CHARACTER_MASK)
+  const icon = (m: string) => seedAsset(studioId, worldId, m, ASSET_KIND.OBJECT_IMAGE)
+
+  const aVargas = await mask(DEMO_MEDIA.vargas),
+    aFinch = await mask(DEMO_MEDIA.finch),
+    aItzel = await mask(DEMO_MEDIA.itzel),
+    aTorch = await icon(DEMO_MEDIA.torch),
+    aFlint = await icon(DEMO_MEDIA.flint),
+    aLitTorch = await icon(DEMO_MEDIA.litTorch),
+    aCodex = await icon(DEMO_MEDIA.codex),
+    aIdol = await icon(DEMO_MEDIA.idol),
+    aMap = await icon(DEMO_MEDIA.map),
+    aRope = await icon(DEMO_MEDIA.rope),
+    aWater = await icon(DEMO_MEDIA.water)
 
   // -- Characters ---------------------------------------------------------
   await Promise.all([
@@ -313,61 +326,95 @@ export default async function saveDemoContent(
   ])
 
   // -- Variables ----------------------------------------------------------
-  await Promise.all([
+  const variable = (
+    id: ElementId,
+    title: string,
+    type: VARIABLE_TYPE,
+    initialValue: string,
+    description: string
+  ) =>
     api().variables.saveVariable(studioId, {
-      id: vFunds,
+      id,
       worldId,
-      title: 'funds',
-      type: NUM,
-      initialValue: '500',
-      description: 'Grant dollars on hand. Shown at the end of the story.',
-      tags: []
-    }),
-    api().variables.saveVariable(studioId, {
-      id: vClues,
-      worldId,
-      title: 'clues',
-      type: NUM,
-      initialValue: '0',
-      description: "Leads to the temple's location. Two are needed to set out.",
-      tags: []
-    }),
-    api().variables.saveVariable(studioId, {
-      id: vMetGuide,
-      worldId,
-      title: 'metGuide',
-      type: BOOL,
-      initialValue: 'false',
-      description: 'Set when Itzel is spoken to; reveals the flint in the market.',
-      tags: []
-    }),
-    api().variables.saveVariable(studioId, {
-      id: vTorchLit,
-      worldId,
-      title: 'torchLit',
-      type: BOOL,
-      initialValue: 'false',
-      description: 'Set by the torch + flint recipe.',
-      tags: []
-    }),
-    api().variables.saveVariable(studioId, {
-      id: vTorchFuel,
-      worldId,
-      title: 'torchFuel',
-      type: NUM,
-      initialValue: '3',
-      description: 'Burns down on every wrong turn in the labyrinth.',
-      tags: []
-    }),
-    api().variables.saveVariable(studioId, {
-      id: vIdolTaken,
-      worldId,
-      title: 'idolTaken',
-      type: BOOL,
-      initialValue: 'false',
-      description: 'Set by taking the idol; gates the way home.',
+      title,
+      type,
+      initialValue,
+      description,
       tags: []
     })
+
+  await Promise.all([
+    variable(
+      vFunds,
+      'funds',
+      NUM,
+      '500',
+      'Grant dollars on hand. Shown at the end of the story.'
+    ),
+    variable(
+      vClues,
+      'clues',
+      NUM,
+      '0',
+      "Leads to the temple's location. Two are needed to set out."
+    ),
+    variable(
+      vMetGuide,
+      'metGuide',
+      BOOL,
+      'false',
+      'Set when Itzel is spoken to; reveals the map and the flint in the market.'
+    ),
+    variable(
+      vFinchTold,
+      'finchTold',
+      BOOL,
+      'false',
+      'Set once Finch has shared what he knows, so he is not asked twice.'
+    ),
+    variable(vTorchLit, 'torchLit', BOOL, 'false', 'Set by the torch + flint recipe.'),
+    variable(
+      vTorchFuel,
+      'torchFuel',
+      NUM,
+      '3',
+      'Burns down on every wrong turn in the labyrinth.'
+    ),
+    variable(
+      vIdolTaken,
+      'idolTaken',
+      BOOL,
+      'false',
+      'Set by taking the idol; gates the way home.'
+    ),
+    variable(
+      vHasMap,
+      'hasMap',
+      BOOL,
+      'false',
+      'Set by taking the trail map. Read by the departure checklist.'
+    ),
+    variable(
+      vHasTorch,
+      'hasTorch',
+      BOOL,
+      'false',
+      'Set by taking the torch. Read by the departure checklist.'
+    ),
+    variable(
+      vHasFlint,
+      'hasFlint',
+      BOOL,
+      'false',
+      'Set by taking the flint striker. Read by the departure checklist.'
+    ),
+    variable(
+      vBoughtSupplies,
+      'boughtSupplies',
+      BOOL,
+      'false',
+      'Set when water and rope are bought; puts both into the inventory.'
+    )
   ])
 
   // -- Objects & recipe ---------------------------------------------------
@@ -382,6 +429,8 @@ export default async function saveDemoContent(
       takeable: true,
       combineable: true,
       placements: [{ location: sMarket, quantity: 1 }],
+      takeEffects: [[vHasTorch, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL]],
+      takeMessage: 'You take the resin torch. Unlit, it is only a stick.',
       tags: []
     }),
     api().objects.saveObject(studioId, {
@@ -402,6 +451,8 @@ export default async function saveDemoContent(
           variableConditions: [[vMetGuide, COMPARE_OPERATOR_TYPE.EQ, 'true', BOOL]]
         }
       ],
+      takeEffects: [[vHasFlint, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL]],
+      takeMessage: 'The striker goes into your pack.',
       tags: []
     }),
     api().objects.saveObject(studioId, {
@@ -414,6 +465,70 @@ export default async function saveDemoContent(
       combineable: false,
       // Never placed in the world; it only exists once the recipe fires.
       placements: [],
+      tags: []
+    }),
+    api().objects.saveObject(studioId, {
+      id: oMap,
+      worldId,
+      title: 'Trail Map',
+      description:
+        'A creased sheet with the trailhead inked in by Itzel, and a cross where the pyramid should stand.',
+      assetId: aMap,
+      takeable: true,
+      combineable: false,
+      // Itzel draws it for you, so it only exists once you have spoken to her.
+      placements: [
+        {
+          location: sMarket,
+          quantity: 1,
+          conditionsType: ALL,
+          variableConditions: [[vMetGuide, COMPARE_OPERATOR_TYPE.EQ, 'true', BOOL]]
+        }
+      ],
+      takeEffects: [[vHasMap, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL]],
+      takeMessage: 'You fold Itzel’s map into your jacket.',
+      tags: []
+    }),
+    api().objects.saveObject(studioId, {
+      id: oRope,
+      worldId,
+      title: 'Coil of Rope',
+      description: 'Forty feet of hemp rope. Heavier than it looks, and worth it.',
+      assetId: aRope,
+      takeable: false,
+      combineable: false,
+      // Bought rather than found: a placement straight into the inventory, gated on
+      // the purchase. This is what gives spending money a visible result.
+      placements: [
+        {
+          location: INVENTORY_LOCATION_KEY,
+          quantity: 1,
+          conditionsType: ALL,
+          variableConditions: [
+            [vBoughtSupplies, COMPARE_OPERATOR_TYPE.EQ, 'true', BOOL]
+          ]
+        }
+      ],
+      tags: []
+    }),
+    api().objects.saveObject(studioId, {
+      id: oWater,
+      worldId,
+      title: 'Canteen of Water',
+      description: 'Full, cold, and the difference between a hike and a disaster.',
+      assetId: aWater,
+      takeable: false,
+      combineable: false,
+      placements: [
+        {
+          location: INVENTORY_LOCATION_KEY,
+          quantity: 1,
+          conditionsType: ALL,
+          variableConditions: [
+            [vBoughtSupplies, COMPARE_OPERATOR_TYPE.EQ, 'true', BOOL]
+          ]
+        }
+      ],
       tags: []
     }),
     api().objects.saveObject(studioId, {
@@ -486,19 +601,27 @@ export default async function saveDemoContent(
     scene(sClass, 'The Classroom', [
       [ELEMENT_TYPE.EVENT, e1],
       [ELEMENT_TYPE.EVENT, e2],
+      [ELEMENT_TYPE.EVENT, e2b],
+      [ELEMENT_TYPE.EVENT, e2a],
+      [ELEMENT_TYPE.EVENT, e2c],
       [ELEMENT_TYPE.JUMP, jStudy]
     ]),
     scene(sStudy, "Finch's Study", [
       [ELEMENT_TYPE.EVENT, e3],
+      [ELEMENT_TYPE.EVENT, e3a],
       [ELEMENT_TYPE.JUMP, jMarket]
     ]),
     scene(sMarket, 'The Market', [
       [ELEMENT_TYPE.EVENT, e4],
-      [ELEMENT_TYPE.JUMP, jEntrance]
+      [ELEMENT_TYPE.EVENT, e4b],
+      [ELEMENT_TYPE.JUMP, jEntrance],
+      [ELEMENT_TYPE.JUMP, jBackToStudy]
     ]),
     scene(sEntrance, 'The Temple Entrance', [
       [ELEMENT_TYPE.EVENT, e5],
-      [ELEMENT_TYPE.JUMP, jLaby]
+      [ELEMENT_TYPE.EVENT, e5a],
+      [ELEMENT_TYPE.JUMP, jLaby],
+      [ELEMENT_TYPE.JUMP, jBackToMarket]
     ]),
     scene(sLaby, 'The Labyrinth', [
       [ELEMENT_TYPE.EVENT, e6],
@@ -533,10 +656,12 @@ export default async function saveDemoContent(
     })
 
   await Promise.all([
-    jump(jStudy, sClass, sStudy, e3, "To Finch's Study", [760, 120]),
-    jump(jMarket, sStudy, sMarket, e4, 'To the Market', [520, 140]),
-    jump(jEntrance, sMarket, sEntrance, e5, 'To the Temple', [560, 160]),
-    jump(jLaby, sEntrance, sLaby, e6, 'Into the Labyrinth', [520, 140]),
+    jump(jStudy, sClass, sStudy, e3, "To Finch's Study", [1400, 120]),
+    jump(jMarket, sStudy, sMarket, e4, 'To the Market', [880, 140]),
+    jump(jEntrance, sMarket, sEntrance, e5, 'To the Temple', [600, 160]),
+    jump(jBackToStudy, sMarket, sStudy, e3, "Back to Finch's Study", [600, 460]),
+    jump(jLaby, sEntrance, sLaby, e6, 'Into the Labyrinth', [560, 140]),
+    jump(jBackToMarket, sEntrance, sMarket, e4, 'Back to the Market', [560, 440]),
     jump(jChamber, sLaby, sChamber, e9, 'To the Idol Chamber', [800, 120]),
     jump(jMuseum, sChamber, sMuseum, e10, 'Home to the Museum', [520, 140])
   ])
@@ -570,6 +695,31 @@ export default async function saveDemoContent(
       composer: { sceneMapPosX: pos[0], sceneMapPosY: pos[1] },
       tags: []
     })
+
+  const vargas = {
+    persona: [cVargas, CHARACTER_MASK_TYPE.EXCITED, undefined] as [
+      ElementId,
+      CHARACTER_MASK_TYPE,
+      string | undefined
+    ],
+    characters: [cVargas]
+  }
+  const finch = {
+    persona: [cFinch, CHARACTER_MASK_TYPE.CHEERFUL, undefined] as [
+      ElementId,
+      CHARACTER_MASK_TYPE,
+      string | undefined
+    ],
+    characters: [cFinch]
+  }
+  const itzel = {
+    persona: [cItzel, CHARACTER_MASK_TYPE.HAPPY, undefined] as [
+      ElementId,
+      CHARACTER_MASK_TYPE,
+      string | undefined
+    ],
+    characters: [cItzel]
+  }
 
   await Promise.all([
     event(
@@ -607,10 +757,61 @@ export default async function saveDemoContent(
       ],
       [chAccept, chAskGrant],
       [440, 120],
-      {
-        persona: [cVargas, CHARACTER_MASK_TYPE.EXCITED, undefined],
-        characters: [cVargas, cFinch]
-      }
+      { ...vargas, characters: [cVargas, cFinch] }
+    ),
+    event(
+      e2b,
+      sClass,
+      'The Grant',
+      [
+        p(
+          t(
+            '“Money — of course. Forgive me, I should have led with that.” Papers rustle on her end of the line. “The board released a research grant this morning. Three hundred dollars, wired to you tonight, on top of your travel. Spend it on whatever the jungle demands.”'
+          )
+        ),
+        p(
+          t(
+            'A pause. “That is everything I have, Professor. The rest is your answer.”'
+          )
+        )
+      ],
+      [chAcceptAfterGrant],
+      [440, 440],
+      vargas
+    ),
+    event(
+      e2a,
+      sClass,
+      'Sealed with a Word',
+      [
+        p(
+          t(
+            '“Thank you.” The relief in her voice is unmistakable. “I will have a ticket waiting at the airport. Go to Mérida first — Professor Finch keeps a study off the Plaza Grande, and he has been chasing this same rumour for a decade. He is expecting you.”'
+          )
+        ),
+        p(t('The line clicks. Outside, the school bell rings for the last time this term.'))
+      ],
+      [chFly],
+      [800, 120],
+      vargas
+    ),
+    event(
+      e2c,
+      sClass,
+      'Mérida',
+      [
+        p(
+          t(
+            'Nine hours and two aircraft later, the heat of the Yucatán closes over you like a hand. A taxi carries you past limestone facades to a narrow door off the Plaza Grande, its brass plate green with age: '
+          ),
+          charRef(cFinch),
+          t('.')
+        ),
+        p(t('You knock.'))
+      ],
+      [chKnock],
+      [1120, 120],
+      { characters: [cFinch] }
     ),
     event(
       e3,
@@ -624,13 +825,38 @@ export default async function saveDemoContent(
         ),
         p(
           t(
-            'A brittle codex sits on the corner of the desk — take it from the object rail on the right. Or ask Finch what he already knows.'
+            'A brittle codex sits on the corner of the desk — take it from the object rail on the right. And Finch himself has been at this for ten years; ask him what he has.'
           )
         )
       ],
       [chAskFinch, chToMarket],
       [200, 140],
-      { persona: [cFinch, CHARACTER_MASK_TYPE.CHEERFUL, undefined], characters: [cFinch] }
+      finch
+    ),
+    event(
+      e3a,
+      sStudy,
+      'What Finch Knows',
+      [
+        p(
+          t(
+            '“Ten years of it.” He unrolls a survey map, pinning the corners with a coffee cup and a trilobite. “Three things. One: the Idol is not in a tomb, it is in a temple — a stepped pyramid, four faces, and only the north face has a door.'
+          )
+        ),
+        p(
+          t(
+            'Two: the inside is a labyrinth, and the builders marked the true way with the jaguar, not the serpent. Serpents in K’aal are guardians. They do not show you the road, they eat people who take it.'
+          )
+        ),
+        p(
+          t(
+            'Three —” he taps the map, “— it is a day west of the old chicle road, and no gringo finds that trailhead alone. Get a guide in the market. Ask for Itzel; she has forgotten more jungle than I ever learned.”'
+          )
+        )
+      ],
+      [chToMarket2],
+      [560, 140],
+      finch
     ),
     event(
       e4,
@@ -644,13 +870,47 @@ export default async function saveDemoContent(
         ),
         p(
           t(
-            'A resin torch lies among the market goods. Talk to Itzel and she’ll show you where to find a flint striker.'
+            'A resin torch lies among the market goods. Talk to Itzel and she will draw you the way; the stalls will sell you the rest.'
           )
         )
       ],
-      [chTalkItzel, chBuy, chToTemple],
+      [chTalkItzel, chBuy, chToTemple, chBackToStudy],
       [200, 160],
-      { persona: [cItzel, CHARACTER_MASK_TYPE.HAPPY, undefined], characters: [cItzel] }
+      itzel
+    ),
+    event(
+      e4b,
+      sMarket,
+      'Not Yet Ready',
+      [
+        p(
+          t(
+            'You get as far as the edge of the market before stopping. Going into that jungle short of anything is how people are never heard from again. You take stock:'
+          )
+        ),
+        p(
+          t(
+            'The location — { clues >= 2 ? "pinned down between the codex and Finch." : "still guesswork. Ask around; the codex and Finch each hold a piece." }'
+          )
+        ),
+        p(
+          t(
+            'A map of the trailhead — { hasMap ? "folded in your jacket." : "you have none. Itzel will draw one if you ask her." }'
+          )
+        ),
+        p(
+          t(
+            'A torch — { hasTorch ? "in your pack." : "not bought. There is one among the market goods." }'
+          )
+        ),
+        p(
+          t(
+            'A striker — { hasFlint ? "in your pack." : "not bought. Itzel knows which stall sells them." }'
+          )
+        )
+      ],
+      [chBackToStalls],
+      [200, 520]
     ),
     event(
       e5,
@@ -663,8 +923,27 @@ export default async function saveDemoContent(
           )
         )
       ],
-      [chEnterLaby],
+      [chEnterLaby, chBackToMarket],
       [200, 140]
+    ),
+    event(
+      e5a,
+      sEntrance,
+      'Not Without Light',
+      [
+        p(
+          t(
+            'You take three steps in and the dark takes the fourth. It is not gloom, it is absence — the air itself feels like a held breath. Somewhere ahead, a long way down, water drips onto stone.'
+          )
+        ),
+        p(
+          t(
+            'You back out into the sun. Nothing goes into that pyramid without fire: strike the flint against the torch first. If either is still sitting on a market stall, the market is half a day back down the trail.'
+          )
+        )
+      ],
+      [chBackToEntrance, chBackToMarket2],
+      [200, 440]
     ),
     event(
       e6,
@@ -748,7 +1027,7 @@ export default async function saveDemoContent(
       ],
       [],
       [240, 160],
-      { ending: true, persona: [cVargas, CHARACTER_MASK_TYPE.EXCITED, undefined], characters: [cVargas] }
+      { ending: true, ...vargas }
     )
   ])
 
@@ -760,12 +1039,21 @@ export default async function saveDemoContent(
     choice(chAnswer, e1, 'Answer the phone'),
     choice(chAccept, e2, 'accept the expedition'),
     choice(chAskGrant, e2, 'Ask about the grant'),
+    choice(chAcceptAfterGrant, e2b, 'Accept the expedition'),
+    choice(chFly, e2a, 'Fly to Mérida'),
+    choice(chKnock, e2c, 'Step into the study'),
     choice(chAskFinch, e3, 'Ask Finch what he knows'),
     choice(chToMarket, e3, 'Head to the market'),
+    choice(chToMarket2, e3a, 'Head to the market'),
     choice(chTalkItzel, e4, 'Talk to Itzel about the temple'),
-    choice(chBuy, e4, 'Buy water and rope'),
+    choice(chBuy, e4, 'Buy water and rope ($100)'),
     choice(chToTemple, e4, 'Set out for the temple'),
+    choice(chBackToStudy, e4, "Go back to Finch's study"),
+    choice(chBackToStalls, e4b, 'Back to the stalls'),
     choice(chEnterLaby, e5, 'Step into the labyrinth'),
+    choice(chBackToEntrance, e5a, 'Back to the entrance'),
+    choice(chBackToMarket, e5, 'Return to the market'),
+    choice(chBackToMarket2, e5a, 'Return to the market'),
     choice(chLeft, e6, 'left passage'),
     choice(chRight, e6, 'right passage'),
     choice(chJaguar, e7, 'jaguar door'),
@@ -782,13 +1070,14 @@ export default async function saveDemoContent(
     destinationId: ElementId,
     destinationType: ELEMENT_TYPE,
     title: string,
-    notification?: string
+    notification?: string,
+    conditionsType: PATH_CONDITIONS_TYPE = ALL
   ) =>
     api().paths.savePath(studioId, {
       id,
       worldId,
       sceneId,
-      conditionsType: ALL,
+      conditionsType,
       originId,
       originType: EVENT_TYPE.CHOICE,
       choiceId,
@@ -799,39 +1088,48 @@ export default async function saveDemoContent(
       tags: []
     })
 
+  const EVENT = ELEMENT_TYPE.EVENT,
+    JUMP = ELEMENT_TYPE.JUMP
+
   await Promise.all([
-    path(pAnswer, sClass, e1, chAnswer, e2, ELEMENT_TYPE.EVENT, 'Answer'),
-    path(pAccept, sClass, e2, chAccept, jStudy, ELEMENT_TYPE.JUMP, 'Accept'),
+    path(pAnswer, sClass, e1, chAnswer, e2, EVENT, 'Answer'),
+    path(pAccept, sClass, e2, chAccept, e2a, EVENT, 'Accept'),
     path(
       pAskGrant,
       sClass,
       e2,
       chAskGrant,
-      jStudy,
-      ELEMENT_TYPE.JUMP,
+      e2b,
+      EVENT,
       'Ask about the grant',
       'Dr. Vargas wires an extra $300 to your account.'
     ),
+    path(pAcceptAfterGrant, sClass, e2b, chAcceptAfterGrant, e2a, EVENT, 'Accept'),
+    path(pFly, sClass, e2a, chFly, e2c, EVENT, 'Fly to Mérida'),
+    path(pKnock, sClass, e2c, chKnock, jStudy, JUMP, 'Into the study'),
+
     path(
       pAskFinch,
       sStudy,
       e3,
       chAskFinch,
-      e3,
-      ELEMENT_TYPE.EVENT,
+      e3a,
+      EVENT,
       'Ask Finch',
-      'Finch sketches a map fragment from memory. (+1 clue)'
+      'Finch talks for twenty minutes without pausing. (+1 clue)'
     ),
-    path(pToMarket, sStudy, e3, chToMarket, jMarket, ELEMENT_TYPE.JUMP, 'To market'),
+    path(pToMarket, sStudy, e3, chToMarket, jMarket, JUMP, 'To market'),
+    path(pToMarket2, sStudy, e3a, chToMarket2, jMarket, JUMP, 'To market'),
+
     path(
       pTalkItzel,
       sMarket,
       e4,
       chTalkItzel,
       e4,
-      ELEMENT_TYPE.EVENT,
+      EVENT,
       'Talk to Itzel',
-      'Itzel marks the trailhead — and points out a flint striker in the next stall.'
+      'Itzel sketches the trailhead onto a map and presses it into your hand — then points out the stall that sells flint strikers.'
     ),
     path(
       pBuy,
@@ -839,61 +1137,63 @@ export default async function saveDemoContent(
       e4,
       chBuy,
       e4,
-      ELEMENT_TYPE.EVENT,
+      EVENT,
       'Buy supplies',
-      'You stock up on water and rope. (−$100)'
+      'You buy a canteen of water and a coil of rope. (−$100)'
     ),
+    path(pToTemple, sMarket, e4, chToTemple, jEntrance, JUMP, 'Set out'),
+    path(pNotReady, sMarket, e4, chToTemple, e4b, EVENT, 'Set out (not ready)', undefined, ANY),
+    path(pBackToStudy, sMarket, e4, chBackToStudy, jBackToStudy, JUMP, 'Back to Finch'),
+    path(pBackToStalls, sMarket, e4b, chBackToStalls, e4, EVENT, 'Back to the stalls'),
+
+    path(pEnterLaby, sEntrance, e5, chEnterLaby, jLaby, JUMP, 'Enter'),
+    path(pNoLight, sEntrance, e5, chEnterLaby, e5a, EVENT, 'Enter (no light)'),
+    path(pBackToEntrance, sEntrance, e5a, chBackToEntrance, e5, EVENT, 'Back outside'),
     path(
-      pToTemple,
-      sMarket,
-      e4,
-      chToTemple,
-      jEntrance,
-      ELEMENT_TYPE.JUMP,
-      'Set out'
-    ),
-    path(
-      pEnterLaby,
+      pBackToMarket,
       sEntrance,
       e5,
-      chEnterLaby,
-      jLaby,
-      ELEMENT_TYPE.JUMP,
-      'Enter'
+      chBackToMarket,
+      jBackToMarket,
+      JUMP,
+      'Back to the market'
     ),
+    path(
+      pBackToMarket2,
+      sEntrance,
+      e5a,
+      chBackToMarket2,
+      jBackToMarket,
+      JUMP,
+      'Back to the market (unlit)'
+    ),
+
     path(
       pLeftLoop,
       sLaby,
       e6,
       chLeft,
       e6,
-      ELEMENT_TYPE.EVENT,
+      EVENT,
       'Left (dead end)',
       'A dead end. You double back, and the torch burns lower.'
     ),
-    path(pLeftLose, sLaby, e6, chLeft, e8, ELEMENT_TYPE.EVENT, 'Left (last breath)'),
-    path(pRight, sLaby, e6, chRight, e7, ELEMENT_TYPE.EVENT, 'Right (onward)'),
-    path(pJaguar, sLaby, e7, chJaguar, jChamber, ELEMENT_TYPE.JUMP, 'Jaguar door'),
+    path(pLeftLose, sLaby, e6, chLeft, e8, EVENT, 'Left (last breath)'),
+    path(pRight, sLaby, e6, chRight, e7, EVENT, 'Right (onward)'),
+    path(pJaguar, sLaby, e7, chJaguar, jChamber, JUMP, 'Jaguar door'),
     path(
       pSerpentLoop,
       sLaby,
       e7,
       chSerpent,
       e7,
-      ELEMENT_TYPE.EVENT,
+      EVENT,
       'Serpent (dead end)',
       'The serpent door loops back on itself. The torch burns lower.'
     ),
-    path(
-      pSerpentLose,
-      sLaby,
-      e7,
-      chSerpent,
-      e8,
-      ELEMENT_TYPE.EVENT,
-      'Serpent (last breath)'
-    ),
-    path(pLeave, sChamber, e9, chLeave, jMuseum, ELEMENT_TYPE.JUMP, 'Leave')
+    path(pSerpentLose, sLaby, e7, chSerpent, e8, EVENT, 'Serpent (last breath)'),
+
+    path(pLeave, sChamber, e9, chLeave, jMuseum, JUMP, 'Leave')
   ])
 
   // -- Effects (change state as a path is taken) --------------------------
@@ -932,22 +1232,51 @@ export default async function saveDemoContent(
       tags: []
     })
 
+  const IS = COMPARE_OPERATOR_TYPE.EQ,
+    GTE = COMPARE_OPERATOR_TYPE.GTE,
+    LT = COMPARE_OPERATOR_TYPE.LT,
+    GT = COMPARE_OPERATOR_TYPE.GT,
+    LTE = COMPARE_OPERATOR_TYPE.LTE,
+    SET = SET_OPERATOR_TYPE.ASSIGN
+
   await Promise.all([
+    // effects
     effect(pAskGrant, vFunds, SET_OPERATOR_TYPE.ADD, '300', NUM),
     effect(pAskFinch, vClues, SET_OPERATOR_TYPE.ADD, '1', NUM),
-    effect(pTalkItzel, vMetGuide, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL),
+    effect(pAskFinch, vFinchTold, SET, 'true', BOOL),
+    effect(pTalkItzel, vMetGuide, SET, 'true', BOOL),
     effect(pBuy, vFunds, SET_OPERATOR_TYPE.SUBTRACT, '100', NUM),
+    effect(pBuy, vBoughtSupplies, SET, 'true', BOOL),
     effect(pLeftLoop, vTorchFuel, SET_OPERATOR_TYPE.SUBTRACT, '1', NUM),
     effect(pLeftLose, vTorchFuel, SET_OPERATOR_TYPE.SUBTRACT, '1', NUM),
     effect(pSerpentLoop, vTorchFuel, SET_OPERATOR_TYPE.SUBTRACT, '1', NUM),
     effect(pSerpentLose, vTorchFuel, SET_OPERATOR_TYPE.SUBTRACT, '1', NUM),
 
-    condition(pToTemple, vClues, COMPARE_OPERATOR_TYPE.GTE, '2', NUM),
-    condition(pLeftLoop, vTorchFuel, COMPARE_OPERATOR_TYPE.GT, '1', NUM),
-    condition(pLeftLose, vTorchFuel, COMPARE_OPERATOR_TYPE.LTE, '1', NUM),
-    condition(pSerpentLoop, vTorchFuel, COMPARE_OPERATOR_TYPE.GT, '1', NUM),
-    condition(pSerpentLose, vTorchFuel, COMPARE_OPERATOR_TYPE.LTE, '1', NUM),
-    condition(pLeave, vIdolTaken, COMPARE_OPERATOR_TYPE.EQ, 'true', BOOL),
+    // Ask-once conversations: the choice closes as soon as it has been used.
+    condition(pAskFinch, vFinchTold, IS, 'false', BOOL),
+    condition(pTalkItzel, vMetGuide, IS, 'false', BOOL),
+    condition(pBuy, vBoughtSupplies, IS, 'false', BOOL),
+
+    // Setting out needs the location *and* the kit. The inverse path below is
+    // what stops a closed choice from reading as a broken one.
+    condition(pToTemple, vClues, GTE, '2', NUM),
+    condition(pToTemple, vHasMap, IS, 'true', BOOL),
+    condition(pToTemple, vHasTorch, IS, 'true', BOOL),
+    condition(pToTemple, vHasFlint, IS, 'true', BOOL),
+    // pNotReady is ANY: open the moment a single requirement is unmet.
+    condition(pNotReady, vClues, LT, '2', NUM),
+    condition(pNotReady, vHasMap, IS, 'false', BOOL),
+    condition(pNotReady, vHasTorch, IS, 'false', BOOL),
+    condition(pNotReady, vHasFlint, IS, 'false', BOOL),
+
+    // The labyrinth: an object gate, with a lit explanation behind it.
+    condition(pNoLight, vTorchLit, IS, 'false', BOOL),
+
+    condition(pLeftLoop, vTorchFuel, GT, '1', NUM),
+    condition(pLeftLose, vTorchFuel, LTE, '1', NUM),
+    condition(pSerpentLoop, vTorchFuel, GT, '1', NUM),
+    condition(pSerpentLose, vTorchFuel, LTE, '1', NUM),
+    condition(pLeave, vIdolTaken, IS, 'true', BOOL),
 
     // Object-presence gate: the labyrinth opens only once a Lit Torch is carried.
     api().objectConditions.saveObjectCondition(studioId, {
