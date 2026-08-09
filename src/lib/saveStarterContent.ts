@@ -2,18 +2,32 @@ import { v4 as uuid } from 'uuid'
 
 import {
   StudioId,
-  ElementId,
   World,
   ELEMENT_TYPE,
-  Event,
   EVENT_TYPE,
   WORLD_TEMPLATE,
-  PATH_CONDITIONS_TYPE,
   DEFAULT_WORLD_VERSION
 } from '../data/types'
 
 import api from '../api'
 
+/**
+ * Creates a new author's storyworld: one scene holding one empty event, and
+ * nothing else.
+ *
+ * This used to seed a "Getting Started" sample world whose prose and structure were
+ * authored by Elm Story Games LLC and carried over from upstream. That content is
+ * copyrighted by the original authors, so it has been removed — a new storyworld now
+ * starts as a blank canvas. The worked example that used to live here has been
+ * replaced by the maintainer's own **built-in demo** ("The Jade Idol of K'aal",
+ * `lib/demo/saveDemoContent.ts`, loaded on demand from the dashboard), which is what
+ * the documentation site's illustrated walkthrough is built around.
+ *
+ * The single scene/event scaffold is deliberate: `Scene.children[0]` must be an
+ * EVENT for the engine to resolve a starting event when `World.jump` is null (see
+ * the embedded engine's `findStartingDestinationLiveEvent`), so the author can hit
+ * Preview immediately rather than staring at an empty scene map.
+ */
 export default async ({
   appVersion,
   studioId,
@@ -27,17 +41,9 @@ export default async ({
 }): Promise<World> => {
   const worldId = uuid(),
     sceneId = uuid(),
-    introEventId = uuid(),
-    resourcesEventId = uuid(),
-    connectingPathId = uuid()
+    eventId = uuid()
 
-  const promises: [
-    Promise<World>, // world data
-    Promise<ElementId>, // base scene id
-    Promise<Event>, // intro event data
-    Promise<Event>, // resources event data
-    Promise<ElementId> // connecting path id
-  ] = [
+  const [savedWorld] = await Promise.all([
     api().worlds.saveWorld(studioId, {
       children: [[ELEMENT_TYPE.SCENE, sceneId]],
       designer: worldDesigner,
@@ -52,85 +58,35 @@ export default async ({
     }),
     api().scenes.saveScene(studioId, {
       id: sceneId,
-      children: [
-        [ELEMENT_TYPE.EVENT, introEventId],
-        [ELEMENT_TYPE.EVENT, resourcesEventId]
-      ],
+      children: [[ELEMENT_TYPE.EVENT, eventId]],
       composer: {
-        sceneMapTransformX: -158.6576402321083,
-        sceneMapTransformY: -117.9864603481625,
-        sceneMapTransformZoom: 1.4622823984526112
+        sceneMapTransformX: 0,
+        sceneMapTransformY: 0,
+        sceneMapTransformZoom: 1
       },
       parent: [ELEMENT_TYPE.WORLD, null],
       tags: [],
-      title: 'Getting Started with Elm Story - NG',
+      title: 'Scene 1',
       worldId
     }),
     api().events.saveEvent(studioId, {
-      id: introEventId,
+      id: eventId,
       characters: [],
       choices: [],
-      content:
-        '[{"type":"h1","children":[{"text":"Welcome to Elm Story - NG"}]},{"type":"p","children":[{"text":"...and your new storyworld!"}]},{"type":"p","children":[{"text":"We\'ve generated this sample content to help you get started."}]},{"type":"p","children":[{"text":"Click the arrow below to view available resources."}]}]',
+      content: '[{"type":"p","children":[{"text":""}]}]',
       composer: {
-        sceneMapPosX: 132,
-        sceneMapPosY: 192
+        sceneMapPosX: 120,
+        sceneMapPosY: 120
       },
       ending: false,
       images: [],
       sceneId,
       tags: [],
-      title: 'Introduction',
+      title: 'Untitled Event',
       type: EVENT_TYPE.CHOICE,
-      worldId
-    }),
-    api().events.saveEvent(studioId, {
-      id: resourcesEventId,
-      characters: [],
-      choices: [],
-      /**
-       * Every external link this used to carry pointed at elmstory.com — its
-       * tutorials, Discord, Twitter, community, donation and Patreon pages. That
-       * domain no longer resolves, so a new author's very first storyworld
-       * shipped six dead links, and the two accounts that do still answer belong
-       * to the original authors rather than to this project. Replaced with the
-       * two authoring affordances that have no visible affordance of their own
-       * (the `/` and `{` triggers) and a pointer at the in-app expression help,
-       * which is where the accurate documentation actually lives.
-       */
-      content:
-        '[{"type":"h2","children":[{"text":"Helpful Resources"}]},{"type":"p","children":[{"text":"Type / in an event\'s content to open the command menu: headings, quotes, lists, character references and images."}]},{"type":"p","children":[{"text":"Type { to start a template expression, which reads a variable by its title. The ❔ beside the Variables tab explains the whole expression language."}]},{"type":"blockquote","children":[{"text":"Elm Story - NG is a continuation of Elm Story, which its original authors stopped developing at 0.7.0 in April 2022. The help buttons and documentation links they left behind point at a site that no longer exists."}]},{"type":"p","children":[{"text":"Ctrl/Cmd+Shift+F hides everything but the writing column. Ctrl/Cmd+X, C, V and D cut, copy, paste and duplicate scene map selections."}]}]',
-      composer: {
-        sceneMapPosX: 400,
-        sceneMapPosY: 192
-      },
-      ending: true,
-      images: [],
-      sceneId,
-      tags: [],
-      title: 'Resources',
-      type: EVENT_TYPE.CHOICE,
-      worldId
-    }),
-    api().paths.savePath(studioId, {
-      conditionsType: PATH_CONDITIONS_TYPE.ALL,
-      destinationId: resourcesEventId,
-      destinationType: ELEMENT_TYPE.EVENT,
-      id: connectingPathId,
-      originId: introEventId,
-      originType: EVENT_TYPE.CHOICE,
-      sceneId,
-      tags: [],
-      title: 'Connecting Path',
       worldId
     })
-  ]
+  ])
 
-  try {
-    const [savedWorld] = await Promise.all(promises)
-
-    return savedWorld
-  } catch (error) {
-    throw error
-  }
+  return savedWorld
 }

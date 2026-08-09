@@ -7,6 +7,7 @@ import Footer from './components/Footer'
 import Landing from './pages/Landing'
 import Docs from './pages/Docs'
 import Tutorial from './pages/Tutorial'
+import Walkthrough from './pages/Walkthrough'
 
 // Jump to the top when the route (but not the docs topic hash) changes, so
 // navigating from a scrolled page does not land mid-content.
@@ -28,6 +29,7 @@ const App: React.FC = () => (
     <Switch>
       <Route exact path="/" component={Landing} />
       <Route path="/docs/:topic?" component={Docs} />
+      <Route path="/walkthrough" component={Walkthrough} />
       <Route path="/tutorial" component={Tutorial} />
       <Redirect to="/" />
     </Switch>

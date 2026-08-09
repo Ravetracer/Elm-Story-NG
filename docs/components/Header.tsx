@@ -19,6 +19,13 @@ const Header: React.FC = () => {
         Documentation
       </NavLink>
       <NavLink
+        to="/walkthrough"
+        activeClassName="active"
+        onClick={() => setOpen(false)}
+      >
+        Walkthrough
+      </NavLink>
+      <NavLink
         to="/tutorial"
         activeClassName="active"
         onClick={() => setOpen(false)}

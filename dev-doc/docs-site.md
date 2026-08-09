@@ -22,7 +22,13 @@ bundled SVG asset.
   template (dark neon-purple; the app's `--highlight-color` accent). The template's
   Tailwind CDN, Bootstrap-Icons CDN and Pexels demo images were all removed.
 - `docs/pages/Docs.tsx` — sidebar (`HELP_GROUPS`) + content pane.
-- `docs/pages/Tutorial.tsx` — step-by-step core mechanics, hand-written.
+- `docs/pages/Tutorial.tsx` — step-by-step core mechanics, hand-written (text only).
+- `docs/pages/Walkthrough.tsx` — the illustrated walkthrough (`/#/walkthrough`),
+  built around the bundled demo storyworld (`dev-doc/demo-storyworld.md`). Its 14
+  screenshots live in `docs/assets/walkthrough/` and are imported as bundled URLs;
+  every one is reproducible from the demo, so re-shoot them if the demo's art or
+  layout changes. One figure is annotated with numbered pane markers (`.wt-marker`,
+  positioned by percentage). Both nav items point here and at the text tutorial.
 - `docs/pages/Expressions.tsx` — the variables & expressions reference.
 - `docs/styles.css` — the whole design system. `docs/icons.tsx` — inline SVGs.
 - `docs/config.ts` — `REPO_URL`, `EDITOR_URL`, `LICENSE`.
