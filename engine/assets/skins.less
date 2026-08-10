@@ -1,0 +1,79 @@
+/*
+ * Game-UI skins — 9-slice frame art that dresses the chrome when a storyworld
+ * selects `World.skin`. Bundled from the Wenrexa GUI kits (CC BY-SA 4.0, modified;
+ * see `public/skins/CREDITS.md`).
+ *
+ * **This stylesheet is export-only, on purpose.** It is imported by `base.less`,
+ * which the editor never syncs (only `engine.less` / `engine-editor.less` are), so
+ * the composer preview shows the flat themed chrome and the skin appears in the
+ * exported story — the same rule the locked theme and the stream alignment follow.
+ * Two consequences ride on that: the `url(../skins/...)` paths resolve against the
+ * built stylesheet at `/assets/` (so `../skins/` is the verbatim-copied
+ * `public/skins/`, exactly like `../fonts/`), and putting these `url()`s here rather
+ * than in the shared `engine.less` keeps the editor build from trying to resolve art
+ * it does not ship.
+ *
+ * `data-skin` is set on the document root by `Presentation` (export-only). The base
+ * structural rules live in `engine.less` under `#runtime`; these override only the
+ * frame and fill, so each selector carries `#runtime` to clear that specificity.
+ *
+ * The art is deliberately a first cut: the 9-slice insets below are measured off the
+ * source PNGs and look right at ordinary sizes, but frame art is tuned by eye in a
+ * real export, not reasoned about — expect to adjust the slice/width pairs.
+ */
+
+// source `@slice` px, on-screen `@width`; `fill` paints the frame's interior so the
+// panel texture shows through, `stretch` because these frames have no repeating run
+.nineslice(@path, @slice, @width) {
+  border: @width solid transparent;
+  border-image: url("@{path}") @slice fill stretch;
+  background: transparent;
+}
+
+[data-skin='MEDIEVAL'] #runtime {
+  .object-panel-tiles {
+    .nineslice('../skins/medieval/panel.webp', 30, 16px);
+  }
+
+  .paperdoll-figure {
+    .nineslice('../skins/medieval/panel.webp', 30, 16px);
+  }
+
+  .object-tile,
+  .paperdoll-slot-figure {
+    .nineslice('../skins/medieval/cell.webp', 16, 8px);
+  }
+
+  .event-content-choices-modal,
+  #settings-content {
+    .nineslice('../skins/medieval/panel.webp', 30, 20px);
+  }
+
+  #title-card-btns button {
+    .nineslice('../skins/medieval/button.webp', 24 40, 12px 20px);
+  }
+}
+
+[data-skin='SCIFI'] #runtime {
+  .object-panel-tiles {
+    .nineslice('../skins/scifi/panel.webp', 28, 16px);
+  }
+
+  .paperdoll-figure {
+    .nineslice('../skins/scifi/panel.webp', 28, 16px);
+  }
+
+  .object-tile,
+  .paperdoll-slot-figure {
+    .nineslice('../skins/scifi/cell.webp', 28, 10px);
+  }
+
+  .event-content-choices-modal,
+  #settings-content {
+    .nineslice('../skins/scifi/panel.webp', 28, 18px);
+  }
+
+  #title-card-btns button {
+    .nineslice('../skins/scifi/button.webp', 16, 10px 16px);
+  }
+}
