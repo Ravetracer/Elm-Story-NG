@@ -241,7 +241,8 @@ export default async function saveDemoContent(
     pSerpentLoop = uuid(),
     pSerpentLose = uuid(),
     pLeave = uuid(),
-    pLeaveTry = uuid() // idol taken but mask not worn — loops back with a hint
+    pLeaveTry = uuid(), // idol taken but mask not worn — loops back with a hint
+    pLeaveNoIdol = uuid() // idol not taken yet — loops back so Leave is never a dead end
 
   const NUM = VARIABLE_TYPE.NUMBER,
     BOOL = VARIABLE_TYPE.BOOLEAN,
@@ -292,7 +293,8 @@ export default async function saveDemoContent(
     aIdol = await icon(DEMO_MEDIA.idol),
     aMap = await icon(DEMO_MEDIA.map),
     aRope = await icon(DEMO_MEDIA.rope),
-    aWater = await icon(DEMO_MEDIA.water)
+    aWater = await icon(DEMO_MEDIA.water),
+    aMask = await icon(DEMO_MEDIA.mask)
 
   // -- Characters ---------------------------------------------------------
   await Promise.all([
@@ -553,8 +555,7 @@ export default async function saveDemoContent(
       title: 'Ceremonial Jade Mask',
       description:
         'A mask of polished jade, its eyes carved wide. The idol’s guardians knew this face.',
-      // No image on purpose: a tile with no asset falls back to its initials,
-      // which is worth seeing once in the demo.
+      assetId: aMask,
       takeable: true,
       combineable: false,
       wearable: true,
@@ -1229,10 +1230,10 @@ export default async function saveDemoContent(
     ),
     path(pSerpentLose, sLaby, e7, chSerpent, e8, EVENT, 'Serpent (last breath)'),
 
-    // Two paths on the one Leave choice, split by whether the mask is worn — the
-    // same one-choice-two-paths shape as the labyrinth doors. Worn: home. Not
-    // worn: a loop back to the pedestal with a hint, so the closed win never reads
-    // as a dead end.
+    // Three paths on the one Leave choice, so it is *always* open and never leaves
+    // the chamber a dead end (the same one-choice-many-paths shape as the labyrinth
+    // doors). The three conditions below are mutually exclusive and cover every
+    // state: idol not taken, idol taken but bare-faced, idol taken and masked.
     path(pLeave, sChamber, e9, chLeave, jMuseum, JUMP, 'Leave (masked)'),
     path(
       pLeaveTry,
@@ -1243,6 +1244,16 @@ export default async function saveDemoContent(
       EVENT,
       'Leave (unmasked)',
       'The idol will not lift. Its carved eye demands a face it knows — wear the mask.'
+    ),
+    path(
+      pLeaveNoIdol,
+      sChamber,
+      e9,
+      chLeave,
+      e9,
+      EVENT,
+      'Leave (empty-handed)',
+      'You have come too far to leave it. The idol still watches from its pedestal — take it first.'
     )
   ])
 
@@ -1329,9 +1340,13 @@ export default async function saveDemoContent(
     // The way home opens only with the idol taken *and* the mask worn.
     condition(pLeave, vIdolTaken, IS, 'true', BOOL),
     condition(pLeave, vWearingMask, IS, 'true', BOOL),
-    // The inverse: idol in hand but bare-faced — loops back with the hint above.
+    // Idol in hand but bare-faced — loops back with the wear-the-mask hint.
     condition(pLeaveTry, vIdolTaken, IS, 'true', BOOL),
     condition(pLeaveTry, vWearingMask, IS, 'false', BOOL),
+    // Idol not taken yet — loops back so Leave is open from the moment you arrive,
+    // rather than a closed choice with no path (which reads as the engine's bare
+    // "Unable to return. Missing path.").
+    condition(pLeaveNoIdol, vIdolTaken, IS, 'false', BOOL),
 
     // Object-presence gate: the labyrinth opens only once a Lit Torch is carried.
     api().objectConditions.saveObjectCondition(studioId, {
