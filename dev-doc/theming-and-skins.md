@@ -1,7 +1,7 @@
 # Design plan: themes, skins, and the reading-lane layout
 
 > **Status: plan, not shipped.** No code follows from this file yet. It is the
-> settled design for a four-phase presentation feature and the reasoning behind
+> settled design for a five-phase presentation feature and the reasoning behind
 > each decision, written in the same spirit as `DESIGN.md`: the "why is this not
 > X" a reader will ask, including the alternatives that were rejected.
 >
@@ -266,10 +266,97 @@ reference counting) for a feature whose entire point is a *curated* look.
 
 ---
 
+## Phase 5 — wearable objects and the character panel
+
+**Equip slots that set a variable, so the gate is free.** The paperdoll-style
+CHARACTER panel from the `!dev/GUI` kits (Game #6) — a body with equipment slots
+and a stat readout — but built as *wearable objects*, not as an RPG stat engine.
+
+**This is the important reframing, and it changes the cost by an order of
+magnitude.** An earlier draft of this feature feared a *numeric stat* system:
+`strength = base + Σ(equipped bonuses)`, recomputed on every equip/unequip. That
+would be a genuinely new evaluation model — variables are authored and effected,
+never *derived* — and it is **rejected**, below. What is designed instead is the
+IF-classic *wearable* concept (Inform 7's "wearable"/"worn"): equipping an object
+sets a **boolean variable**, and the existing condition system does the gating.
+"Wear the hat to enter the spider cave"; "the disguise lets you speak to the
+guard" — both are a path condition on a variable that is already expressible.
+
+**The precedent is already in the model.** `WorldObject.takeEffects`
+(`src/data/types.ts`) is "variable assignments applied when the player picks this
+up", and its own comment states the reason: inventory presence is not queryable,
+so an object mirrors its state into a variable a condition can read
+(`{ bookTaken ? ... }`). Equipping is the same move with a different trigger and
+one addition — it reverses. So the mechanic is `takeEffects` with an on/off pair,
+not a new subsystem.
+
+What is actually new:
+
+- **A wearable flag and a slot.** Beside `takeable` / `combineable`, add
+  `wearable: boolean` and a `slot: EQUIP_SLOT` (`HEAD | FACE | BODY | HANDS |
+  FEET | ...` — a curated enum, so the paperdoll has fixed anchor points to draw).
+  Tier-one/two fields on the existing `objects` table: **no Dexie migration**.
+- **`wearEffects` / `removeEffects`.** The mirror of `takeEffects`, applied on
+  equip and un-equip. For a boolean this is trivially reversible — set `true` on
+  wear, `false` on remove. The `takeEffects` guidance ("usually assignment, not
+  increment") applies verbatim and is what keeps it reversible; an author who
+  increments instead owns the result. This is the whole of the "reversibility
+  problem" that the numeric version made frightening — for a toggle it is two
+  assignments.
+- **A worn runtime state.** Which object occupies which slot is *runtime* state,
+  exactly like the object deltas: `EngineLiveEventData.objects` is already an
+  optional unindexed property on `live_events` and "an old save simply lacks it …
+  reads as a pristine world" (`CLAUDE.md`, *the 0.8.0 shape*). Worn state is a
+  second such property — **no migration**, and an old playthrough just has nothing
+  equipped.
+- **An equip / remove verb.** `useObjectActions` already exposes
+  `takeObject` / `combineObjects` / `inspectObject`, surfaced as verbs in
+  `ObjectMenu`. Add `wearObject` / `removeObject`, offered only for a `wearable`
+  object, only when it is carried — the same "only the verbs that apply" rule the
+  menu already follows (Take is absent once carried).
+- **The gate is free.** Once equipping sets a variable, *nothing else is needed*
+  to open a path — the existing `Condition.variableId` path gate does it. This is
+  the entire payoff of routing through a variable rather than inventing an
+  "is-worn" condition type: every reader of variable conditions already handles
+  it, and none can wave it through the way `isPathOpen` fails open on an unknown
+  condition (`CLAUDE.md`, *the 0.8.0 shape*).
+
+**The panel:**
+
+- **The character panel is the phase-3 inventory in "character" mode** — the same
+  object grid, plus a paperdoll region whose slots are drop targets keyed on
+  `EQUIP_SLOT`. It is skin art (phase 4) when dressed, flat tokens before that.
+- **A stats *readout* is a separate, cheaper sub-feature and does not need
+  equipment at all.** Today a variable only shows if the author types
+  `{ strength }` into prose; a panel that *pins chosen variables* as a persistent
+  readout ("STRENGTH 88") is new UI plus a "which variables to show" list, and no
+  new mechanic. It pairs naturally with the paperdoll but ships independently, and
+  it is the honest way to get the panel's right-hand column without (B) below.
+- **Configurable and off by default, non-negotiable.** Like the object rail, the
+  character panel appears only when the author opts in (a world has wearable
+  objects, or pins stats). A pure narrative world sees none of it.
+
+**Rejected — numeric stat accumulation (`base + Σ bonuses`).** This is the line
+between a narrative engine and an RPG engine, and it stays on the narrative side.
+It would require variables to be *derived* — recomputed from equipment on every
+change — which the engine deliberately does not do (objects derive quantity;
+variables never derive). The wearable-boolean model delivers the authored intent
+("this item unlocks this content") without it. If a numeric system is ever
+wanted, it is its own design track with its own `dev-doc`, not a widening of this
+one.
+
+**Rejected — an "is-worn" path condition type.** A new condition kind that asks
+the inventory directly would be a reader every existing condition-evaluator would
+have to learn, and `isPathOpen` *fails open* on conditions it does not recognise —
+in the direction that unlocks content. Routing through a variable reuses a gate
+that already exists and already fails safe.
+
+---
+
 ## Sequencing and the one open question
 
-**Order: 1 → 2 → 3 → 4.** Each phase ships and is usable on its own; nothing
-later is required for something earlier to be worth having.
+**Order: 1 → 2 → 3 → 4, with 5 riding on 3.** Each phase ships and is usable on
+its own; nothing later is required for something earlier to be worth having.
 
 - Phase 1 (alignment) and phase 2 (theme lock) are independent and could ship in
   either order or together; alignment is the recommended first because it is the
@@ -278,6 +365,11 @@ later is required for something earlier to be worth having.
 - Phase 4 (skin art) depends on nothing structurally but should be last: it is
   the only phase with a licensing gate and open-ended art labour, and the flat
   tokens carry every phase before it.
+- Phase 5 (wearables + character panel) rides on phase 3 — the paperdoll is the
+  inventory grid in "character" mode — but is otherwise self-contained and needs
+  no schema migration. Its stats-readout sub-feature is independent of everything
+  and can land whenever. Phase 5 is a *mechanic* riding presentation, so it is
+  the one phase that changes what a storyworld can *do*, not just how it looks.
 
 **Open question deferred to phase 4:** which specific kits become the built-in
 skins, pending licence confirmation. Until then phases 1–3 use the existing flat
