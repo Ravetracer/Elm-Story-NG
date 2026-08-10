@@ -44,7 +44,71 @@ dock preview already has. Decoupling `isComposer` from `studioId` would mean
 untangling all twenty behaviours, in the direction of a rendering mode that has
 never existed. Rejected.
 
+## Correction (found during implementation): the snapshot approach is UNSAFE
+
+**The "bake a snapshot, run the real player" design in the next two sections is
+superseded.** Building it surfaced two hazards the design pass missed, both
+rooted in the same fact: **the preview window shares the editor's origin, and
+therefore its IndexedDB and its `userData`.** Skip to *Corrected approach* — the
+snapshot sections are kept only so the reasoning that ruled them out is on record.
+
+1. **The player install path destroys live data.** `Runtime`'s `!isComposer`
+   branch installs baked `data` via `Installer` →
+   `getLibraryDatabase(studioId)` → `saveEngineCollectionData`, and on a version
+   match `removeWorldData(studioId, worldId)` + re-save. That library database is
+   `esg-library-<studioId>` — **the very one the editor writes**. A snapshot
+   install would delete and rewrite the author's live world every time they hit
+   Preview. In a shipped export this is safe because the player's database is
+   empty; in a same-origin preview it is data loss.
+2. **Assets are scoped by studio *and* world, so the ids cannot be rewritten to
+   isolate the install.** Files live at
+   `userData/assets/<studioId>/<worldId>/<id>.<ext>` (`src/main.ts`), and the
+   player builds `esg-asset://` URLs from those same ids. Rewriting the
+   snapshot's `studioId`/`worldId` into a throwaway preview namespace — the
+   obvious way to keep the install off the real database — points every image and
+   audio URL at a directory that does not exist. Keep the real ids and the
+   install is destructive (hazard 1); rewrite them and the assets break. The
+   snapshot approach has no safe form here.
+
+## Corrected approach: a non-destructive live-read preview mode
+
+The preview must **read the live database the way the composer does — never
+install** — while **rendering as the player**. The composer's read path
+(`Installer`'s `isComposer` branch: `getWorldInfo` + a live query, no
+`saveEngineCollectionData`) is already non-destructive and uses the real
+`studioId`/`worldId`, so assets resolve. What it lacks is the player's
+presentation: it does not mount `Presentation` (so no `data-theme`/`data-size`
+and thus no theme or alignment), it shows DevTools/XRay, and — the part that
+makes it wrong to reuse as-is — `engine.isComposer` being true enables in-place
+event editing, whose debounced saves write to the live database.
+
+So the preview is a **third render mode**, not either existing one:
+
+- **Data path:** the composer's live read (real ids, no install, non-destructive).
+- **Behaviour:** `engine.isComposer` **false** — no editing, no XRay, no DevTools,
+  player audio/muting — so nothing in the window writes back.
+- **Presentation:** mount `SettingsProvider` + `Presentation` so `data-theme`,
+  `data-size` and alignment are set, and load the standalone player styles
+  (`base.less`), not `engine-editor.less`.
+
+This is additive and must stay so: a `preview` flag threaded through `Runtime`
+and `Installer`, **defaulting off**, so the composer and export paths are
+byte-for-byte unchanged and only the new preview entry sets it. The one
+write-side-effect to audit before building is `resetWorld` (called on the
+composer read path) — it must touch only playthrough/bookmark state, never
+authored world data; if it writes anything the author owns, the preview read
+path must skip or guard it.
+
+**Scaffold status:** the renderer-entry/build-config/`localStorage` scaffold was
+reverted rather than left half-wired; the entry (`preview.html` + `preview.tsx`
+loading `base.less`, opened as a `BrowserWindow`/tab) is still correct for this
+approach — only the mount changes, from baked `data` to
+`<Runtime studioId worldId preview />`. **This mode is engine-core surgery on the
+render path, so it needs an explicit go-ahead before implementation.**
+
 ## The approach: bake a snapshot, run the real player
+
+> **Superseded — unsafe. See the correction above.**
 
 Reuse the **export player**, which already does everything right — mounts
 `Presentation`, sets the data attributes, loads `base.less`, paints the theme,
