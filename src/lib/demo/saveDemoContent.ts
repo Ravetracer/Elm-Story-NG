@@ -12,6 +12,7 @@ import {
   SET_OPERATOR_TYPE,
   VARIABLE_TYPE,
   CHARACTER_MASK_TYPE,
+  ENGINE_SKIN,
   EQUIP_SLOT,
   OBJECT_LOCATION_TYPE,
   RECIPE_OUTPUT_DESTINATION,
@@ -274,6 +275,11 @@ export default async function saveDemoContent(
     // shows off the author-locked Theme setting (the player's own theme toggle is
     // hidden while this is set). Wearables below demonstrate the equip mechanic.
     theme: ENGINE_THEME.CONSOLE,
+    // The medieval skin dresses the inventory, the choice modal and the character
+    // paperdoll with carved-panel art — a fit for a temple adventure, and the way
+    // to see the skin (which shows in an export, not this preview). The wearable
+    // mask fills the paperdoll's FACE slot. Only this skin's art is packed on export.
+    skin: ENGINE_SKIN.MEDIEVAL,
     tags: ['demo'],
     template: WORLD_TEMPLATE.ADVENTURE,
     title: 'The Jade Idol of K’aal',

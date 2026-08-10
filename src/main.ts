@@ -882,6 +882,39 @@ const createWindow = async () => {
                     logger.info(`Assets don't exist. Skipping...`)
                   }
 
+                  // Ship only the selected skin's art. The engine build bundles
+                  // every skin, but a world uses at most one; the others'
+                  // border-image rules never match its `data-skin`, so their files
+                  // would only bloat the download. Remove the unused ones, and the
+                  // whole `skins` directory when the world has no skin. The kept
+                  // skin is served at runtime rather than precached, so its frames
+                  // need a connection on first paint — a follow-up can precache it
+                  // the way content assets are.
+                  try {
+                    const skinsDir = `${savePathFull}/skins`
+                    const keep = parsedWorldData._.skin
+                      ? String(parsedWorldData._.skin).toLowerCase()
+                      : undefined
+
+                    if (await fs.pathExists(skinsDir)) {
+                      if (!keep) {
+                        await fs.remove(skinsDir)
+                      } else {
+                        for (const entry of await fs.readdir(skinsDir)) {
+                          if (entry === keep || entry === 'CREDITS.md') continue
+
+                          const full = `${skinsDir}/${entry}`
+
+                          if ((await fs.stat(full)).isDirectory()) {
+                            await fs.remove(full)
+                          }
+                        }
+                      }
+                    }
+                  } catch (error) {
+                    logger.info(`Skipping skin pruning. ${error}`)
+                  }
+
                   const manifest: {
                     'index.html': { file: string }
                   } = JSON.parse(

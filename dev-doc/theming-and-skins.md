@@ -314,6 +314,47 @@ derived-quantity model is deliberate; a census-with-positions would fight it.
 
 ## Phase 4 — the skin (ornate art), last and most expensive
 
+> **Shipped (0.66.0–0.69.0), first cut.** Two bundled skins — **MEDIEVAL** (Wenrexa
+> GUI Game #6) and **SCIFI** (GUI Game #16), both **CC BY-SA 4.0**, attributed in
+> `CREDITS.md` and `engine/public/skins/CREDITS.md`; the licence was confirmed off
+> the store page (no `NC`/`ND`, modification and commercial use permitted, resale
+> forbidden — which bundling to style output is not). Built in four slices:
+>
+> - **Field + selector (4a, 0.66.0).** `ENGINE_SKIN` + `World.skin`, wired through
+>   the same seams as the locked theme (both projects' types, `format.ts`'s world
+>   pick, `Installer`'s `WORLD_INFO_FIELDS`, the engine context, export/import, the
+>   0.8.0 schema — tier-two, no migration). A **Skin** panel in the storyworld's
+>   properties. `Presentation` sets `data-skin` on the document root **in the export
+>   only**.
+> - **Art + 9-slice (4b, 0.67.0).** The needed kit elements re-encoded to WebP
+>   (alpha kept, ~48 KB total) under `engine/public/skins/<skin>/`, copied verbatim
+>   into an export's `/skins/` like the fonts and referenced by stable relative
+>   `url()`. `engine/assets/skins.less` applies `border-image` to the inventory
+>   frame, tiles/slots, paperdoll frame, choice modal, settings panel and title
+>   buttons, keyed on `data-skin`. **It is `@import`ed by `base.less`, which the
+>   editor never syncs** — so the skin is export-only *by construction*, the editor
+>   build never resolves the skin `url()`s, and the composer preview keeps the flat
+>   chrome (like the locked theme and alignment).
+> - **Paperdoll body art (4c, 0.68.0).** Under MEDIEVAL the figure becomes the kit's
+>   equipment body art (its own aspect ratio, generic silhouette + labels hidden),
+>   with the seven equip anchors moved onto the art's drawn boxes. To keep this
+>   without the component knowing the (export-only) skin, the **anchor coordinates
+>   moved from `ObjectPanel` into CSS classes** (`.paperdoll-slot--HEAD` …):
+>   `engine.less` holds the generic positions, `skins.less` overrides per skin. SCIFI
+>   ships no body art, so it keeps the generic silhouette inside its panel frame.
+> - **Export pruning (4d, 0.69.0).** The engine build bundles every skin; the desktop
+>   PWA export removes the folders a world does not use (and the whole `skins` dir
+>   when it has none) — the "only the needed assets" rule. The kept skin is served at
+>   runtime, **not precached**, so its frames need a connection on first paint; a
+>   follow-up can precache it the way content assets are. The demo world selects
+>   MEDIEVAL so an export shows the skin and the paperdoll with the mask worn.
+>
+> **First-cut caveats, for the live pass:** the 9-slice insets and the medieval
+> anchor coordinates are measured off the source art and want tuning against a real
+> export; only the surfaces above are dressed (prose column untouched); the browser
+> build's PWA export does not yet prune skins; and offline skin precache is a
+> follow-up.
+
 **The 9-slice framed look. Cosmetic only — no engine logic — so low risk but
 real, per-asset labour.** Sequenced last because phases 1–3 give ~70% of the
 "feels like a game" payoff for ~20% of the work and de-risk this one.
