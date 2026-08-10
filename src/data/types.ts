@@ -544,6 +544,26 @@ export interface ObjectPlacement {
 }
 
 /**
+ * Where a wearable object sits on the body, so the paperdoll panel has a fixed
+ * anchor to draw it on and so one slot holds one thing at a time. A curated list
+ * rather than a free string: the panel positions each member, and one-item-per-slot
+ * replacement (see the engine's `wear`) can only mean anything against a closed set.
+ *
+ * `slot` is optional. A wearable with no slot can still be worn — it just does not
+ * participate in slot exclusivity or appear on the paperdoll, which is the right
+ * behaviour for "wear the gloves" when the author does not care about a hands slot.
+ */
+export enum EQUIP_SLOT {
+  HEAD = 'HEAD',
+  FACE = 'FACE',
+  NECK = 'NECK',
+  BODY = 'BODY',
+  HANDS = 'HANDS',
+  FEET = 'FEET',
+  HELD = 'HELD'
+}
+
+/**
  * A thing in the world that can be looked at, carried and combined.
  *
  * There are no object *instances*. A definition plus a count per location is
@@ -595,6 +615,13 @@ export interface WorldObject extends Element {
    * rest.
    */
   wearable?: boolean
+  /**
+   * Where this sits on the body when worn. Optional even for a wearable: an object
+   * with a slot occupies it exclusively (wearing a second head item removes the
+   * first, applying its `removeEffects`) and shows on the paperdoll; one without a
+   * slot is simply wearable. See `EQUIP_SLOT`.
+   */
+  slot?: EQUIP_SLOT
   /** Variable assignments applied when the player wears this. See `takeEffects`. */
   wearEffects?: VariableSet[]
   /** Variable assignments applied when the player removes this. */

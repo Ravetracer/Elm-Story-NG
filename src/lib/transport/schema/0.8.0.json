@@ -1034,6 +1034,10 @@
           "wearable": {
             "type": "boolean"
           },
+          "slot": {
+            "type": "string",
+            "enum": ["HEAD", "FACE", "NECK", "BODY", "HANDS", "FEET", "HELD"]
+          },
           "wearMessage": {
             "type": "string"
           },

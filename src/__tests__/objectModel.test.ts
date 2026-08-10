@@ -31,6 +31,7 @@ import {
   COMPARE_OPERATOR_TYPE,
   ENGINE_LIVE_EVENT_MESSAGE_TYPE,
   EngineVariableData,
+  EQUIP_SLOT,
   VARIABLE_SCOPE,
   EngineObjectData,
   EngineRecipeData,
@@ -1215,5 +1216,81 @@ describe('wearing and removing objects', () => {
 
   it('refuses to remove what is not worn', () => {
     expect(unwear(carried(), [], 'hat')).toBeUndefined()
+  })
+
+  // one item per slot: wearing a second head item takes the first off
+  const helmet = () =>
+    object('helmet', {
+      wearable: true,
+      slot: EQUIP_SLOT.HEAD,
+      wearEffects: [
+        ['armoured', SET_OPERATOR_TYPE.ASSIGN, 'true', VARIABLE_TYPE.BOOLEAN]
+      ]
+    })
+
+  const capped = () =>
+    object('cap', {
+      wearable: true,
+      slot: EQUIP_SLOT.HEAD,
+      removeEffects: [
+        ['disguised', SET_OPERATOR_TYPE.ASSIGN, 'false', VARIABLE_TYPE.BOOLEAN]
+      ]
+    })
+
+  const twoHeadItems = () =>
+    snapshot({
+      objects: [helmet(), capped()],
+      deltas: { [INVENTORY_LOCATION_KEY]: { helmet: 1, cap: 1 } },
+      state: {
+        armoured: {
+          title: 'armoured',
+          type: VARIABLE_TYPE.BOOLEAN,
+          value: 'false',
+          worldId: 'world-1'
+        },
+        disguised: {
+          title: 'disguised',
+          type: VARIABLE_TYPE.BOOLEAN,
+          value: 'true',
+          worldId: 'world-1'
+        }
+      }
+    })
+
+  it('displaces the item already in a slot, applying its remove effects', () => {
+    const result = wear(twoHeadItems(), ['cap'], 'helmet')
+
+    // the cap comes off, the helmet goes on — the slot holds one
+    expect(result?.worn).toEqual(['helmet'])
+    // the displaced cap's remove effect fired, reverting its gate variable
+    expect(result?.state.disguised.value).toBe('false')
+    // and the helmet's own wear effect applied
+    expect(result?.state.armoured.value).toBe('true')
+  })
+
+  it('leaves a different slot alone rather than displacing across slots', () => {
+    const gloves = object('gloves', {
+      wearable: true,
+      slot: EQUIP_SLOT.HANDS
+    })
+
+    const world = snapshot({
+      objects: [helmet(), gloves],
+      deltas: { [INVENTORY_LOCATION_KEY]: { helmet: 1, gloves: 1 } }
+    })
+
+    expect(wear(world, ['helmet'], 'gloves')?.worn).toEqual(['helmet', 'gloves'])
+  })
+
+  it('does not displace when the wearable has no slot, so many can be worn', () => {
+    const scarf = object('scarf', { wearable: true })
+    const badge = object('badge', { wearable: true })
+
+    const world = snapshot({
+      objects: [scarf, badge],
+      deltas: { [INVENTORY_LOCATION_KEY]: { scarf: 1, badge: 1 } }
+    })
+
+    expect(wear(world, ['scarf'], 'badge')?.worn).toEqual(['scarf', 'badge'])
   })
 })

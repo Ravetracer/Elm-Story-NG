@@ -75,6 +75,22 @@ export enum RECIPE_OUTPUT_DESTINATION {
 }
 
 /**
+ * Where a wearable object sits on the body — the paperdoll's anchor points and the
+ * key the engine's `wear` enforces one-item-per-slot against. Mirrors the editor's
+ * `EQUIP_SLOT`; optional on an object, so a wearable with no slot is still wearable
+ * but claims no anchor and does not displace anything.
+ */
+export enum EQUIP_SLOT {
+  HEAD = 'HEAD',
+  FACE = 'FACE',
+  NECK = 'NECK',
+  BODY = 'BODY',
+  HANDS = 'HANDS',
+  FEET = 'FEET',
+  HELD = 'HELD'
+}
+
+/**
  * The inventory's key in the one location space shared with scene ids. Scene ids
  * are uuids, so it cannot collide; it follows the same convention as
  * `INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY` and `AUTO_ENGINE_BOOKMARK_KEY`.
@@ -611,6 +627,8 @@ export interface EngineObjectData {
   takeMessage?: string
   /** whether the object can be worn/equipped; see WorldObject.wearable */
   wearable?: boolean
+  /** where this sits on the body when worn; see WorldObject.slot and EQUIP_SLOT */
+  slot?: EQUIP_SLOT
   /** applied when the player wears this */
   wearEffects?: VariableSet[]
   /** applied when the player removes this */

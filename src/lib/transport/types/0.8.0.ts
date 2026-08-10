@@ -162,6 +162,16 @@ export enum RECIPE_OUTPUT_DESTINATION {
   CURRENT_SCENE = 'CURRENT_SCENE'
 }
 
+export enum EQUIP_SLOT {
+  HEAD = 'HEAD',
+  FACE = 'FACE',
+  NECK = 'NECK',
+  BODY = 'BODY',
+  HANDS = 'HANDS',
+  FEET = 'FEET',
+  HELD = 'HELD'
+}
+
 export const INVENTORY_LOCATION_KEY = '___inventory___'
 
 export type VariableCompare = [
@@ -203,6 +213,7 @@ export interface ObjectData {
   takeEffects?: VariableSet[]
   takeMessage?: string
   wearable?: boolean
+  slot?: EQUIP_SLOT
   wearEffects?: VariableSet[]
   removeEffects?: VariableSet[]
   wearMessage?: string

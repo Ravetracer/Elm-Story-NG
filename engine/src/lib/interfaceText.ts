@@ -43,6 +43,16 @@ export enum INTERFACE_TEXT_KEY {
   OBJECT_COMBINING = 'OBJECT_COMBINING',
   OBJECT_CLEAR = 'OBJECT_CLEAR',
 
+  // the character paperdoll: its title, and the name of each equip slot
+  OBJECT_WORN = 'OBJECT_WORN',
+  OBJECT_SLOT_HEAD = 'OBJECT_SLOT_HEAD',
+  OBJECT_SLOT_FACE = 'OBJECT_SLOT_FACE',
+  OBJECT_SLOT_NECK = 'OBJECT_SLOT_NECK',
+  OBJECT_SLOT_BODY = 'OBJECT_SLOT_BODY',
+  OBJECT_SLOT_HANDS = 'OBJECT_SLOT_HANDS',
+  OBJECT_SLOT_FEET = 'OBJECT_SLOT_FEET',
+  OBJECT_SLOT_HELD = 'OBJECT_SLOT_HELD',
+
   // the event stream
   STREAM_RESTART = 'STREAM_RESTART',
   STREAM_TITLE_SCREEN = 'STREAM_TITLE_SCREEN',
@@ -114,6 +124,14 @@ export const INTERFACE_TEXT_DEFAULTS: Record<INTERFACE_TEXT_KEY, string> = {
   [INTERFACE_TEXT_KEY.OBJECT_COMBINE_WITH]: 'Combine with',
   [INTERFACE_TEXT_KEY.OBJECT_COMBINING]: 'Combining',
   [INTERFACE_TEXT_KEY.OBJECT_CLEAR]: 'Cancel',
+  [INTERFACE_TEXT_KEY.OBJECT_WORN]: 'Worn',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_HEAD]: 'Head',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_FACE]: 'Face',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_NECK]: 'Neck',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_BODY]: 'Body',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_HANDS]: 'Hands',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_FEET]: 'Feet',
+  [INTERFACE_TEXT_KEY.OBJECT_SLOT_HELD]: 'Held',
 
   [INTERFACE_TEXT_KEY.STREAM_RESTART]: 'Restart',
   [INTERFACE_TEXT_KEY.STREAM_TITLE_SCREEN]: 'Title Screen',
@@ -174,9 +192,10 @@ export const INTERFACE_TEXT_GROUPS: {
   {
     title: 'Objects',
     note:
-      'The rail beside the story, and the verb menu that opens when a tile is ' +
-      'clicked. "Combine with" and "Combining" are each followed by an object\'s ' +
-      'name, as in "Combine with Antenna".',
+      'The rail beside the story, the verb menu that opens when a tile is ' +
+      'clicked, and the character paperdoll. "Combine with" and "Combining" are ' +
+      'each followed by an object\'s name, as in "Combine with Antenna". The slot ' +
+      'names label the paperdoll and appear only when a world has slotted wearables.',
     keys: [
       INTERFACE_TEXT_KEY.OBJECT_HERE,
       INTERFACE_TEXT_KEY.OBJECT_INVENTORY,
@@ -189,7 +208,15 @@ export const INTERFACE_TEXT_GROUPS: {
       INTERFACE_TEXT_KEY.OBJECT_COMBINE_START,
       INTERFACE_TEXT_KEY.OBJECT_COMBINE_WITH,
       INTERFACE_TEXT_KEY.OBJECT_COMBINING,
-      INTERFACE_TEXT_KEY.OBJECT_CLEAR
+      INTERFACE_TEXT_KEY.OBJECT_CLEAR,
+      INTERFACE_TEXT_KEY.OBJECT_WORN,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_HEAD,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_FACE,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_NECK,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_BODY,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_HANDS,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_FEET,
+      INTERFACE_TEXT_KEY.OBJECT_SLOT_HELD
     ]
   },
   {

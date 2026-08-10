@@ -140,6 +140,7 @@ function format(worldData: WorldDataJSON): string {
       'takeEffects',
       'takeMessage',
       'wearable',
+      'slot',
       'wearEffects',
       'removeEffects',
       'wearMessage',

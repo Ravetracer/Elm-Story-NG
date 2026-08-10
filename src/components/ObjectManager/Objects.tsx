@@ -3,12 +3,29 @@ import { v4 as uuid } from 'uuid'
 
 import {
   ElementId,
+  EQUIP_SLOT,
   INVENTORY_LOCATION_KEY,
   ObjectPlacement,
   StudioId,
   WorldId,
   WorldObject
 } from '../../data/types'
+
+/**
+ * The equip slots offered when an object is wearable, with the label shown in the
+ * editor. A slot is optional — the empty option means "wearable, but claims no slot"
+ * — and only slotted objects are exclusive and appear on the paperdoll.
+ */
+const SLOT_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'No slot' },
+  { value: EQUIP_SLOT.HEAD, label: 'Head' },
+  { value: EQUIP_SLOT.FACE, label: 'Face' },
+  { value: EQUIP_SLOT.NECK, label: 'Neck' },
+  { value: EQUIP_SLOT.BODY, label: 'Body' },
+  { value: EQUIP_SLOT.HANDS, label: 'Hands' },
+  { value: EQUIP_SLOT.FEET, label: 'Feet' },
+  { value: EQUIP_SLOT.HELD, label: 'Held' }
+]
 
 import { ASSET_KIND } from '../../lib/assets'
 
@@ -513,6 +530,23 @@ const Objects: React.FC<{
               */}
               {selected.wearable && (
                 <div className={styles.section}>
+                  <span className={styles.fieldLabel}>Equip slot</span>
+
+                  <Select
+                    value={selected.slot ?? ''}
+                    options={SLOT_OPTIONS}
+                    onChange={(slot) =>
+                      patch({ slot: (slot as EQUIP_SLOT) || undefined })
+                    }
+                  />
+
+                  <span className={styles.fieldHint}>
+                    A slot holds one thing at a time: wearing a second Head item
+                    takes the first off. Slotted items show on the character
+                    paperdoll. Leave it on "No slot" to make the object wearable
+                    without claiming a body part.
+                  </span>
+
                   <span className={styles.fieldLabel}>
                     When the player wears this
                   </span>

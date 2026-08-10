@@ -14,6 +14,7 @@ import { getLibraryDatabase } from '../lib/db'
 import {
   ElementId,
   EngineObjectData,
+  EQUIP_SLOT,
   INVENTORY_LOCATION_KEY
 } from '../types'
 
@@ -146,6 +147,133 @@ const initialsOf = (title: string): string =>
     .map((word) => word[0].toUpperCase())
     .join('')
 
+/**
+ * Where each equip slot sits on the paperdoll figure, and the word that labels it.
+ *
+ * Percentages against the figure box, tuned to the silhouette drawn below: head at
+ * the crown, face beside it, neck under it, body at the chest, hands and a held item
+ * at either side, feet at the bottom. Phase 4 skin art replaces the silhouette but
+ * keeps these anchors, which is the whole reason `EQUIP_SLOT` is a closed set.
+ */
+const SLOT_LAYOUT: {
+  slot: EQUIP_SLOT
+  left: string
+  top: string
+  textKey: INTERFACE_TEXT_KEY
+}[] = [
+  { slot: EQUIP_SLOT.HEAD, left: '50%', top: '8%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HEAD },
+  { slot: EQUIP_SLOT.FACE, left: '76%', top: '15%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FACE },
+  { slot: EQUIP_SLOT.NECK, left: '50%', top: '26%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_NECK },
+  { slot: EQUIP_SLOT.BODY, left: '50%', top: '46%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_BODY },
+  { slot: EQUIP_SLOT.HANDS, left: '18%', top: '54%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HANDS },
+  { slot: EQUIP_SLOT.HELD, left: '82%', top: '54%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HELD },
+  { slot: EQUIP_SLOT.FEET, left: '50%', top: '87%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FEET }
+]
+
+/**
+ * One anchor on the paperdoll. A filled slot is a button that takes the item off —
+ * the design's "click a filled slot to Remove"; equipping stays on the inventory
+ * tile's Wear verb, which is why an empty slot is an inert marker rather than a drop
+ * target (the engine ships no drag-and-drop, and would not want to inside a PWA).
+ */
+const PaperdollSlot: React.FC<{
+  left: string
+  top: string
+  label: string
+  object?: EngineObjectData
+  onRemove: (objectId: ElementId) => void
+}> = ({ left, top, label, object, onRemove }) => {
+  const imageData = useImageLoader({
+    eventId: object ? object.id : `empty-${label}`,
+    assetId: object?.assetId,
+    placeholder: '',
+    ext: 'webp'
+  })
+
+  const name = object ? `${label}: ${object.title}` : label
+
+  return (
+    <div className="paperdoll-slot" style={{ left, top }}>
+      {object ? (
+        <button
+          type="button"
+          className="paperdoll-slot-figure paperdoll-slot-filled"
+          aria-label={name}
+          title={name}
+          onClick={() => onRemove(object.id)}
+        >
+          {imageData ? (
+            <img className="paperdoll-slot-image" src={imageData} alt="" />
+          ) : (
+            <span className="paperdoll-slot-initials" aria-hidden="true">
+              {initialsOf(object.title)}
+            </span>
+          )}
+        </button>
+      ) : (
+        <span
+          className="paperdoll-slot-figure paperdoll-slot-empty"
+          aria-label={name}
+          title={label}
+        />
+      )}
+
+      <span className="paperdoll-slot-label" aria-hidden="true">
+        {label}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * The character figure: a silhouette with an anchor per equip slot the world uses,
+ * each showing what is worn there. Present only when the world has slotted wearables
+ * — a world that wears nothing, or wears only slotless items, shows no figure, the
+ * same opt-in rule the whole panel follows.
+ */
+const Paperdoll: React.FC<{
+  title: string
+  slots: {
+    slot: EQUIP_SLOT
+    left: string
+    top: string
+    label: string
+    object?: EngineObjectData
+  }[]
+  onRemove: (objectId: ElementId) => void
+}> = ({ title, slots, onRemove }) => (
+  <div className="object-panel-paperdoll">
+    <h4 className="object-panel-group-title">{title}</h4>
+
+    <div className="paperdoll-figure">
+      <svg
+        className="paperdoll-silhouette"
+        viewBox="0 0 100 130"
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        <circle cx="50" cy="12" r="8" />
+        <rect x="38" y="24" width="24" height="46" rx="9" />
+        <path d="M39 30 L26 58" />
+        <path d="M61 30 L74 58" />
+        <path d="M45 70 L41 118" />
+        <path d="M55 70 L59 118" />
+      </svg>
+
+      {slots.map((entry) => (
+        <PaperdollSlot
+          key={entry.slot}
+          left={entry.left}
+          top={entry.top}
+          label={entry.label}
+          object={entry.object}
+          onRemove={onRemove}
+        />
+      ))}
+    </div>
+  </div>
+)
+
 const ObjectPanel: React.FC = () => {
   const { engine } = useContext(EngineContext)
 
@@ -243,6 +371,33 @@ const ObjectPanel: React.FC = () => {
     () => (snapshot ? locationContents(snapshot, INVENTORY_LOCATION_KEY) : []),
     [snapshot]
   )
+
+  /*
+   * The paperdoll's slots: every slot some wearable in the world uses, in figure
+   * order, each carrying the object currently worn there. Built off the object
+   * definitions (which slots exist) and the live event's `worn` set (what fills
+   * them), so it is empty for a world with no slotted wearables and the figure does
+   * not render at all.
+   */
+  const paperdollSlots = useMemo(() => {
+    if (!objects) return []
+
+    const used = new Set(
+      objects.filter((object) => object.wearable && object.slot).map((object) => object.slot)
+    )
+
+    if (used.size === 0) return []
+
+    const wornIds = liveEvent?.worn ?? []
+
+    return SLOT_LAYOUT.filter((entry) => used.has(entry.slot)).map((entry) => ({
+      ...entry,
+      label: t(entry.textKey),
+      object: objects.find(
+        (object) => object.slot === entry.slot && wornIds.includes(object.id)
+      )
+    }))
+  }, [objects, liveEvent?.worn, t])
 
   const railRef = useRef<HTMLDivElement>(null)
 
@@ -519,6 +674,14 @@ const ObjectPanel: React.FC = () => {
       // the rail starts 4.4rem below the prose it sits beside.
       style={{ top: engine.isComposer ? 0 : '' }}
     >
+      {paperdollSlots.length > 0 && (
+        <Paperdoll
+          title={t(INTERFACE_TEXT_KEY.OBJECT_WORN)}
+          slots={paperdollSlots}
+          onRemove={onRemove}
+        />
+      )}
+
       <div className="object-panel-groups">
         {here.length > 0 &&
           group(t(INTERFACE_TEXT_KEY.OBJECT_HERE), here)}

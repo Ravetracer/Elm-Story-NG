@@ -281,6 +281,17 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
           condition system does the rest; it is not a stats system, and the object
           stays in Carrying rather than being consumed.
         </p>
+        <h4>Equip slots &amp; the character panel</h4>
+        <p>
+          Give a wearable an <strong>equip slot</strong> — Head, Face, Neck, Body,
+          Hands, Feet or Held — and two things follow. The slot holds one thing at a
+          time: wearing a second Head item takes the first off, applying its remove
+          effects (so its gate variable reverts). And the worn item shows on a
+          <strong> character paperdoll</strong> beside the inventory, on its body
+          anchor; click it there to take it off. Leave the slot as{' '}
+          <em>No slot</em> to keep an object wearable without any of that — no
+          exclusivity, no figure. The panel appears only for worlds that use slots.
+        </p>
       </>
     )
   },

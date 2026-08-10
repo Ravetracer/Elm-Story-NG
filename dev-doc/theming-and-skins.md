@@ -383,6 +383,40 @@ reference counting) for a feature whose entire point is a *curated* look.
 > - **Deferred to 5b:** the `EQUIP_SLOT` field, the paperdoll/character panel, and
 >   one-item-per-slot replacement. 5a offers Wear/Remove from the ordinary
 >   inventory rail; the worn set is bookkeeping the panel will visualise.
+>
+> **Slice 5b shipped (0.65.0) — equip slots and the character paperdoll.**
+>
+> - **Model (both projects, transport, schema):** `EQUIP_SLOT` (`HEAD | FACE |
+>   NECK | BODY | HANDS | FEET | HELD`, a closed curated set) and an optional
+>   `WorldObject.slot` / `EngineObjectData.slot`. Tier-two field on the existing
+>   `objects` table — **no migration** — named in `format.ts`'s object pick, the
+>   0.8.0 transport type, the schema's `objects` block (`additionalProperties:
+>   false`, so it had to be), and both export/import destructures.
+> - **One item per slot, in the pure `wear`.** Wearing an object whose slot is
+>   occupied displaces the incumbent: it drops from `worn` and its `removeEffects`
+>   apply *before* the newcomer's `wearEffects`, so a shared gate variable ends up
+>   with the newcomer's value and the displaced item's own gate reverts. A wearable
+>   with **no** slot claims nothing and never displaces (many can be worn). Only the
+>   newcomer's `wearMessage` narrates — the displaced item's `removeMessage` does
+>   not, because the player did not choose to take it off; its *effects* still fire.
+>   Covered by `objectModel.test.ts`. The hook is unchanged — `wear` already returns
+>   the whole worn set.
+> - **The panel is a body silhouette with one anchor per slot the world uses**
+>   (`Paperdoll` / `PaperdollSlot` in `ObjectPanel.tsx`, `SLOT_LAYOUT` the anchor
+>   coordinates). A filled anchor is a button that takes the item off — the design's
+>   "click a filled slot to Remove"; equipping stays on the tile's Wear verb. **No
+>   drag-and-drop:** the engine ships no DnD library and adding one would bloat every
+>   exported PWA, so empty anchors are inert markers, not drop targets. Present only
+>   when the world has slotted wearables — same opt-in as the rail. Styled in
+>   `engine.less` in flat tokens (so it shows in the composer preview *and* the
+>   export, unlike phases 1–2), silhouette in `currentColor`; **phase 4 skin art
+>   dresses the figure and keeps the same anchors**, which is the whole reason the
+>   slot set is closed.
+> - **Slot names are interface text** (`OBJECT_WORN` + `OBJECT_SLOT_*`, in the
+>   Objects group), so the paperdoll is translatable like the rest of the rail.
+> - **Authoring:** an *Equip slot* dropdown in `ObjectManager/Objects.tsx`'s
+>   wearable section (`SLOT_OPTIONS`, "No slot" default). The demo's Ceremonial Jade
+>   Mask is a `FACE` item, so the demo now shows the figure with a single anchor.
 
 
 

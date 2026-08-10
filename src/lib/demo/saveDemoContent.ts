@@ -12,6 +12,7 @@ import {
   SET_OPERATOR_TYPE,
   VARIABLE_TYPE,
   CHARACTER_MASK_TYPE,
+  EQUIP_SLOT,
   OBJECT_LOCATION_TYPE,
   RECIPE_OUTPUT_DESTINATION,
   WORLD_TEMPLATE,
@@ -559,6 +560,10 @@ export default async function saveDemoContent(
       takeable: true,
       combineable: false,
       wearable: true,
+      // A FACE item, so wearing it fills the paperdoll's face slot. The demo has
+      // only this one slotted wearable, so the character figure shows a single
+      // anchor — enough to see the panel appear and clear when the mask is worn.
+      slot: EQUIP_SLOT.FACE,
       // Rests beside the idol. Take it, then wear it.
       placements: [{ location: sChamber, quantity: 1 }],
       wearEffects: [[vWearingMask, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL]],

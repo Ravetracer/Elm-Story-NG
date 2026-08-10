@@ -556,6 +556,15 @@ export type WearResult = {
  * hat" become a variable a path condition can gate on. That variable *is* the
  * mechanism; there is no numeric stat model behind it (DESIGN rejected one).
  *
+ * **One item per slot.** An object with a `slot` claims it exclusively: wearing a
+ * second head item takes the first off first, dropping it from `worn` and applying
+ * *its* `removeEffects` before this one's `wearEffects` — so the displaced item's
+ * gate variable reverts, which is the whole point of routing through variables. A
+ * wearable with no slot claims nothing and never displaces. Only the incoming
+ * object's `wearMessage` is narrated; the displaced item's `removeMessage` is not,
+ * because the player did not choose to take it off and an unbidden "you take off the
+ * hat" line reads as noise — its *effects* still fire, which is what matters.
+ *
  * `worn` is the current worn set, threaded in rather than read off the snapshot so
  * the function stays pure. Returns undefined when the action would change nothing —
  * a non-wearable object, one not carried, wearing what is already worn, or removing
@@ -575,9 +584,28 @@ export const wear = (
   // only something the player is carrying can be put on
   if (inventoryCount(snapshot, objectId) <= 0) return undefined
 
+  // the object already in this slot, if any — displaced before the new one goes on
+  const displacedId = object.slot
+    ? worn.find(
+        (id) =>
+          snapshot.objects.find((candidate) => candidate.id === id)?.slot ===
+          object.slot
+      )
+    : undefined
+
+  const displaced = displacedId
+    ? snapshot.objects.find((candidate) => candidate.id === displacedId)
+    : undefined
+
+  // remove effects first so the incoming wear effects win any variable they share
+  const state = applyVariableSets(
+    applyVariableSets(snapshot.state, displaced?.removeEffects ?? []),
+    object.wearEffects ?? []
+  )
+
   return {
-    worn: [...worn, objectId],
-    state: applyVariableSets(snapshot.state, object.wearEffects ?? []),
+    worn: [...worn.filter((id) => id !== displacedId), objectId],
+    state,
     message: object.wearMessage
   }
 }
