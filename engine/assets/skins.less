@@ -25,6 +25,12 @@
 // source `@slice` px, on-screen `@width`; `fill` paints the frame's interior so the
 // panel texture shows through, `stretch` because these frames have no repeating run
 .nineslice(@path, @slice, @width) {
+  // border-box so the frame's border-width is drawn *inside* the element's box
+  // rather than growing it. Without this a skinned tile (content-box, 4.4rem) grows
+  // by 2×@width past its grid track and the icon fills out to the frame — the
+  // "icons a bit off" report. With it the tile keeps its size, the frame sits on the
+  // edge and the icon stays in the opening.
+  box-sizing: border-box;
   border: @width solid transparent;
   border-image: url("@{path}") @slice fill stretch;
   background: transparent;

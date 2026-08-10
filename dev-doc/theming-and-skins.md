@@ -362,6 +362,18 @@ derived-quantity model is deliberate; a census-with-positions would fight it.
 >   the write. This is the exact "add a field, four places fail silently" trap — the
 >   install pick was the fifth place. **Re-export after this to see the skin.**
 >
+> - **Live-pass refinements (0.69.2).** From the first real export: (1) skinned
+>   tiles/slots read "a bit off" because `.object-tile` is `content-box`, so the 8px
+>   skin border grew each tile past its 4.4rem grid track and the icon filled out to
+>   the frame — fixed by `box-sizing: border-box` in the `.nineslice` mixin (skinned
+>   frames only). (2) A worn, *slotted* item is now hidden from the inventory grid,
+>   since it already shows on the paperdoll; a slotless worn item has no anchor and
+>   stays in the grid. (3) Taking a worn item off the paperdoll is a **two-step
+>   confirm** (click the item → a "Remove" button → click to remove), because
+>   removing applies the item's remove effects and a stray click stripping a mask in
+>   a hostile scene should not be a single tap. Dismisses on outside-click/Escape
+>   like the rail menu.
+>
 > **First-cut caveats, for the live pass:** the 9-slice insets and the medieval
 > anchor coordinates are measured off the source art and want tuning against a real
 > export; only the surfaces above are dressed (prose column untouched); the browser

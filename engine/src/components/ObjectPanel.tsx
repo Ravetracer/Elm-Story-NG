@@ -181,8 +181,11 @@ const PaperdollSlot: React.FC<{
   slot: EQUIP_SLOT
   label: string
   object?: EngineObjectData
-  onRemove: (objectId: ElementId) => void
-}> = ({ slot, label, object, onRemove }) => {
+  confirming: boolean
+  removeLabel: string
+  onRequest: (slot: EQUIP_SLOT) => void
+  onConfirm: (objectId: ElementId) => void
+}> = ({ slot, label, object, confirming, removeLabel, onRequest, onConfirm }) => {
   const imageData = useImageLoader({
     eventId: object ? object.id : `empty-${label}`,
     assetId: object?.assetId,
@@ -200,7 +203,11 @@ const PaperdollSlot: React.FC<{
           className="paperdoll-slot-figure paperdoll-slot-filled"
           aria-label={name}
           title={name}
-          onClick={() => onRemove(object.id)}
+          aria-haspopup="true"
+          aria-expanded={confirming}
+          // a click asks; the confirm button below removes — so a stray tap does
+          // not strip the mask off in a place where being bare-faced is fatal
+          onClick={() => onRequest(slot)}
         >
           {imageData ? (
             <img className="paperdoll-slot-image" src={imageData} alt="" />
@@ -218,9 +225,21 @@ const PaperdollSlot: React.FC<{
         />
       )}
 
-      <span className="paperdoll-slot-label" aria-hidden="true">
-        {label}
-      </span>
+      {object && confirming ? (
+        <button
+          type="button"
+          className="paperdoll-slot-confirm"
+          // the figure's own dismiss listener asks whether a press landed in here
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={() => onConfirm(object.id)}
+        >
+          {removeLabel}
+        </button>
+      ) : (
+        <span className="paperdoll-slot-label" aria-hidden="true">
+          {label}
+        </span>
+      )}
     </div>
   )
 }
@@ -230,46 +249,89 @@ const PaperdollSlot: React.FC<{
  * each showing what is worn there. Present only when the world has slotted wearables
  * — a world that wears nothing, or wears only slotless items, shows no figure, the
  * same opt-in rule the whole panel follows.
+ *
+ * Taking a worn item off is a two-step: a click on the item asks, a second click on
+ * the "Remove" button confirms. Removing is not free — it applies the item's remove
+ * effects, which can gate a path — so an accidental single click should not do it.
  */
 const Paperdoll: React.FC<{
   title: string
+  removeLabel: string
   slots: {
     slot: EQUIP_SLOT
     label: string
     object?: EngineObjectData
   }[]
   onRemove: (objectId: ElementId) => void
-}> = ({ title, slots, onRemove }) => (
-  <div className="object-panel-paperdoll">
-    <h4 className="object-panel-group-title">{title}</h4>
+}> = ({ title, removeLabel, slots, onRemove }) => {
+  const [confirming, setConfirming] = useState<EQUIP_SLOT | undefined>(undefined)
 
-    <div className="paperdoll-figure">
-      <svg
-        className="paperdoll-silhouette"
-        viewBox="0 0 100 130"
-        preserveAspectRatio="xMidYMid meet"
-        aria-hidden="true"
-      >
-        <circle cx="50" cy="12" r="8" />
-        <rect x="38" y="24" width="24" height="46" rx="9" />
-        <path d="M39 30 L26 58" />
-        <path d="M61 30 L74 58" />
-        <path d="M45 70 L41 118" />
-        <path d="M55 70 L59 118" />
-      </svg>
+  // A click elsewhere, or escape, cancels a pending removal — the same dismissal the
+  // rail's verb menu uses, and the same reason it listens on `mousedown`.
+  useEffect(() => {
+    if (!confirming) return
 
-      {slots.map((entry) => (
-        <PaperdollSlot
-          key={entry.slot}
-          slot={entry.slot}
-          label={entry.label}
-          object={entry.object}
-          onRemove={onRemove}
-        />
-      ))}
+    const onDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null
+
+      if (target?.closest('.paperdoll-slot-confirm, .paperdoll-slot-filled')) return
+
+      setConfirming(undefined)
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setConfirming(undefined)
+    }
+
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [confirming])
+
+  return (
+    <div className="object-panel-paperdoll">
+      <h4 className="object-panel-group-title">{title}</h4>
+
+      <div className="paperdoll-figure">
+        <svg
+          className="paperdoll-silhouette"
+          viewBox="0 0 100 130"
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden="true"
+        >
+          <circle cx="50" cy="12" r="8" />
+          <rect x="38" y="24" width="24" height="46" rx="9" />
+          <path d="M39 30 L26 58" />
+          <path d="M61 30 L74 58" />
+          <path d="M45 70 L41 118" />
+          <path d="M55 70 L59 118" />
+        </svg>
+
+        {slots.map((entry) => (
+          <PaperdollSlot
+            key={entry.slot}
+            slot={entry.slot}
+            label={entry.label}
+            object={entry.object}
+            confirming={confirming === entry.slot}
+            removeLabel={removeLabel}
+            onRequest={(slot) =>
+              setConfirming((current) => (current === slot ? undefined : slot))
+            }
+            onConfirm={(objectId) => {
+              setConfirming(undefined)
+              onRemove(objectId)
+            }}
+          />
+        ))}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 const ObjectPanel: React.FC = () => {
   const { engine } = useContext(EngineContext)
@@ -364,10 +426,28 @@ const ObjectPanel: React.FC = () => {
     [snapshot, destinationEvent?.sceneId]
   )
 
-  const carrying = useMemo(
-    () => (snapshot ? locationContents(snapshot, INVENTORY_LOCATION_KEY) : []),
-    [snapshot]
-  )
+  const carrying = useMemo(() => {
+    const all = snapshot
+      ? locationContents(snapshot, INVENTORY_LOCATION_KEY)
+      : []
+
+    if (!objects) return all
+
+    // A worn item that has a slot is drawn on the paperdoll, so showing it in the
+    // inventory grid as well is a confusing duplicate — hide it there. A worn item
+    // with no slot has no anchor on the figure, so it stays in the grid (its only
+    // home). Removing it on the figure returns it here.
+    const wornIds = liveEvent?.worn ?? []
+    const onFigure = new Set(
+      objects
+        .filter((object) => object.slot && wornIds.includes(object.id))
+        .map((object) => object.id)
+    )
+
+    return onFigure.size > 0
+      ? all.filter(([object]) => !onFigure.has(object.id))
+      : all
+  }, [snapshot, objects, liveEvent?.worn])
 
   /*
    * The paperdoll's slots: every slot some wearable in the world uses, in figure
@@ -674,6 +754,7 @@ const ObjectPanel: React.FC = () => {
       {paperdollSlots.length > 0 && (
         <Paperdoll
           title={t(INTERFACE_TEXT_KEY.OBJECT_WORN)}
+          removeLabel={t(INTERFACE_TEXT_KEY.OBJECT_REMOVE)}
           slots={paperdollSlots}
           onRemove={onRemove}
         />
