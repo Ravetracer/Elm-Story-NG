@@ -15,6 +15,7 @@ import StreamAlignmentSelect from '../../StreamAlignmentSelect'
 import WorldCover from './WorldCover'
 import WorldBackground from './WorldBackground'
 import WorldColors from './WorldColors'
+import ThemeSelect from '../../ThemeSelect'
 import JumpTo from '../../JumpTo'
 
 import parentStyles from '../styles.module.less'
@@ -199,6 +200,34 @@ const WorldProperties: React.FC<{
             chosen theme. Keyed on the world id so switching storyworlds remounts
             it with the new world's colours.
           */}
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['theme-panel']}>
+              <Collapse.Panel header="Theme" key="theme-panel">
+                <div className={parentStyles.content}>
+                  <ThemeSelect
+                    value={world.theme}
+                    onChange={async (theme) => {
+                      if (!world.id) return
+
+                      await api().worlds.saveWorld(studioId, {
+                        // re-read rather than spreading the rendered copy: this
+                        // panel's metadata form writes to the same row
+                        ...(await api().worlds.getWorld(studioId, world.id)),
+                        theme
+                      })
+                    }}
+                  />
+
+                  <div className={styles.choicesHint}>
+                    The story’s base palette. Leave it to the player, or lock the
+                    story to dark or light. The colours below layer on top of
+                    whichever theme applies.
+                  </div>
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
           <div className={parentStyles.elementPropertiesNestedCollapse}>
             <Collapse defaultActiveKey={['colors-panel']}>
               <Collapse.Panel header="Colors" key="colors-panel">

@@ -6,6 +6,7 @@ import {
   CHOICE_PRESENTATION,
   ENGINE_TRANSITION,
   STREAM_ALIGNMENT,
+  ENGINE_THEME,
   WorldThemeColors,
   ElementId,
   EngineLiveEventData,
@@ -59,6 +60,7 @@ interface EngineState {
     choicePresentation?: CHOICE_PRESENTATION
     transition?: ENGINE_TRANSITION
     streamAlignment?: STREAM_ALIGNMENT
+    theme?: ENGINE_THEME
     themeColors?: WorldThemeColors
     backgroundAssetId?: string
     studioId: StudioId

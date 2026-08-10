@@ -542,6 +542,7 @@ export default (
             choicePresentation: _.choicePresentation,
             transition: _.transition,
             streamAlignment: _.streamAlignment,
+            theme: _.theme,
             themeColors: _.themeColors,
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,

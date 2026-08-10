@@ -100,6 +100,7 @@ export interface RootData {
   choicePresentation?: CHOICE_PRESENTATION
   transition?: ENGINE_TRANSITION
   streamAlignment?: STREAM_ALIGNMENT
+  theme?: ENGINE_THEME
   themeColors?: WorldThemeColors
   copyright?: string
   coverAssetId?: string

@@ -163,6 +163,34 @@ which slides the whole column.
 
 ## Phase 2 — the bundled theme selector, author-locked
 
+> **Shipped (0.61.0).** `World.theme` (`ENGINE_THEME` = `BOOK | CONSOLE`, unset =
+> the player chooses). Wired through the same seams as `streamAlignment`
+> (`ENGINE_THEME` added to `src/data/types.ts`; the field on the World in both
+> projects, `EngineContext.worldInfo`, `format.ts`, `WORLD_INFO_FIELDS`,
+> export/import, schema — tier-two, no migration). `resolveTheme` /
+> `isThemeLocked` in `engine/src/lib/theme.ts`, held by
+> `src/__tests__/theme.test.ts`.
+>
+> - **Precedence is one rule in one place.** `Presentation` sets `data-theme` from
+>   `resolveTheme(world.theme, settings.theme)` — the author's lock wins,
+>   otherwise the player's choice — and `Settings` hides its theme toggle when
+>   `worldInfo.theme` is set, so the stored player preference can never fight the
+>   lock.
+> - **The editor-root leak I worried about in the plan does not bite.** The plan
+>   feared applying `data-theme` on the composer's `documentElement` would
+>   re-theme the editor, and prescribed applying it on `#runtime` in the preview.
+>   In fact `Presentation` is export-only, so the only place this code sets
+>   `data-theme` is the exported/full-window player, where `documentElement` *is*
+>   the engine's own root. The composer preview never has it set — and its palette
+>   is pinned by `engine-editor.less`'s `#runtime` block regardless — so, like
+>   alignment, **the lock is visible in the export, not the dock preview.**
+> - **UI:** `ThemeSelect` in the storyworld's **Theme** panel (above Colors),
+>   offering "Let the player choose" (unset) / Dark / Light. The colour overrides
+>   still layer on top of whichever theme resolves.
+> - **Only two themes ship for now** (the existing BOOK/CONSOLE). The mechanism is
+>   the feature; adding more curated palettes is the additive CSS below, and is
+>   the natural next increment — a colour-taste decision for the maintainer.
+
 **Curated themes the author picks from; no custom theming; the choice locks.**
 
 - **Field:** `World.theme: ENGINE_THEME`, optional. Unset means "the player's

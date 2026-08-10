@@ -10,6 +10,8 @@ import { EngineContext } from '../contexts/EngineContext'
 
 import { getPresentationSettings } from '../lib/api'
 
+import { resolveTheme } from '../lib/theme'
+
 const Presentation: React.FC = ({ children }) => {
   const { engine } = useContext(EngineContext),
     { settings, settingsDispatch } = useContext(SettingsContext)
@@ -70,10 +72,14 @@ const Presentation: React.FC = ({ children }) => {
       })
   }, [presentationSettings?.size])
 
+  // The author's locked theme wins over the player's own choice. Absent, the
+  // player's choice stands. `resolveTheme` is the one rule; `Settings` hides the
+  // player's toggle when the world locks it, so the two cannot disagree.
+  const theme = resolveTheme(engine.worldInfo?.theme, settings.theme)
+
   useEffect(() => {
-    settings.theme &&
-      document.documentElement.setAttribute('data-theme', settings.theme)
-  }, [settings.theme])
+    theme && document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   useEffect(() => {
     settings.font &&
@@ -96,7 +102,7 @@ const Presentation: React.FC = ({ children }) => {
 
   return (
     <>
-      {settings.theme &&
+      {theme &&
         settings.font &&
         settings.motion &&
         settings.size &&

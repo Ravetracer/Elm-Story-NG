@@ -65,6 +65,7 @@ export default async (
         choicePresentation: world.choicePresentation,
         transition: world.transition,
         streamAlignment: world.streamAlignment,
+        theme: world.theme,
         themeColors: world.themeColors,
         copyright: world.copyright,
         backgroundAssetId: world.backgroundAssetId,

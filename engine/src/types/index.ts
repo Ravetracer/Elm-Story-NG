@@ -879,6 +879,11 @@ export interface EngineWorldData {
   transition?: ENGINE_TRANSITION
   /** Where the reading column sits on a wide screen. Absent means CENTER. */
   streamAlignment?: STREAM_ALIGNMENT
+  /**
+   * The author's locked base palette. Absent means the player chooses; set means
+   * the storyworld locks to it and the player's theme toggle is hidden.
+   */
+  theme?: ENGINE_THEME
   /** Author overrides of the base theme's colours, applied on top of it. */
   themeColors?: WorldThemeColors
   copyright?: string

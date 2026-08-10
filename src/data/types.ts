@@ -242,6 +242,12 @@ export interface World extends Element {
   transition?: ENGINE_TRANSITION
   /** Where the reading column sits on a wide screen. Absent means CENTER. */
   streamAlignment?: STREAM_ALIGNMENT
+  /**
+   * The author's locked base palette. Absent means the player chooses their own
+   * theme, as before; set means the storyworld locks to it and the player's theme
+   * toggle is hidden.
+   */
+  theme?: ENGINE_THEME
   /** Author overrides of the base theme's colours, applied on top of it. */
   themeColors?: WorldThemeColors
   template: WORLD_TEMPLATE
@@ -452,6 +458,16 @@ export enum STREAM_ALIGNMENT {
   LEFT = 'LEFT',
   CENTER = 'CENTER',
   RIGHT = 'RIGHT'
+}
+
+/**
+ * The engine's base palette. Also a *player* setting, but when an author sets
+ * `World.theme` the storyworld locks to it and the player's own toggle is hidden.
+ * BOOK is the light theme, CONSOLE the dark one.
+ */
+export enum ENGINE_THEME {
+  BOOK = 'BOOK',
+  CONSOLE = 'CONSOLE'
 }
 
 /**

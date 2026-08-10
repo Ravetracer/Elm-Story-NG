@@ -49,6 +49,7 @@ const WORLD_INFO_FIELDS = [
   'choicePresentation',
   'transition',
   'streamAlignment',
+  'theme',
   'themeColors',
   'copyright',
   'coverAssetId',

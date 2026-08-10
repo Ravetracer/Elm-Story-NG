@@ -133,32 +133,40 @@ const Settings: React.FC = () => {
           <section>
             <h1>{t(INTERFACE_TEXT_KEY.SETTINGS_PRESENTATION)}</h1>
 
-            <div>
-              <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_THEME)}</h2>
-              <p>
-                <a
-                  className={
-                    settings.theme === ENGINE_THEME.CONSOLE
-                      ? 'settings-active'
-                      : ''
-                  }
-                  onClick={() => setTheme(ENGINE_THEME.CONSOLE)}
-                >
-                  {t(INTERFACE_TEXT_KEY.SETTINGS_THEME_DARK)}
-                </a>{' '}
-                <span>|</span>{' '}
-                <a
-                  className={
-                    settings.theme === ENGINE_THEME.BOOK
-                      ? 'settings-active'
-                      : ''
-                  }
-                  onClick={() => setTheme(ENGINE_THEME.BOOK)}
-                >
-                  {t(INTERFACE_TEXT_KEY.SETTINGS_THEME_LIGHT)}
-                </a>
-              </p>
-            </div>
+            {/*
+             * The theme toggle is hidden when the author has locked the
+             * storyworld to a theme — the setting would be stored and never
+             * applied, since `Presentation` resolves the world's theme over the
+             * player's. A control that does nothing is worse than an absent one.
+             */}
+            {!engine.worldInfo?.theme && (
+              <div>
+                <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_THEME)}</h2>
+                <p>
+                  <a
+                    className={
+                      settings.theme === ENGINE_THEME.CONSOLE
+                        ? 'settings-active'
+                        : ''
+                    }
+                    onClick={() => setTheme(ENGINE_THEME.CONSOLE)}
+                  >
+                    {t(INTERFACE_TEXT_KEY.SETTINGS_THEME_DARK)}
+                  </a>{' '}
+                  <span>|</span>{' '}
+                  <a
+                    className={
+                      settings.theme === ENGINE_THEME.BOOK
+                        ? 'settings-active'
+                        : ''
+                    }
+                    onClick={() => setTheme(ENGINE_THEME.BOOK)}
+                  >
+                    {t(INTERFACE_TEXT_KEY.SETTINGS_THEME_LIGHT)}
+                  </a>
+                </p>
+              </div>
+            )}
 
             <div>
               <h2>{t(INTERFACE_TEXT_KEY.SETTINGS_FONT)}</h2>

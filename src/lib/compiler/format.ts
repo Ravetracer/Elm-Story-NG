@@ -61,6 +61,7 @@ function format(worldData: WorldDataJSON): string {
         'choicePresentation',
         'transition',
         'streamAlignment',
+        'theme',
         'themeColors',
         'copyright',
         'coverAssetId',
