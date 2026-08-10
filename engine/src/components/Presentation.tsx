@@ -81,6 +81,17 @@ const Presentation: React.FC = ({ children }) => {
     theme && document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
+  // The author's chosen game-UI skin. Set only in the export (this component is
+  // export-only), which is where the skin art is bundled and engine.less resolves
+  // its `url()`s; the composer preview keeps the flat chrome, like the locked theme
+  // and the stream alignment. Absent removes the attribute so no skin rules match.
+  const skin = engine.worldInfo?.skin
+
+  useEffect(() => {
+    if (skin) document.documentElement.setAttribute('data-skin', skin)
+    else document.documentElement.removeAttribute('data-skin')
+  }, [skin])
+
   useEffect(() => {
     settings.font &&
       document.documentElement.setAttribute('data-font', settings.font)

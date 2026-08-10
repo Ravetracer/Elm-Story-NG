@@ -16,6 +16,7 @@ import WorldCover from './WorldCover'
 import WorldBackground from './WorldBackground'
 import WorldColors from './WorldColors'
 import ThemeSelect from '../../ThemeSelect'
+import SkinSelect from '../../SkinSelect'
 import JumpTo from '../../JumpTo'
 
 import parentStyles from '../styles.module.less'
@@ -237,6 +238,35 @@ const WorldProperties: React.FC<{
                     studioId={studioId}
                     world={world}
                   />
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse>
+              <Collapse.Panel header="Skin" key="skin-panel">
+                <div className={parentStyles.content}>
+                  <SkinSelect
+                    value={world.skin}
+                    onChange={async (skin) => {
+                      if (!world.id) return
+
+                      await api().worlds.saveWorld(studioId, {
+                        // re-read rather than spreading the rendered copy: this
+                        // panel's metadata form writes to the same row
+                        ...(await api().worlds.getWorld(studioId, world.id)),
+                        skin
+                      })
+                    }}
+                  />
+
+                  <div className={styles.choicesHint}>
+                    A game-UI skin that dresses the inventory, the character
+                    paperdoll, the choice modal and the panels. It shows in the
+                    exported story, not this preview. Only the chosen skin’s art is
+                    packed into an export.
+                  </div>
                 </div>
               </Collapse.Panel>
             </Collapse>

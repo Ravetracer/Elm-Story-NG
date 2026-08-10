@@ -436,6 +436,12 @@ export enum ENGINE_THEME {
   CONSOLE = 'CONSOLE'
 }
 
+/** A bundled 9-slice game-UI skin; mirrors the editor's `ENGINE_SKIN`. */
+export enum ENGINE_SKIN {
+  MEDIEVAL = 'MEDIEVAL',
+  SCIFI = 'SCIFI'
+}
+
 export enum ENGINE_FONT {
   SANS = 'SANS',
   SERIF = 'SERIF'
@@ -918,6 +924,8 @@ export interface EngineWorldData {
   theme?: ENGINE_THEME
   /** Author overrides of the base theme's colours, applied on top of it. */
   themeColors?: WorldThemeColors
+  /** A bundled 9-slice game-UI skin; absent means the flat themed chrome. */
+  skin?: ENGINE_SKIN
   copyright?: string
   coverAssetId?: string
   /** ASSET_KIND.WORLD_BACKGROUND. Filled behind the reading column. */

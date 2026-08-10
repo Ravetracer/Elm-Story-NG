@@ -102,6 +102,7 @@ export interface RootData {
   streamAlignment?: STREAM_ALIGNMENT
   theme?: ENGINE_THEME
   themeColors?: WorldThemeColors
+  skin?: ENGINE_SKIN
   copyright?: string
   coverAssetId?: string
   backgroundAssetId?: string
@@ -581,6 +582,11 @@ export interface WorldDataJSON {
 export enum ENGINE_THEME {
   BOOK = 'BOOK',
   CONSOLE = 'CONSOLE'
+}
+
+export enum ENGINE_SKIN {
+  MEDIEVAL = 'MEDIEVAL',
+  SCIFI = 'SCIFI'
 }
 
 export enum ENGINE_FONT {

@@ -51,6 +51,7 @@ const WORLD_INFO_FIELDS = [
   'streamAlignment',
   'theme',
   'themeColors',
+  'skin',
   'copyright',
   'coverAssetId',
   'backgroundAssetId',

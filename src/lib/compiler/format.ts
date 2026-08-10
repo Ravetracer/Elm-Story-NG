@@ -63,6 +63,7 @@ function format(worldData: WorldDataJSON): string {
         'streamAlignment',
         'theme',
         'themeColors',
+        'skin',
         'copyright',
         'coverAssetId',
         'backgroundAssetId',

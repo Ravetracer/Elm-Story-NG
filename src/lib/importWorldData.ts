@@ -556,6 +556,7 @@ export default (
             streamAlignment: _.streamAlignment,
             theme: _.theme,
             themeColors: _.themeColors,
+            skin: _.skin,
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,
             backgroundAssetId: _.backgroundAssetId,

@@ -250,6 +250,12 @@ export interface World extends Element {
   theme?: ENGINE_THEME
   /** Author overrides of the base theme's colours, applied on top of it. */
   themeColors?: WorldThemeColors
+  /**
+   * A bundled game-UI skin dressing the inventory, paperdoll, choice modal and
+   * panels with 9-slice art. Absent means the flat themed chrome, as before — the
+   * skin is opt-in. Only the selected skin's art is bundled into an export.
+   */
+  skin?: ENGINE_SKIN
   template: WORLD_TEMPLATE
   version: string
   website?: string
@@ -468,6 +474,18 @@ export enum STREAM_ALIGNMENT {
 export enum ENGINE_THEME {
   BOOK = 'BOOK',
   CONSOLE = 'CONSOLE'
+}
+
+/**
+ * A bundled game-UI skin — 9-slice frame art that dresses the inventory, the
+ * character paperdoll, the choice modal and the panels. A closed curated set, one
+ * folder of art per member; absent on a world means no skin (the flat themed
+ * chrome). MEDIEVAL is the Wenrexa RPG kit (#6), SCIFI the minimalist space kit
+ * (#16); both are CC BY-SA 4.0, credited in CREDITS and the export.
+ */
+export enum ENGINE_SKIN {
+  MEDIEVAL = 'MEDIEVAL',
+  SCIFI = 'SCIFI'
 }
 
 /**

@@ -7,6 +7,7 @@ import {
   ENGINE_TRANSITION,
   STREAM_ALIGNMENT,
   ENGINE_THEME,
+  ENGINE_SKIN,
   WorldThemeColors,
   ElementId,
   EngineLiveEventData,
@@ -62,6 +63,7 @@ interface EngineState {
     streamAlignment?: STREAM_ALIGNMENT
     theme?: ENGINE_THEME
     themeColors?: WorldThemeColors
+    skin?: ENGINE_SKIN
     backgroundAssetId?: string
     studioId: StudioId
     studioTitle: string

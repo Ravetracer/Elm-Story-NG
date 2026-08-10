@@ -67,6 +67,7 @@ export default async (
         streamAlignment: world.streamAlignment,
         theme: world.theme,
         themeColors: world.themeColors,
+        skin: world.skin,
         copyright: world.copyright,
         backgroundAssetId: world.backgroundAssetId,
         coverAssetId: world.coverAssetId,

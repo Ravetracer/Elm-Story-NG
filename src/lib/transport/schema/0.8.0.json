@@ -87,6 +87,10 @@
         "theme": {
           "type": "string"
         },
+        "skin": {
+          "type": "string",
+          "enum": ["MEDIEVAL", "SCIFI"]
+        },
         "themeColors": {
           "type": "object",
           "properties": {
