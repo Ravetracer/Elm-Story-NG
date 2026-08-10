@@ -255,8 +255,10 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
         <h4>What a tile offers</h4>
         <ul>
           <li>
-            <strong>Look at</strong> prints the object&apos;s description into the
-            story.
+            <strong>Look at</strong> opens a close-up — the object&apos;s picture
+            large, with its name and description — and prints the description into
+            the story as a record. Close it with its button, a click outside, or
+            Escape.
           </li>
           <li>
             <strong>Take</strong> moves it from the scene into Carrying, and can
@@ -283,14 +285,22 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
         </p>
         <h4>Equip slots &amp; the character panel</h4>
         <p>
-          Give a wearable an <strong>equip slot</strong> — Head, Face, Neck, Body,
-          Hands, Feet or Held — and two things follow. The slot holds one thing at a
-          time: wearing a second Head item takes the first off, applying its remove
-          effects (so its gate variable reverts). And the worn item shows on a
-          <strong> character paperdoll</strong> beside the inventory, on its body
-          anchor; click it there to take it off. Leave the slot as{' '}
-          <em>No slot</em> to keep an object wearable without any of that — no
-          exclusivity, no figure. The panel appears only for worlds that use slots.
+          Give a wearable an <strong>equip slot</strong> — Head, Neck, Body, Hands,
+          Feet or Held — and two things follow. The slot holds one thing at a time:
+          wearing a second Head item takes the first off, applying its remove effects
+          (so its gate variable reverts). And the worn item shows on a{' '}
+          <strong>character paperdoll</strong> beside the inventory, on its body
+          anchor; a worn item is shown there rather than in the inventory grid.
+          Clicking it on the figure asks to confirm before taking it off, so a stray
+          tap can&apos;t strip something you need. Leave the slot as <em>No slot</em>{' '}
+          to keep an object wearable without any of that — no exclusivity, no figure.
+          The panel appears only for worlds that use slots.
+        </p>
+        <p>
+          A bundled <strong>skin</strong> (set on the storyworld) dresses the
+          inventory, the paperdoll and the panels with game-UI art; under a skin the
+          figure becomes an equipment body with the slots drawn on it. The skin shows
+          in the exported story, not the composer preview.
         </p>
       </>
     )

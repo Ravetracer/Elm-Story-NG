@@ -18,6 +18,7 @@ import imgPlacement from '../assets/walkthrough/placement-gate.png'
 import imgRecipe from '../assets/walkthrough/recipe.png'
 import imgPlayDialog from '../assets/walkthrough/play-dialog.png'
 import imgPlayRail from '../assets/walkthrough/play-object-rail.png'
+import imgPaperdoll from '../assets/walkthrough/play-paperdoll.png'
 import imgPlayCombine from '../assets/walkthrough/play-combine.png'
 import imgPlayTemplate from '../assets/walkthrough/play-template.png'
 import imgPlayEnding from '../assets/walkthrough/play-ending.png'
@@ -301,11 +302,23 @@ const Walkthrough: React.FC = () => (
             lift it. At play they appear in a framed grid beside the story, in its
             own lane so the prose keeps its width.
           </p>
+          <p>
+            A tile&rsquo;s verbs open on click. <strong>Look at</strong> opens a
+            close-up &mdash; the picture large, with the name and description &mdash;
+            so the small tiles never hide the art. <strong>Take</strong> carries it
+            (and can set variables), and <strong>Use</strong>/<strong>Combine</strong>{' '}
+            runs a recipe.
+          </p>
           <div className="wt-grid">
             <Figure
               src={imgObjects}
               alt="The object manager"
-              caption={<>The objects, each with its own art and flags.</>}
+              caption={
+                <>
+                  The objects, each with its own art and flags &mdash; including{' '}
+                  <em>wearable</em> and an <em>equip slot</em>.
+                </>
+              }
             />
             <Figure
               src={imgPlayRail}
@@ -314,16 +327,50 @@ const Walkthrough: React.FC = () => (
                 <>
                   In <em>Preview</em>, objects in the current scene show under{' '}
                   <strong>Here</strong> and carried ones under{' '}
-                  <strong>Inventory</strong>. Click a tile for its verbs (Look at,
-                  Take, Wear, Combine).
+                  <strong>Inventory</strong>. Click a tile for its verbs.
                 </>
               }
             />
           </div>
         </div>
 
-        {/* 9 */}
+        {/* 8b — wearing, the character panel and skins */}
         <div className="step" data-step="9">
+          <h3>Wearing, the character panel &amp; skins</h3>
+          <p>
+            Mark an object <strong>wearable</strong> and give it an{' '}
+            <strong>equip slot</strong> (Head, Neck, Body, Hands, Feet or Held).
+            Wearing it applies its <em>wear effects</em> and removing it the{' '}
+            <em>remove effects</em>, so &ldquo;the player is wearing this&rdquo;
+            becomes a variable you can gate a path on &mdash; it is not a stats
+            system. In the demo the ceremonial mask is a Head item, and the idol only
+            lifts for a masked face.
+          </p>
+          <p>
+            A slot holds one thing at a time, and a worn, slotted item appears on a{' '}
+            <strong>character paperdoll</strong> beside the inventory rather than
+            twice in the grid. Click it on the figure to take it off (it asks first,
+            so a stray tap can&rsquo;t strip something you need). The panel appears
+            only for worlds that use slots. A storyworld <strong>skin</strong> &mdash;
+            set in its properties &mdash; dresses the inventory, the paperdoll and the
+            panels with game-UI art; under a skin the figure becomes an equipment
+            body with the slots drawn on it. The skin shows in the exported story.
+          </p>
+          <Figure
+            src={imgPaperdoll}
+            alt="The character paperdoll under a skin"
+            caption={
+              <>
+                The character panel in the exported demo under the <em>Medieval</em>{' '}
+                skin: the equipment body with a Head slot above the framed inventory.
+                Worn items sit in their slot on the figure.
+              </>
+            }
+          />
+        </div>
+
+        {/* 9 */}
+        <div className="step" data-step="10">
           <h3>Placements &mdash; and gating them</h3>
           <p>
             A <strong>placement</strong> says where an object starts and how many.
@@ -344,7 +391,7 @@ const Walkthrough: React.FC = () => (
         </div>
 
         {/* 10 */}
-        <div className="step" data-step="10">
+        <div className="step" data-step="11">
           <h3>Recipes &mdash; combining objects</h3>
           <p>
             A <strong>recipe</strong> turns objects into another object. One input is
@@ -379,7 +426,7 @@ const Walkthrough: React.FC = () => (
         </div>
 
         {/* 11 */}
-        <div className="step" data-step="11">
+        <div className="step" data-step="12">
           <h3>Template expressions in prose</h3>
           <p>
             Type <code>{'{'}</code> in event content to write a template expression.
@@ -401,7 +448,7 @@ const Walkthrough: React.FC = () => (
         </div>
 
         {/* 12 */}
-        <div className="step" data-step="12">
+        <div className="step" data-step="13">
           <h3>Endings</h3>
           <p>
             An event marked as an <strong>ending</strong> stops the story. The demo
