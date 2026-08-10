@@ -198,7 +198,13 @@ const ObjectPanel: React.FC = () => {
     return await getLibraryDatabase(studioId).events.get(liveEvent.destination)
   }, [studioId, liveEvent?.destination])
 
-  const { takeObject, combineObjects, inspectObject } = useObjectActions(
+  const {
+    takeObject,
+    combineObjects,
+    inspectObject,
+    wearObject,
+    removeObject
+  } = useObjectActions(
     // the hook needs a live event; while one is loading the actions are inert
     // rather than the hook being called conditionally, which would change hook
     // order between renders
@@ -286,6 +292,24 @@ const ObjectPanel: React.FC = () => {
       await takeObject(objectId)
     },
     [closeMenu, takeObject]
+  )
+
+  const onWear = useCallback(
+    async (objectId: ElementId) => {
+      closeMenu()
+
+      await wearObject(objectId)
+    },
+    [closeMenu, wearObject]
+  )
+
+  const onRemove = useCallback(
+    async (objectId: ElementId) => {
+      closeMenu()
+
+      await removeObject(objectId)
+    },
+    [closeMenu, removeObject]
   )
 
   /**
@@ -534,11 +558,17 @@ const ObjectPanel: React.FC = () => {
           takeable={here.some(
             ([candidate]) => candidate.id === menuObject.id && candidate.takeable
           )}
+          carried={carrying.some(
+            ([candidate]) => candidate.id === menuObject.id
+          )}
+          worn={(liveEvent?.worn ?? []).includes(menuObject.id)}
           top={menu.top}
           menuRef={menuRef}
           t={t}
           onLookAt={onLookAt}
           onTake={onTake}
+          onWear={onWear}
+          onRemove={onRemove}
           onCombine={onCombine}
           onSelectForCombining={onSelectForCombining}
           onClearCombining={onClearCombining}
@@ -575,11 +605,15 @@ const ObjectMenu: React.FC<{
   object: EngineObjectData
   combiningObject?: EngineObjectData
   takeable: boolean
+  carried: boolean
+  worn: boolean
   top: number
   menuRef: React.RefObject<HTMLDivElement>
   t: (key: INTERFACE_TEXT_KEY) => string
   onLookAt: (object: EngineObjectData) => void
   onTake: (objectId: ElementId) => void
+  onWear: (objectId: ElementId) => void
+  onRemove: (objectId: ElementId) => void
   onCombine: (objectIds: ElementId[]) => void
   onSelectForCombining: (objectId: ElementId) => void
   onClearCombining: () => void
@@ -587,11 +621,15 @@ const ObjectMenu: React.FC<{
   object,
   combiningObject,
   takeable,
+  carried,
+  worn,
   top,
   menuRef,
   t,
   onLookAt,
   onTake,
+  onWear,
+  onRemove,
   onCombine,
   onSelectForCombining,
   onClearCombining
@@ -617,6 +655,23 @@ const ObjectMenu: React.FC<{
         {takeable && (
           <MenuItem onSelect={() => onTake(object.id)}>
             {t(INTERFACE_TEXT_KEY.OBJECT_TAKE)}
+          </MenuItem>
+        )}
+
+        {/*
+          Wear applies to something the player is carrying and has not already put
+          on; Remove to something worn. A worn object stays in the inventory, so
+          the two are never offered together.
+        */}
+        {object.wearable && carried && !worn && (
+          <MenuItem onSelect={() => onWear(object.id)}>
+            {t(INTERFACE_TEXT_KEY.OBJECT_WEAR)}
+          </MenuItem>
+        )}
+
+        {worn && (
+          <MenuItem onSelect={() => onRemove(object.id)}>
+            {t(INTERFACE_TEXT_KEY.OBJECT_REMOVE)}
           </MenuItem>
         )}
 

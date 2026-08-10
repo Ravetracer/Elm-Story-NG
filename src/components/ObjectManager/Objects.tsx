@@ -283,6 +283,15 @@ const Objects: React.FC<{
                 >
                   Combineable
                 </Checkbox>
+
+                <Checkbox
+                  checked={selected.wearable ?? false}
+                  onChange={(event) =>
+                    patch({ wearable: event.target.checked || undefined })
+                  }
+                >
+                  Wearable
+                </Checkbox>
               </div>
 
               <span className={styles.fieldHint}>
@@ -491,6 +500,70 @@ const Objects: React.FC<{
                   <span className={styles.fieldHint}>
                     Applied every time a stack of this is picked up, so “set to” is
                     usually the right operator rather than an increment.
+                  </span>
+                </div>
+              )}
+
+              {/*
+                Wearing sets variables the same way taking does, so a path can be
+                gated on "is the player wearing this" — a disguise that lets them
+                pass, a hat that lets them enter. Removing reverses it. This is not
+                a stat system; it sets variables and the condition system does the
+                rest.
+              */}
+              {selected.wearable && (
+                <div className={styles.section}>
+                  <span className={styles.fieldLabel}>
+                    When the player wears this
+                  </span>
+
+                  <Input
+                    value={selected.wearMessage ?? ''}
+                    placeholder="You pull the hood low over your face."
+                    onChange={(event) =>
+                      patch({ wearMessage: event.target.value || undefined })
+                    }
+                  />
+
+                  <VariableEffectRows
+                    effects={selected.wearEffects ?? []}
+                    variables={variables ?? []}
+                    addLabel="Set a variable on wear"
+                    onChange={(wearEffects) =>
+                      patch({
+                        wearEffects:
+                          wearEffects.length > 0 ? wearEffects : undefined
+                      })
+                    }
+                  />
+
+                  <span className={styles.fieldLabel}>
+                    When the player removes this
+                  </span>
+
+                  <Input
+                    value={selected.removeMessage ?? ''}
+                    placeholder="You lower the hood."
+                    onChange={(event) =>
+                      patch({ removeMessage: event.target.value || undefined })
+                    }
+                  />
+
+                  <VariableEffectRows
+                    effects={selected.removeEffects ?? []}
+                    variables={variables ?? []}
+                    addLabel="Set a variable on remove"
+                    onChange={(removeEffects) =>
+                      patch({
+                        removeEffects:
+                          removeEffects.length > 0 ? removeEffects : undefined
+                      })
+                    }
+                  />
+
+                  <span className={styles.fieldHint}>
+                    Wearing keeps the object in Carrying; it is not consumed. Gate a
+                    path on the variable you set here to react to it.
                   </span>
                 </div>
               )}

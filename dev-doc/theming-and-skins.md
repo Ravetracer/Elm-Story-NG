@@ -358,6 +358,34 @@ reference counting) for a feature whose entire point is a *curated* look.
 
 ## Phase 5 — wearable objects and the character panel
 
+> **Slice 5a shipped (0.63.0) — the mechanic.** Wearable objects with wear/remove
+> effects; the paperdoll panel (5b) is still to come.
+>
+> - **Model (both projects):** `WorldObject.wearable`, `wearEffects` /
+>   `removeEffects` (`VariableSet[]`, mirroring `takeEffects`), `wearMessage` /
+>   `removeMessage`. `EngineObjectData` mirrors them; the engine reads them, so
+>   they are in `format.ts`'s object pick. Worn runtime state is
+>   `EngineLiveEventData.worn?: ElementId[]` — unindexed, absent = nothing worn, no
+>   migration, exactly like `objects`/`messages`.
+> - **Engine:** pure `wear` / `unwear` in `lib/objects.ts` (no delta moves — the
+>   object stays carried; they toggle the worn set and apply the effects), driven
+>   by `wearObject` / `removeObject` in `useObjectActions` (which now also persists
+>   `worn` through `saveLiveEventObjectOutcome`). The object menu grows **Wear**
+>   (carried, wearable, not worn) and **Remove** (worn); `OBJECT_WEAR` /
+>   `OBJECT_REMOVE` interface-text keys.
+> - **The gate is free, as designed.** Wearing sets a variable; the existing
+>   `Condition.variableId` path gate does the rest. No new condition type, no
+>   numeric stats — both explicitly rejected below.
+> - **Authoring:** a *Wearable* checkbox in `ObjectManager/Objects.tsx` plus a
+>   wear/remove effects + messages section (reusing `VariableEffectRows`).
+> - **Covered** by `objectModel.test.ts` (wear/unwear: toggles worn, applies
+>   effects, refuses when not carried / not wearable / already-worn / not-worn).
+> - **Deferred to 5b:** the `EQUIP_SLOT` field, the paperdoll/character panel, and
+>   one-item-per-slot replacement. 5a offers Wear/Remove from the ordinary
+>   inventory rail; the worn set is bookkeeping the panel will visualise.
+
+
+
 **Equip slots that set a variable, so the gate is free.** The paperdoll-style
 CHARACTER panel from the `!dev/GUI` kits (Game #6) — a body with equipment slots
 and a stat readout — but built as *wearable objects*, not as an RPG stat engine.

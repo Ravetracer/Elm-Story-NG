@@ -1110,11 +1110,13 @@ export const saveLiveEventObjectOutcome = async (
   {
     objects,
     state,
-    messages
+    messages,
+    worn
   }: {
     objects?: EngineObjectDeltaCollection
     state?: EngineLiveEventStateCollection
     messages?: EngineLiveEventMessageData[]
+    worn?: ElementId[]
   }
 ) => {
   try {
@@ -1127,6 +1129,7 @@ export const saveLiveEventObjectOutcome = async (
         objects: objects ?? foundLiveEvent.objects,
         state: state ?? foundLiveEvent.state,
         messages: messages ?? foundLiveEvent.messages,
+        worn: worn ?? foundLiveEvent.worn,
         updated: Date.now()
       })
     }

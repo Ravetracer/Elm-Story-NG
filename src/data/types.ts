@@ -586,6 +586,23 @@ export interface WorldObject extends Element {
   takeEffects?: VariableSet[]
   /** What the storyteller says when the player picks this up. */
   takeMessage?: string
+  /**
+   * Whether the object can be worn/equipped. When true the object gains Wear and
+   * Remove verbs; wearing applies `wearEffects` and removing applies
+   * `removeEffects`, so "the player is wearing the hat" becomes a variable a path
+   * condition can gate on — the disguise/hat-in-the-cave pattern. This is not an
+   * RPG stat system: it sets variables, and the existing condition system does the
+   * rest.
+   */
+  wearable?: boolean
+  /** Variable assignments applied when the player wears this. See `takeEffects`. */
+  wearEffects?: VariableSet[]
+  /** Variable assignments applied when the player removes this. */
+  removeEffects?: VariableSet[]
+  /** What the storyteller says when the player wears this. */
+  wearMessage?: string
+  /** What the storyteller says when the player removes this. */
+  removeMessage?: string
   placements: ObjectPlacement[]
 }
 

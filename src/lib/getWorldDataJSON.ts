@@ -325,6 +325,11 @@ export default async (
         takeable,
         takeEffects,
         takeMessage,
+        wearable,
+        wearEffects,
+        removeEffects,
+        wearMessage,
+        removeMessage,
         title,
         updated
       }) =>
@@ -341,6 +346,11 @@ export default async (
           takeable,
           takeEffects,
           takeMessage,
+          wearable,
+          wearEffects,
+          removeEffects,
+          wearMessage,
+          removeMessage,
           title,
           updated: updated as number
         })

@@ -21,9 +21,12 @@ import {
   combine,
   COMBINE_OUTCOME,
   take,
+  wear,
+  unwear,
   type CombineResult,
   type ObjectWorldSnapshot,
-  type TakeResult
+  type TakeResult,
+  type WearResult
 } from '../objects'
 
 import { EngineContext, ENGINE_ACTION_TYPE } from '../../contexts/EngineContext'
@@ -94,11 +97,13 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
       objects,
       state,
       message,
+      worn,
       collapseRepeat
     }: {
       objects?: EngineObjectDeltaCollection
       state?: EngineLiveEventStateCollection
       message?: EngineLiveEventMessageData
+      worn?: ElementId[]
       collapseRepeat?: boolean
     }) => {
       if (!studioId || !worldId) return
@@ -110,12 +115,13 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
       const messages = appendMessage(stored.messages, message, collapseRepeat)
 
       // nothing to say and nothing to change is not a write
-      if (!objects && !state && !messages) return
+      if (!objects && !state && !messages && !worn) return
 
       await saveLiveEventObjectOutcome(studioId, liveEvent.id, {
         objects,
         state,
-        messages
+        messages,
+        worn
       })
 
       const updated = await getLiveEvent(studioId, liveEvent.id)
@@ -200,6 +206,54 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
   )
 
   /**
+   * Puts a wearable object on, applying its wear effects and narrating it. Like
+   * `takeObject`, resolves to undefined and writes nothing when the action would
+   * change nothing (not wearable, not carried, or already worn).
+   */
+  const wearObject = useCallback(
+    async (objectId: ElementId): Promise<WearResult | undefined> => {
+      const world = await snapshot()
+
+      if (!world) return undefined
+
+      const result = wear(world, liveEvent.worn ?? [], objectId)
+
+      if (!result) return undefined
+
+      await apply({
+        state: result.state,
+        worn: result.worn,
+        message: narration(result.message)
+      })
+
+      return result
+    },
+    [snapshot, apply, liveEvent.worn]
+  )
+
+  /** Takes a worn object off, applying its remove effects and narrating it. */
+  const removeObject = useCallback(
+    async (objectId: ElementId): Promise<WearResult | undefined> => {
+      const world = await snapshot()
+
+      if (!world) return undefined
+
+      const result = unwear(world, liveEvent.worn ?? [], objectId)
+
+      if (!result) return undefined
+
+      await apply({
+        state: result.state,
+        worn: result.worn,
+        message: narration(result.message)
+      })
+
+      return result
+    },
+    [snapshot, apply, liveEvent.worn]
+  )
+
+  /**
    * Prints what an object is into the stream.
    *
    * Changes nothing — `DESIGN.md` §5's "inspecting an object changes no state"
@@ -222,7 +276,7 @@ const useObjectActions = (liveEvent: EngineLiveEventData) => {
     [apply]
   )
 
-  return { takeObject, combineObjects, inspectObject }
+  return { takeObject, combineObjects, inspectObject, wearObject, removeObject }
 }
 
 export default useObjectActions

@@ -139,6 +139,11 @@ function format(worldData: WorldDataJSON): string {
       'takeable',
       'takeEffects',
       'takeMessage',
+      'wearable',
+      'wearEffects',
+      'removeEffects',
+      'wearMessage',
+      'removeMessage',
       'title'
     ]),
     paths: filterCollectionChildProps(paths, [

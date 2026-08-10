@@ -543,6 +543,63 @@ export const take = (
   }
 }
 
+export type WearResult = {
+  worn: ElementId[]
+  state: EngineLiveEventStateCollection
+  message?: string
+}
+
+/**
+ * Puts a wearable object on, or takes it off. No delta moves — the object stays in
+ * the inventory; wearing only changes the worn set and applies the object's
+ * `wearEffects` / `removeEffects`, which is what lets "the player is wearing the
+ * hat" become a variable a path condition can gate on. That variable *is* the
+ * mechanism; there is no numeric stat model behind it (DESIGN rejected one).
+ *
+ * `worn` is the current worn set, threaded in rather than read off the snapshot so
+ * the function stays pure. Returns undefined when the action would change nothing —
+ * a non-wearable object, one not carried, wearing what is already worn, or removing
+ * what is not — so the caller writes no live event at all, like `take`.
+ */
+export const wear = (
+  snapshot: ObjectWorldSnapshot,
+  worn: ElementId[],
+  objectId: ElementId
+): WearResult | undefined => {
+  const object = snapshot.objects.find(
+    (candidate) => candidate.id === objectId
+  )
+
+  if (!object || !object.wearable || worn.includes(objectId)) return undefined
+
+  // only something the player is carrying can be put on
+  if (inventoryCount(snapshot, objectId) <= 0) return undefined
+
+  return {
+    worn: [...worn, objectId],
+    state: applyVariableSets(snapshot.state, object.wearEffects ?? []),
+    message: object.wearMessage
+  }
+}
+
+export const unwear = (
+  snapshot: ObjectWorldSnapshot,
+  worn: ElementId[],
+  objectId: ElementId
+): WearResult | undefined => {
+  const object = snapshot.objects.find(
+    (candidate) => candidate.id === objectId
+  )
+
+  if (!object || !worn.includes(objectId)) return undefined
+
+  return {
+    worn: worn.filter((id) => id !== objectId),
+    state: applyVariableSets(snapshot.state, object.removeEffects ?? []),
+    message: object.removeMessage
+  }
+}
+
 /**
  * Adds what the storyteller just said to what it has already said on this event.
  *

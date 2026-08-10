@@ -16,6 +16,8 @@ import {
   objectCountAt,
   pruneDeltas,
   take,
+  wear,
+  unwear,
   type ObjectWorldSnapshot
 } from '../../engine/src/lib/objects'
 
@@ -1147,5 +1149,71 @@ describe('reconciling a save against a newer world', () => {
     const deltas = { [INVENTORY_LOCATION_KEY]: { coin: 2 } }
 
     expect(pruneDeltas(deltas, ['coin'])).toEqual(deltas)
+  })
+})
+
+describe('wearing and removing objects', () => {
+  const hat = (overrides = {}) =>
+    object('hat', {
+      wearable: true,
+      wearEffects: [
+        ['worn', SET_OPERATOR_TYPE.ASSIGN, 'true', VARIABLE_TYPE.BOOLEAN]
+      ],
+      removeEffects: [
+        ['worn', SET_OPERATOR_TYPE.ASSIGN, 'false', VARIABLE_TYPE.BOOLEAN]
+      ],
+      wearMessage: 'You put the hat on.',
+      ...overrides
+    })
+
+  const carried = () =>
+    snapshot({
+      objects: [hat()],
+      deltas: { [INVENTORY_LOCATION_KEY]: { hat: 1 } },
+      state: {
+        worn: {
+          title: 'worn',
+          type: VARIABLE_TYPE.BOOLEAN,
+          value: 'false',
+          worldId: 'world-1'
+        }
+      }
+    })
+
+  it('wears a carried wearable, adding it to worn and applying wear effects', () => {
+    const result = wear(carried(), [], 'hat')
+
+    expect(result?.worn).toEqual(['hat'])
+    expect(result?.state.worn.value).toBe('true')
+    expect(result?.message).toBe('You put the hat on.')
+  })
+
+  it('refuses to wear what is not carried, not wearable, or already worn', () => {
+    // not carried
+    expect(wear(snapshot({ objects: [hat()] }), [], 'hat')).toBeUndefined()
+    // not wearable
+    expect(
+      wear(
+        snapshot({
+          objects: [object('rock', { wearable: false })],
+          deltas: { [INVENTORY_LOCATION_KEY]: { rock: 1 } }
+        }),
+        [],
+        'rock'
+      )
+    ).toBeUndefined()
+    // already worn
+    expect(wear(carried(), ['hat'], 'hat')).toBeUndefined()
+  })
+
+  it('removes a worn object, dropping it from worn and applying remove effects', () => {
+    const result = unwear(carried(), ['hat'], 'hat')
+
+    expect(result?.worn).toEqual([])
+    expect(result?.state.worn.value).toBe('false')
+  })
+
+  it('refuses to remove what is not worn', () => {
+    expect(unwear(carried(), [], 'hat')).toBeUndefined()
   })
 })

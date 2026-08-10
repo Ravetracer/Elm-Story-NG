@@ -609,6 +609,14 @@ export interface EngineObjectData {
   /** applied when the player picks this up; see WorldObject.takeEffects */
   takeEffects?: VariableSet[]
   takeMessage?: string
+  /** whether the object can be worn/equipped; see WorldObject.wearable */
+  wearable?: boolean
+  /** applied when the player wears this */
+  wearEffects?: VariableSet[]
+  /** applied when the player removes this */
+  removeEffects?: VariableSet[]
+  wearMessage?: string
+  removeMessage?: string
   title: string
   worldId: WorldId
 }
@@ -755,6 +763,12 @@ export interface EngineLiveEventData {
    * `engine/src/lib/db/v12.ts` exists for the new definition tables, not for this.
    */
   objects?: EngineObjectDeltaCollection
+  /**
+   * Ids of the objects the player is currently wearing. Absent on every live event
+   * written before wearables shipped, and absent means "nothing worn" — so an old
+   * save needs no migration, like `objects` and `messages`.
+   */
+  worn?: ElementId[]
   origin?: ElementId // passage ID or INITIAL_ENGINE_EVENT_ORIGIN_KEY
   prev?: ElementId // event ID
   result?: EngineLiveEventResult

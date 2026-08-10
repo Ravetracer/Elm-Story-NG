@@ -202,6 +202,11 @@ export interface ObjectData {
   takeable: boolean
   takeEffects?: VariableSet[]
   takeMessage?: string
+  wearable?: boolean
+  wearEffects?: VariableSet[]
+  removeEffects?: VariableSet[]
+  wearMessage?: string
+  removeMessage?: string
   title: string
   updated: number
 }

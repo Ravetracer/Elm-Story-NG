@@ -454,6 +454,11 @@ export default (
               takeable,
               takeEffects,
               takeMessage,
+              wearable,
+              wearEffects,
+              removeEffects,
+              wearMessage,
+              removeMessage,
               title,
               updated
             }
@@ -471,6 +476,11 @@ export default (
               takeable,
               takeEffects,
               takeMessage,
+              wearable,
+              wearEffects,
+              removeEffects,
+              wearMessage,
+              removeMessage,
               title,
               updated,
               worldId: _.id
