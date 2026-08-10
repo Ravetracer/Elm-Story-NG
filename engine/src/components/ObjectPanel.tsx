@@ -297,19 +297,13 @@ const Paperdoll: React.FC<{
       <h4 className="object-panel-group-title">{title}</h4>
 
       <div className="paperdoll-figure">
-        <svg
-          className="paperdoll-silhouette"
-          viewBox="0 0 100 130"
-          preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-        >
-          <circle cx="50" cy="12" r="8" />
-          <rect x="38" y="24" width="24" height="46" rx="9" />
-          <path d="M39 30 L26 58" />
-          <path d="M61 30 L74 58" />
-          <path d="M45 70 L41 118" />
-          <path d="M55 70 L59 118" />
-        </svg>
+        {/*
+          The default body figure, shown when no skin dresses the paperdoll (the
+          composer preview and any unskinned export). A skin with its own body art
+          hides this in skins.less. The image is a data URI in engine.less so it
+          resolves in both the editor build and an export without a file path.
+        */}
+        <div className="paperdoll-silhouette" aria-hidden="true" />
 
         {slots.map((entry) => (
           <PaperdollSlot
