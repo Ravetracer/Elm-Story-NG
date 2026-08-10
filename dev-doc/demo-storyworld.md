@@ -113,6 +113,20 @@ read site asks for. This sidesteps the DOM/canvas re-encode path entirely.
 **"Elm Story - NG Demos"** studio, reused across clicks, and selects it. Nothing is
 created until the button is pressed, so an author's own libraries are never touched.
 
+## Updating an installed demo
+
+The dashboard button is context-aware. With no demo present it reads **"New here?
+Load the demo storyworld"** and seeds one. Once a demo world exists in the demo
+studio it reads **"Update the demo storyworld"** and, on click, confirms first —
+updating removes the installed demo world(s) and re-seeds the current bundled
+version, so any changes an author made to the demo are overwritten (their own
+storyworlds are untouched). This is how a player who installed an older demo picks
+up later fixes (e.g. the mask's equip slot moving from the removed FACE to HEAD)
+without hunting for the change by hand. The removals are sequential, not
+`Promise.all`, because each rewrites the studio's shared `worlds` array. Detection
+is a live query on the demo studio's `worlds` table, so the label flips the moment a
+demo is added or removed.
+
 ## Related: starter content no longer ships a sample story
 
 `src/lib/saveStarterContent.ts` used to seed a "Getting Started" world whose prose
