@@ -349,6 +349,19 @@ derived-quantity model is deliberate; a census-with-positions would fight it.
 >   follow-up can precache it the way content assets are. The demo world selects
 >   MEDIEVAL so an export shows the skin and the paperdoll with the mask worn.
 >
+> - **Install-drop fix (0.69.1).** The first export showed no skin: `data-skin` was
+>   never set even though the art shipped, the CSS loaded and the world's skin was
+>   MEDIEVAL (the export prune proved it — it removed sci-fi). Root cause was **not**
+>   in the skin code: `saveEngineCollectionData` (the engine's install-into-IndexedDB
+>   step) destructures an explicit field list from `engineData._` and writes it with
+>   `saveWorldData`, and that list **omitted `streamAlignment`, `theme` and `skin`**.
+>   `getWorldInfo` reads the installed row, so `worldInfo.skin` was always undefined
+>   in an export. `theme` limped along only because `Presentation` also applies it via
+>   `getPresentationSettings`; `skin` and `streamAlignment` had no such backup, so both
+>   were silently dead in every export. Added the three fields to the destructure and
+>   the write. This is the exact "add a field, four places fail silently" trap — the
+>   install pick was the fifth place. **Re-export after this to see the skin.**
+>
 > **First-cut caveats, for the live pass:** the 9-slice insets and the medieval
 > anchor coordinates are measured off the source art and want tuning against a real
 > export; only the surfaces above are dressed (prose column untouched); the browser
