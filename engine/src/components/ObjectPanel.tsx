@@ -134,17 +134,6 @@ const ObjectTile: React.FC<{
   )
 }
 
-/**
- * How much of the runtime column the rail takes.
- *
- * Declared here rather than only in `engine.less` because the component is what
- * sets it on `#runtime`; the stylesheet's `--object-panel-width: 0rem` is the
- * default for a world with no objects, not this value. It fits two 4.4rem tiles
- * across, which is the minimum interaction height and therefore the smallest tile
- * a finger can reliably hit.
- */
-const OBJECT_RAIL_WIDTH = '12rem'
-
 /** How close the verb menu may come to the rail's top and bottom edges, in px. */
 const MENU_MARGIN = 4
 
@@ -437,12 +426,14 @@ const ObjectPanel: React.FC = () => {
   }, [menu])
 
   /*
-   * Tells the layout how much room to leave, rather than the stylesheet guessing.
+   * Activates the inventory's width, rather than the stylesheet guessing.
    *
-   * `#live-event-stream` is absolutely positioned to `right: 0`, so the rail would
-   * sit on top of the prose without this. The stream reads `--object-panel-width`,
-   * which defaults to zero, so a world with no objects is laid out precisely as it
-   * was before 0.8.0.
+   * `#object-panel` is absolutely positioned and `#runtime` grows by
+   * `--object-panel-width` (see engine.less / base.less), both derived from the
+   * column count. This flag switches that width on: it is 0 by default, so a world
+   * with no objects is laid out precisely as it was before 0.8.0, and 1 while the
+   * rail is mounted. A flag rather than writing the width itself keeps the
+   * derivation in one place, the stylesheet.
    *
    * A `:has(+ #object-panel)` selector would express the same thing in CSS alone,
    * and was not used: it depends on the rail remaining the stream's immediate
@@ -454,12 +445,12 @@ const ObjectPanel: React.FC = () => {
 
     if (!runtime || !objects || objects.length === 0) return
 
-    runtime.style.setProperty('--object-panel-width', OBJECT_RAIL_WIDTH)
+    runtime.style.setProperty('--object-panel-active', '1')
 
     // braced: removeProperty returns a string, and an effect cleanup must return
     // nothing
     return () => {
-      runtime.style.removeProperty('--object-panel-width')
+      runtime.style.removeProperty('--object-panel-active')
     }
   }, [objects])
 

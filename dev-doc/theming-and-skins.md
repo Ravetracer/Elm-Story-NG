@@ -241,6 +241,42 @@ player-only setting cannot express.
 
 ## Phase 3 — the inventory as a framed grid
 
+> **Shipped (0.62.0).** The object rail is now a framed grid, and the crucial
+> decision was the *width model*, not the grid itself:
+>
+> - **`#runtime` grows by the inventory's width instead of the rail eating into
+>   the reading column.** Before, `#runtime` was a fixed `--runtime-width` and the
+>   rail took `--object-panel-width` out of it (a 68rem runtime gave the prose
+>   56rem beside a 12rem rail). Now `#runtime` is
+>   `calc(var(--runtime-width) + var(--object-panel-width))` (`base.less`), so the
+>   reading column keeps its full measure and the inventory sits in its own lane —
+>   which is the "story in its own lane, inventory beside it" the maintainer
+>   asked for, and what makes phase 1's alignment meaningful (there is now a lane
+>   to push). `max-width: 100%` caps it so a wide inventory on a narrow window
+>   shrinks rather than overflows. A world with no objects has
+>   `--object-panel-width: 0`, so it is byte-for-byte unchanged.
+> - **The width is derived from a column count, not hardcoded.**
+>   `--object-panel-columns` (default 4) drives both the grid
+>   (`grid-template-columns: repeat(var(--object-panel-columns), 4.4rem)`) and the
+>   panel width (a `calc` from it), so widening the inventory toward the 6–8 the
+>   maintainer wanted is a one-value change with no arithmetic to keep in step. 4
+>   is a sane default; a big-screen world can go wider.
+> - **`ObjectPanel` sets `--object-panel-active: 1` while mounted** (was: wrote a
+>   hardcoded `12rem`), and the stylesheet's `calc` collapses to `0` when it is
+>   absent — the same "unchanged without objects" guarantee, with the derivation
+>   living in one place.
+> - **`#object-panel` is now `box-sizing: border-box`**, so its padding and left
+>   border are inside `--object-panel-width` — the value the stream reserves —
+>   rather than the ~1.7rem overlap the old content-box rail hid under its opaque
+>   background.
+> - **The frame is flat tokens** (border, radius, faint fill on
+>   `.object-panel-tiles`); skin art dresses it in phase 4. Visible in the
+>   composer preview *and* the export; only the runtime-grows part is export-only
+>   (`base.less`), so in the dock preview the wider grid still eats into the
+>   narrow pane — expected, verify roominess in an export.
+> - **No model change**, as planned — quantity stays derived; the grid is pure
+>   presentation, overflow scrolls.
+
 **Re-lay the object rail from a vertical icon strip into a 6–8 wide grid of
 framed slots with a decorative border.** No data change — objects already exist;
 this is presentation only.

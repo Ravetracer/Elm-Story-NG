@@ -74,7 +74,14 @@ html[data-size='DEFAULT'] {
       position: absolute;
       left: 50%;
       transform: translate(-50%, 0%);
-      width: var(--runtime-width);
+      // The reading measure (--runtime-width) plus the inventory's own width, so
+      // the object rail sits in its own lane and the prose keeps its measure
+      // instead of giving room up to the rail. --object-panel-width is 0 for a
+      // world without objects, so those are unchanged. Capped at the viewport so a
+      // wide inventory on a narrow window shrinks the layout rather than
+      // overflowing it.
+      width: calc(var(--runtime-width) + var(--object-panel-width));
+      max-width: 100%;
       border-left: 0.1rem solid var(--renderer-border-color);
       border-right: 0.1rem solid var(--renderer-border-color);
       height: 100%;
@@ -90,7 +97,14 @@ html[data-size='LARGE'] {
       position: absolute;
       left: 50%;
       transform: translate(-50%, 0%);
-      width: var(--runtime-width);
+      // The reading measure (--runtime-width) plus the inventory's own width, so
+      // the object rail sits in its own lane and the prose keeps its measure
+      // instead of giving room up to the rail. --object-panel-width is 0 for a
+      // world without objects, so those are unchanged. Capped at the viewport so a
+      // wide inventory on a narrow window shrinks the layout rather than
+      // overflowing it.
+      width: calc(var(--runtime-width) + var(--object-panel-width));
+      max-width: 100%;
       border-left: 0.1rem solid var(--renderer-border-color);
       border-right: 0.1rem solid var(--renderer-border-color);
       height: 100%;

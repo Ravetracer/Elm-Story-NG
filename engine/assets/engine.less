@@ -305,10 +305,25 @@
     }
   }
 
-  // Zero unless ObjectPanel is showing, which is what keeps a storyworld with no
-  // objects laid out exactly as it was before 0.8.0. The rail sets it on #runtime
-  // while mounted; see the note in ObjectPanel.tsx for why it is not a :has().
-  --object-panel-width: 0rem;
+  // The inventory's width, derived from its column count rather than hardcoded, so
+  // the grid and the room the stream gives up cannot disagree. `#runtime` grows by
+  // this (see base.less) so the reading column keeps its measure and the inventory
+  // sits in its own lane beside it rather than squeezing the prose.
+  //
+  // `--object-panel-active` is 0 by default and set to 1 by `ObjectPanel` while it
+  // is mounted, so a storyworld with no objects collapses the width to 0 and is
+  // laid out exactly as it was before objects existed. It is a flag rather than a
+  // `:has()` for the reason in ObjectPanel.tsx.
+  --object-panel-columns: 4;
+  --object-panel-active: 0;
+  // columns of 4.4rem tiles + gaps, plus the tiles' frame (1.4rem) and the panel's
+  // own padding and left border (1.7rem). box-sizing on #object-panel is border-box
+  // so this footprint is exactly what the stream reserves.
+  --object-panel-width: calc(
+    var(--object-panel-active) *
+      (var(--object-panel-columns) * 4.4rem +
+        (var(--object-panel-columns) - 1) * 0.4rem + 3.1rem)
+  );
 
   #live-event-stream {
     position: absolute;
@@ -322,13 +337,18 @@
   }
 
   // The rail of objects, beside the stream rather than docked under it. Its width
-  // comes from --object-panel-width, which ObjectPanel sets from OBJECT_RAIL_WIDTH,
-  // so the rail and the room the stream gives up cannot disagree.
+  // comes from --object-panel-width, which ObjectPanel activates by setting
+  // --object-panel-active, so the rail and the room the stream gives up cannot
+  // disagree.
+  //
+  // `border-box` so the padding and left border are inside --object-panel-width —
+  // the value the stream reserves — rather than added on top of it.
   //
   // `overflow: visible` rather than auto: the tooltip has to overhang the left
   // edge, and a scroll container clips it. The scrolling is on the groups inside.
   #object-panel {
     position: absolute;
+    box-sizing: border-box;
     top: var(--title-bar-height);
     bottom: 0;
     right: 0;
@@ -368,13 +388,19 @@
     font-style: italic;
   }
 
-  // Two 4.4rem tiles across a 12rem rail, less its 0.8rem padding either side.
-  // Fixed columns rather than wrapping flex, so a row holding one tile still lines
-  // up with the row above it.
+  // A framed grid of 4.4rem tiles, `--object-panel-columns` across (default 4;
+  // widen it for a roomier inventory on a big screen). Fixed columns rather than
+  // wrapping flex, so a row holding one tile still lines up with the row above it,
+  // and the frame reads as an inventory even when only a slot or two is filled.
+  // The frame is drawn in flat tokens here; skin art dresses it later.
   .object-panel-tiles {
     display: grid;
-    grid-template-columns: repeat(2, 4.4rem);
+    grid-template-columns: repeat(var(--object-panel-columns, 2), 4.4rem);
     gap: 0.4rem;
+    padding: 0.6rem;
+    border: 0.1rem solid var(--renderer-border-color);
+    border-radius: 0.4rem;
+    background: hsla(0, 0%, 50%, 0.04);
   }
 
   .object-tile {
