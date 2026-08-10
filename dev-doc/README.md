@@ -24,6 +24,7 @@ folder.
 | [0.7.1-archive.md](0.7.1-archive.md) | Forensic record of what the 0.7.1 upstream archive did and did not contain, plus the dead-code cleanup notes it surfaced |
 | [scene-triggers.md](scene-triggers.md) | **Design (not built):** scene-scoped reactive triggers — fire a one-shot sound on the rising edge of a variable condition; the seams, the edge-detection insight, and the audio one-shot |
 | [keyboard.md](keyboard.md) | How key events are handled, and the layout trap — matching a physical keyCode when the intent is a character (why a German keyboard could not type `?`), plus the AltGr/accelerator collision |
+| [preview-window.md](preview-window.md) | **Design (not built):** a standalone full-window preview window so authors can see alignment/theme/skin without exporting — why the composer preview can't show them (the `isComposer` coupling), the bake-a-snapshot-and-run-the-real-player approach, the localStorage data channel, and the build/font risks |
 | [theming-and-skins.md](theming-and-skins.md) | **Design (not built):** five-phase presentation plan — configurable reading-lane alignment, an author-locked bundled theme selector, a framed inventory grid, curated 9-slice skin art, and wearable objects + a character panel (equipping sets a variable, so path-gating is free); the schema costs, the layout coupling, and the licensing gate |
 
 ## Conventions
