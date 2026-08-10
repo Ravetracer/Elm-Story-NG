@@ -11,6 +11,7 @@ import { Button, Collapse, Form, Input } from 'antd'
 import ElementTitle from '../ElementTitle'
 import ChoicePresentationSelect from '../../ChoicePresentationSelect'
 import TransitionSelect from '../../TransitionSelect'
+import StreamAlignmentSelect from '../../StreamAlignmentSelect'
 import WorldCover from './WorldCover'
 import WorldBackground from './WorldBackground'
 import WorldColors from './WorldColors'
@@ -274,6 +275,34 @@ const WorldProperties: React.FC<{
                   <div className={styles.choicesHint}>
                     How each new event enters the story. A player who prefers
                     reduced motion sees no animation whatever you choose here.
+                  </div>
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse defaultActiveKey={['layout-panel']}>
+              <Collapse.Panel header="Layout" key="layout-panel">
+                <div className={parentStyles.content}>
+                  <StreamAlignmentSelect
+                    value={world.streamAlignment}
+                    onChange={async (streamAlignment) => {
+                      if (!world.id) return
+
+                      await api().worlds.saveWorld(studioId, {
+                        // re-read rather than spreading the rendered copy: this
+                        // panel's metadata form writes to the same row
+                        ...(await api().worlds.getWorld(studioId, world.id)),
+                        streamAlignment
+                      })
+                    }}
+                  />
+
+                  <div className={styles.choicesHint}>
+                    Where the story sits on a wide screen. Off-centre leaves room
+                    beside it; on a narrow window the story fills the width and
+                    this has no effect.
                   </div>
                 </div>
               </Collapse.Panel>

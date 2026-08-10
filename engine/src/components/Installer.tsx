@@ -48,6 +48,7 @@ import { INITIAL_LIVE_ENGINE_EVENT_ORIGIN_KEY } from '../lib'
 const WORLD_INFO_FIELDS = [
   'choicePresentation',
   'transition',
+  'streamAlignment',
   'themeColors',
   'copyright',
   'coverAssetId',

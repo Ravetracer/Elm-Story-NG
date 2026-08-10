@@ -60,6 +60,7 @@ function format(worldData: WorldDataJSON): string {
       ...pick(_, [
         'choicePresentation',
         'transition',
+        'streamAlignment',
         'themeColors',
         'copyright',
         'coverAssetId',

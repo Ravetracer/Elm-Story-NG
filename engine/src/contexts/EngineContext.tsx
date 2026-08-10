@@ -5,6 +5,7 @@ import React, { createContext, useMemo, useReducer } from 'react'
 import {
   CHOICE_PRESENTATION,
   ENGINE_TRANSITION,
+  STREAM_ALIGNMENT,
   WorldThemeColors,
   ElementId,
   EngineLiveEventData,
@@ -57,6 +58,7 @@ interface EngineState {
      */
     choicePresentation?: CHOICE_PRESENTATION
     transition?: ENGINE_TRANSITION
+    streamAlignment?: STREAM_ALIGNMENT
     themeColors?: WorldThemeColors
     backgroundAssetId?: string
     studioId: StudioId

@@ -14,6 +14,7 @@ import Renderer from './components/Renderer'
 import Settings from './components/Settings'
 import Presentation from './components/Presentation'
 import ThemeColors from './components/ThemeColors'
+import StreamAlignment from './components/StreamAlignment'
 
 import StartingDestinationGate from './components/StartingDestinationGate'
 import DevTools from './components/DevTools'
@@ -61,6 +62,7 @@ const Runtime: React.FC<{
                     isComposer={isComposer}
                   >
                     <ThemeColors />
+                    <StreamAlignment />
                     <Renderer />
                   </Installer>
                 </StartingDestinationGate>
@@ -77,6 +79,7 @@ const Runtime: React.FC<{
                 <SettingsProvider>
                   <Presentation>
                     <ThemeColors />
+                    <StreamAlignment />
                     <Settings />
 
                     <Renderer />

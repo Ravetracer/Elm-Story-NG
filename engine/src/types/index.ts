@@ -37,6 +37,16 @@ export enum ENGINE_TRANSITION {
 }
 
 /**
+ * Where the reading column sits in the window on a wide screen. CENTER is the
+ * unset default — how every pre-feature storyworld already laid out.
+ */
+export enum STREAM_ALIGNMENT {
+  LEFT = 'LEFT',
+  CENTER = 'CENTER',
+  RIGHT = 'RIGHT'
+}
+
+/**
  * An author's overrides of the base theme's colours, each a CSS colour string.
  * Every field is optional and layers on top of the player's chosen theme; the
  * engine applies them as inline custom properties on `#runtime` at runtime.
@@ -867,6 +877,8 @@ export interface EngineWorldData {
   choicePresentation?: CHOICE_PRESENTATION
   /** How a live event enters the stream. Absent means FADE. */
   transition?: ENGINE_TRANSITION
+  /** Where the reading column sits on a wide screen. Absent means CENTER. */
+  streamAlignment?: STREAM_ALIGNMENT
   /** Author overrides of the base theme's colours, applied on top of it. */
   themeColors?: WorldThemeColors
   copyright?: string

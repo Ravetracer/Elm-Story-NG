@@ -64,6 +64,7 @@ export default async (
         children: world.children as WorldChildRefs,
         choicePresentation: world.choicePresentation,
         transition: world.transition,
+        streamAlignment: world.streamAlignment,
         themeColors: world.themeColors,
         copyright: world.copyright,
         backgroundAssetId: world.backgroundAssetId,

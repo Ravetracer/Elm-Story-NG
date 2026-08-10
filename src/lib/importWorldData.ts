@@ -541,6 +541,7 @@ export default (
             children: _.children,
             choicePresentation: _.choicePresentation,
             transition: _.transition,
+            streamAlignment: _.streamAlignment,
             themeColors: _.themeColors,
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,

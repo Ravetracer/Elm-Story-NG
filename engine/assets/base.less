@@ -97,3 +97,25 @@ html[data-size='LARGE'] {
     }
   }
 }
+
+// The author's reading-column alignment (`StreamAlignment` stamps
+// `data-stream-alignment` on `#runtime`; CENTER is the unset default, which the
+// blocks above already produce, so only LEFT and RIGHT override the centring).
+//
+// These live outside a media query on purpose: the centring above only takes
+// effect once `#runtime` is `position: absolute` at its fixed measure, so on a
+// narrow window `#runtime` is static and setting `left`/`transform` here does
+// nothing — which is correct, since there is no slack to shift below the measure.
+// Specificity matches `html[data-size='…'] #runtime` (id + attribute + type), so
+// source order decides and these, being later, win.
+html #runtime[data-stream-alignment='LEFT'] {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
+html #runtime[data-stream-alignment='RIGHT'] {
+  left: auto;
+  right: 0;
+  transform: none;
+}

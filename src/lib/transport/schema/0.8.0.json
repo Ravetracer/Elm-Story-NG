@@ -81,6 +81,9 @@
         "transition": {
           "type": "string"
         },
+        "streamAlignment": {
+          "type": "string"
+        },
         "themeColors": {
           "type": "object",
           "properties": {

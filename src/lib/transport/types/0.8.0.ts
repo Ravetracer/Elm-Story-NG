@@ -99,6 +99,7 @@ export interface RootData {
   children: WorldChildRefs
   choicePresentation?: CHOICE_PRESENTATION
   transition?: ENGINE_TRANSITION
+  streamAlignment?: STREAM_ALIGNMENT
   themeColors?: WorldThemeColors
   copyright?: string
   coverAssetId?: string
@@ -130,6 +131,12 @@ export enum ENGINE_TRANSITION {
   NONE = 'NONE',
   FADE = 'FADE',
   SLIDE = 'SLIDE'
+}
+
+export enum STREAM_ALIGNMENT {
+  LEFT = 'LEFT',
+  CENTER = 'CENTER',
+  RIGHT = 'RIGHT'
 }
 
 export interface WorldThemeColors {

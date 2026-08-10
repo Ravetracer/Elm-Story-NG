@@ -94,6 +94,32 @@ The transport cost is the other half: each field must be added to
 
 ## Phase 1 — the configurable reading lane
 
+> **Shipped (0.60.0).** `World.streamAlignment` (`STREAM_ALIGNMENT` =
+> `LEFT | CENTER | RIGHT`, unset = CENTER). Two things about the real layout that
+> the plan below got slightly wrong and the implementation corrected:
+>
+> - **The reading measure is not on the stream.** It is `--runtime-width: 68rem`
+>   applied to the whole `#runtime`, which `base.less` centres in the window on a
+>   wide screen (`left: 50%; transform`). The `margin: 0 auto` on
+>   `#live-event-stream` is effectively a no-op — the stream fills `#runtime`. So
+>   alignment is implemented by **repositioning the centred `#runtime`**, not the
+>   stream: `StreamAlignment.tsx` stamps `data-stream-alignment` on `#runtime`
+>   (mirroring `ThemeColors`, mounted in both `Runtime` branches, off the editor
+>   root), and two `base.less` rules override `left`/`transform` for LEFT and
+>   RIGHT. CENTER is the unset default the existing blocks already produce.
+> - **It manifests in the exported/full-window player, not the composer preview.**
+>   `base.less` is loaded only by the standalone engine (`engine/index.html`);
+>   the composer preview uses `engine-editor.less`, which does not centre
+>   `#runtime` at a fixed measure — so there is no slack to shift and alignment is
+>   a no-op there, honestly reflected in the panel hint. Verify it in an export or
+>   the full-window browser build, not the dock-panel preview. Making it visible
+>   in the preview means giving that preview a centred measure, which is phase-3
+>   work (room beside the stream), not phase 1.
+>
+> Resolver `resolveStreamAlignment` in `engine/src/lib/streamAlignment.ts`, held
+> by `src/__tests__/streamAlignment.test.ts`. UI: `StreamAlignmentSelect` in the
+> storyworld's **Layout** panel. All seams below were wired as described.
+
 **The cheapest change and the highest impact.** Turn the auto-centred stream
 into a lane that can sit left, centre or right, leaving room beside it.
 
