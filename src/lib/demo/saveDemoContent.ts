@@ -278,7 +278,7 @@ export default async function saveDemoContent(
     // The medieval skin dresses the inventory, the choice modal and the character
     // paperdoll with carved-panel art — a fit for a temple adventure, and the way
     // to see the skin (which shows in an export, not this preview). The wearable
-    // mask fills the paperdoll's FACE slot. Only this skin's art is packed on export.
+    // mask fills the paperdoll's HEAD slot. Only this skin's art is packed on export.
     skin: ENGINE_SKIN.MEDIEVAL,
     tags: ['demo'],
     template: WORLD_TEMPLATE.ADVENTURE,
@@ -566,10 +566,10 @@ export default async function saveDemoContent(
       takeable: true,
       combineable: false,
       wearable: true,
-      // A FACE item, so wearing it fills the paperdoll's face slot. The demo has
+      // A HEAD item, so wearing it fills the paperdoll's head slot. The demo has
       // only this one slotted wearable, so the character figure shows a single
       // anchor — enough to see the panel appear and clear when the mask is worn.
-      slot: EQUIP_SLOT.FACE,
+      slot: EQUIP_SLOT.HEAD,
       // Rests beside the idol. Take it, then wear it.
       placements: [{ location: sChamber, quantity: 1 }],
       wearEffects: [[vWearingMask, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL]],

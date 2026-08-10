@@ -1040,7 +1040,7 @@
           },
           "slot": {
             "type": "string",
-            "enum": ["HEAD", "FACE", "NECK", "BODY", "HANDS", "FEET", "HELD"]
+            "enum": ["HEAD", "NECK", "BODY", "HANDS", "FEET", "HELD"]
           },
           "wearMessage": {
             "type": "string"

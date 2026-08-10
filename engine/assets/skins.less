@@ -36,6 +36,19 @@
   background: transparent;
 }
 
+// Both skins put a thick 9-slice frame on the inventory grid, and that frame's
+// border-width is not in the generic `--object-panel-width` (which reserves only a
+// hairline border). Widen the lane so the columns still fit inside the frame — the
+// constant rises from 3.1rem to 6.3rem to cover the frame on both sides. Without
+// this the last column clips off the panel edge (the "margin"/overflow bug).
+[data-skin] #runtime {
+  --object-panel-width: calc(
+    var(--object-panel-active) *
+      (var(--object-panel-columns) * 4.4rem +
+        (var(--object-panel-columns) - 1) * 0.4rem + 6.3rem)
+  );
+}
+
 [data-skin='MEDIEVAL'] #runtime {
   .object-panel-tiles {
     .nineslice('../skins/medieval/panel.webp', 30, 16px);
@@ -57,18 +70,33 @@
     display: none;
   }
 
-  // Our seven slots onto seven of the body art's boxes; the boxes we do not map to
-  // stay as drawn decoration. First-cut coordinates — tune against a real export.
-  .paperdoll-slot--HEAD  { left: 50%; top: 8%; }
-  .paperdoll-slot--FACE  { left: 80%; top: 22%; }
-  .paperdoll-slot--NECK  { left: 20%; top: 22%; }
-  .paperdoll-slot--BODY  { left: 50%; top: 30%; }
-  .paperdoll-slot--HANDS { left: 12%; top: 43%; }
-  .paperdoll-slot--HELD  { left: 88%; top: 43%; }
-  .paperdoll-slot--FEET  { left: 50%; top: 78%; }
+  // Our six slots onto six of the body art's boxes, measured from the art's grid
+  // (the figure sits slightly left of centre, so the centred boxes are at ~48%).
+  // The boxes we do not map to stay as drawn decoration.
+  .paperdoll-slot--HEAD  { left: 48%; top: 8%; }
+  .paperdoll-slot--NECK  { left: 22%; top: 20%; }
+  .paperdoll-slot--BODY  { left: 48%; top: 33%; }
+  .paperdoll-slot--HANDS { left: 11%; top: 46%; }
+  .paperdoll-slot--HELD  { left: 87%; top: 46%; }
+  .paperdoll-slot--FEET  { left: 48%; top: 85%; }
 
-  .object-tile,
+  // The body art already draws a box per slot, so a worn item sits *in* that box
+  // with no frame of its own, and an empty slot shows nothing (the drawn box is the
+  // marker). Only the inventory tiles get the cell frame.
+  .paperdoll-slot-empty {
+    display: none;
+  }
+
   .paperdoll-slot-figure {
+    background: transparent;
+    border: none;
+  }
+
+  .paperdoll-slot-image {
+    border-radius: 0.2rem;
+  }
+
+  .object-tile {
     .nineslice('../skins/medieval/cell.webp', 16, 8px);
   }
 

@@ -82,7 +82,6 @@ export enum RECIPE_OUTPUT_DESTINATION {
  */
 export enum EQUIP_SLOT {
   HEAD = 'HEAD',
-  FACE = 'FACE',
   NECK = 'NECK',
   BODY = 'BODY',
   HANDS = 'HANDS',

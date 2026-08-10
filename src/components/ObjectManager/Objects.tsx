@@ -19,7 +19,6 @@ import {
 const SLOT_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'No slot' },
   { value: EQUIP_SLOT.HEAD, label: 'Head' },
-  { value: EQUIP_SLOT.FACE, label: 'Face' },
   { value: EQUIP_SLOT.NECK, label: 'Neck' },
   { value: EQUIP_SLOT.BODY, label: 'Body' },
   { value: EQUIP_SLOT.HANDS, label: 'Hands' },

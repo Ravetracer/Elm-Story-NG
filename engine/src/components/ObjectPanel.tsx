@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState
 } from 'react'
+import ReactDOM from 'react-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { getLibraryDatabase } from '../lib/db'
@@ -163,7 +164,6 @@ const SLOT_LAYOUT: {
   textKey: INTERFACE_TEXT_KEY
 }[] = [
   { slot: EQUIP_SLOT.HEAD, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HEAD },
-  { slot: EQUIP_SLOT.FACE, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FACE },
   { slot: EQUIP_SLOT.NECK, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_NECK },
   { slot: EQUIP_SLOT.BODY, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_BODY },
   { slot: EQUIP_SLOT.HANDS, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HANDS },
@@ -327,6 +327,71 @@ const Paperdoll: React.FC<{
   )
 }
 
+/**
+ * A close-up of an object — its picture large, with title and description — opened
+ * by **Look at**. The rail tiles are small (one image, no title), so this is where a
+ * player actually reads what a thing is and sees its art.
+ *
+ * Portalled to `#runtime` — the engine's own root — so the overlay covers the whole
+ * storyteller box (the stream and the rail) and stays put rather than scrolling with
+ * the story, while staying inside the engine's box rather than the browser window
+ * (so it does not cover the editor in the composer preview). Dismissed by the close
+ * button, a click on the backdrop, or Escape (wired by the caller).
+ */
+const ObjectLightbox: React.FC<{
+  object: EngineObjectData
+  closeLabel: string
+  onClose: () => void
+}> = ({ object, closeLabel, onClose }) => {
+  const imageData = useImageLoader({
+    eventId: `lightbox-${object.id}`,
+    assetId: object.assetId,
+    placeholder: '',
+    ext: 'webp'
+  })
+
+  const root = document.getElementById('runtime')
+
+  if (!root) return null
+
+  return ReactDOM.createPortal(
+    <div className="object-lightbox-backdrop" onClick={onClose}>
+      <div
+        className="object-lightbox"
+        role="dialog"
+        aria-label={object.title}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="object-lightbox-close"
+          aria-label={closeLabel}
+          onClick={onClose}
+        >
+          {'×'}
+        </button>
+
+        <div className="object-lightbox-image">
+          {imageData ? (
+            <img src={imageData} alt="" />
+          ) : (
+            <span className="object-lightbox-initials" aria-hidden="true">
+              {initialsOf(object.title)}
+            </span>
+          )}
+        </div>
+
+        <h3 className="object-lightbox-title">{object.title}</h3>
+
+        {object.description && (
+          <p className="object-lightbox-description">{object.description}</p>
+        )}
+      </div>
+    </div>,
+    root
+  )
+}
+
 const ObjectPanel: React.FC = () => {
   const { engine } = useContext(EngineContext)
 
@@ -344,7 +409,9 @@ const ObjectPanel: React.FC = () => {
   const [combining, setCombining] = useState<ElementId | undefined>(undefined),
     [menu, setMenu] = useState<{ objectId: ElementId; top: number } | undefined>(
       undefined
-    )
+    ),
+    // the object shown in the Look-at lightbox, if any
+    [inspecting, setInspecting] = useState<EngineObjectData | undefined>(undefined)
 
   const liveEvent = useLiveQuery(async () => {
     if (!studioId || !engine.currentLiveEvent) return undefined
@@ -506,10 +573,27 @@ const ObjectPanel: React.FC = () => {
     (object: EngineObjectData) => {
       closeMenu()
 
+      // the close-up, and the log line in the stream (template-resolved, kept in
+      // history) — the lightbox is the immediate read, the stream line the record
+      setInspecting(object)
+
       if (object.description) inspectObject(object.description)
     },
     [closeMenu, inspectObject]
   )
+
+  // Escape closes the lightbox
+  useEffect(() => {
+    if (!inspecting) return
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setInspecting(undefined)
+    }
+
+    document.addEventListener('keydown', onKey)
+
+    return () => document.removeEventListener('keydown', onKey)
+  }, [inspecting])
 
   const onTake = useCallback(
     async (objectId: ElementId) => {
@@ -814,6 +898,14 @@ const ObjectPanel: React.FC = () => {
         <span className="object-tile-tooltip" style={{ top: tooltip.top }}>
           {tooltip.title}
         </span>
+      )}
+
+      {inspecting && (
+        <ObjectLightbox
+          object={inspecting}
+          closeLabel={t(INTERFACE_TEXT_KEY.STREAM_CHOICES_CLOSE)}
+          onClose={() => setInspecting(undefined)}
+        />
       )}
     </div>
   )

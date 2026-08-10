@@ -573,7 +573,6 @@ export interface ObjectPlacement {
  */
 export enum EQUIP_SLOT {
   HEAD = 'HEAD',
-  FACE = 'FACE',
   NECK = 'NECK',
   BODY = 'BODY',
   HANDS = 'HANDS',
