@@ -16,7 +16,8 @@ import {
   RECIPE_OUTPUT_DESTINATION,
   WORLD_TEMPLATE,
   DEFAULT_WORLD_VERSION,
-  INVENTORY_LOCATION_KEY
+  INVENTORY_LOCATION_KEY,
+  ENGINE_THEME
 } from '../../data/types'
 
 import { WINDOW_EVENT_TYPE } from '../events'
@@ -34,8 +35,9 @@ import api from '../../api'
  *
  *   branching · character masks & dialog · variables · path effects · conditions
  *   gating choices · object-presence path gates · inventory + a combine recipe ·
- *   take-effects · gated object placements · inline choices · generic choices ·
- *   template expressions in prose · path notifications · a win and a lose ending.
+ *   take-effects · gated object placements · a wearable object gating the finale ·
+ *   inline choices · generic choices · template expressions in prose · path
+ *   notifications · an author-locked theme · a win and a lose ending.
  *
  * Everything is deterministic: every element id is generated up front so choices,
  * paths, conditions, effects and object conditions can all reference one another.
@@ -168,7 +170,8 @@ export default async function saveDemoContent(
     vHasMap = uuid(),
     vHasTorch = uuid(),
     vHasFlint = uuid(),
-    vBoughtSupplies = uuid()
+    vBoughtSupplies = uuid(),
+    vWearingMask = uuid()
 
   // Objects & recipe
   const oTorch = uuid(),
@@ -179,6 +182,7 @@ export default async function saveDemoContent(
     oMap = uuid(),
     oRope = uuid(),
     oWater = uuid(),
+    oMask = uuid(),
     rLight = uuid()
 
   // Choices
@@ -236,7 +240,8 @@ export default async function saveDemoContent(
     pJaguar = uuid(),
     pSerpentLoop = uuid(),
     pSerpentLose = uuid(),
-    pLeave = uuid()
+    pLeave = uuid(),
+    pLeaveTry = uuid() // idol taken but mask not worn — loops back with a hint
 
   const NUM = VARIABLE_TYPE.NUMBER,
     BOOL = VARIABLE_TYPE.BOOLEAN,
@@ -263,6 +268,10 @@ export default async function saveDemoContent(
     engine: appVersion,
     jump: null,
     objectNoRecipeMessage: 'Those two do nothing together.',
+    // Locks the story to the dark theme, which suits a torch-lit temple and
+    // shows off the author-locked Theme setting (the player's own theme toggle is
+    // hidden while this is set). Wearables below demonstrate the equip mechanic.
+    theme: ENGINE_THEME.CONSOLE,
     tags: ['demo'],
     template: WORLD_TEMPLATE.ADVENTURE,
     title: 'The Jade Idol of K’aal',
@@ -386,6 +395,13 @@ export default async function saveDemoContent(
       BOOL,
       'false',
       'Set by taking the idol; gates the way home.'
+    ),
+    variable(
+      vWearingMask,
+      'wearingMask',
+      BOOL,
+      'false',
+      'Set while the ceremonial jade mask is worn; the idol only lifts for a masked face.'
     ),
     variable(
       vHasMap,
@@ -529,6 +545,26 @@ export default async function saveDemoContent(
           ]
         }
       ],
+      tags: []
+    }),
+    api().objects.saveObject(studioId, {
+      id: oMask,
+      worldId,
+      title: 'Ceremonial Jade Mask',
+      description:
+        'A mask of polished jade, its eyes carved wide. The idol’s guardians knew this face.',
+      // No image on purpose: a tile with no asset falls back to its initials,
+      // which is worth seeing once in the demo.
+      takeable: true,
+      combineable: false,
+      wearable: true,
+      // Rests beside the idol. Take it, then wear it.
+      placements: [{ location: sChamber, quantity: 1 }],
+      wearEffects: [[vWearingMask, SET_OPERATOR_TYPE.ASSIGN, 'true', BOOL]],
+      removeEffects: [[vWearingMask, SET_OPERATOR_TYPE.ASSIGN, 'false', BOOL]],
+      wearMessage:
+        'You lift the mask to your face. The carved eyes settle over yours, and the chamber seems to hold its breath.',
+      removeMessage: 'You lower the mask.',
       tags: []
     }),
     api().objects.saveObject(studioId, {
@@ -1002,7 +1038,7 @@ export default async function saveDemoContent(
       [
         p(
           t(
-            'At the heart of the pyramid, on a pedestal of black stone, the Jade Idol of K’aal watches with a single carved eye. Take it from the object rail, then leave the way you came.'
+            'At the heart of the pyramid, on a pedestal of black stone, the Jade Idol of K’aal watches with a single carved eye. Beside it rests a ceremonial jade mask. Take both from the object rail, wear the mask, then leave the way you came.'
           )
         )
       ],
@@ -1193,7 +1229,21 @@ export default async function saveDemoContent(
     ),
     path(pSerpentLose, sLaby, e7, chSerpent, e8, EVENT, 'Serpent (last breath)'),
 
-    path(pLeave, sChamber, e9, chLeave, jMuseum, JUMP, 'Leave')
+    // Two paths on the one Leave choice, split by whether the mask is worn — the
+    // same one-choice-two-paths shape as the labyrinth doors. Worn: home. Not
+    // worn: a loop back to the pedestal with a hint, so the closed win never reads
+    // as a dead end.
+    path(pLeave, sChamber, e9, chLeave, jMuseum, JUMP, 'Leave (masked)'),
+    path(
+      pLeaveTry,
+      sChamber,
+      e9,
+      chLeave,
+      e9,
+      EVENT,
+      'Leave (unmasked)',
+      'The idol will not lift. Its carved eye demands a face it knows — wear the mask.'
+    )
   ])
 
   // -- Effects (change state as a path is taken) --------------------------
@@ -1276,7 +1326,12 @@ export default async function saveDemoContent(
     condition(pLeftLose, vTorchFuel, LTE, '1', NUM),
     condition(pSerpentLoop, vTorchFuel, GT, '1', NUM),
     condition(pSerpentLose, vTorchFuel, LTE, '1', NUM),
+    // The way home opens only with the idol taken *and* the mask worn.
     condition(pLeave, vIdolTaken, IS, 'true', BOOL),
+    condition(pLeave, vWearingMask, IS, 'true', BOOL),
+    // The inverse: idol in hand but bare-faced — loops back with the hint above.
+    condition(pLeaveTry, vIdolTaken, IS, 'true', BOOL),
+    condition(pLeaveTry, vWearingMask, IS, 'false', BOOL),
 
     // Object-presence gate: the labyrinth opens only once a Lit Torch is carried.
     api().objectConditions.saveObjectCondition(studioId, {

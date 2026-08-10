@@ -47,8 +47,9 @@ const Walkthrough: React.FC = () => (
       <p>
         One small, complete adventure that uses every core mechanic once &mdash;
         branching, characters and masks, variables, conditions and effects, an
-        inventory with a combine recipe, inline choices and two endings. Load it in
-        the editor and read along; every screenshot below is this exact storyworld.
+        inventory with a combine recipe, a wearable that gates the finale, inline
+        choices and two endings. Load it in the editor and read along; every
+        screenshot below is this exact storyworld.
       </p>
       <p style={{ marginTop: 20 }}>
         <a className="btn btn-primary" href={EDITOR_URL}>
@@ -291,16 +292,20 @@ const Walkthrough: React.FC = () => (
         <div className="step" data-step="8">
           <h3>Objects and the inventory</h3>
           <p>
-            An <strong>object</strong> can be looked at, carried and combined. Open
-            the object manager from the storyworld outline&rsquo;s toolbar. The demo
-            has five: a torch, a flint striker, the lit torch they make, an ancient
-            codex and the jade idol itself.
+            An <strong>object</strong> can be looked at, carried, combined and
+            &mdash; if it is marked <em>wearable</em> &mdash; worn. Open the object
+            manager from the storyworld outline&rsquo;s toolbar. The demo&rsquo;s
+            objects include a torch, a flint striker, the lit torch they make, an
+            ancient codex, supplies bought at the market, and &mdash; in the final
+            chamber &mdash; the jade idol and a ceremonial mask you must wear to
+            lift it. At play they appear in a framed grid beside the story, in its
+            own lane so the prose keeps its width.
           </p>
           <div className="wt-grid">
             <Figure
               src={imgObjects}
               alt="The object manager"
-              caption={<>The five objects, each with its own art and flags.</>}
+              caption={<>The objects, each with its own art and flags.</>}
             />
             <Figure
               src={imgPlayRail}
@@ -310,7 +315,7 @@ const Walkthrough: React.FC = () => (
                   In <em>Preview</em>, objects in the current scene show under{' '}
                   <strong>Here</strong> and carried ones under{' '}
                   <strong>Inventory</strong>. Click a tile for its verbs (Look at,
-                  Take, Combine).
+                  Take, Wear, Combine).
                 </>
               }
             />

@@ -22,6 +22,7 @@ export type HelpTopic =
   | 'SCENE_TRIGGERS'
   | 'ASSET_MANAGER'
   | 'INTERFACE_TEXT'
+  | 'OBJECTS'
   | 'EXPRESSIONS'
   | 'EXPORT_JSON'
   | 'EXPORT_ZIP'
@@ -241,6 +242,48 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
       </>
     )
   },
+  OBJECTS: {
+    title: 'Objects & the inventory',
+    body: (
+      <>
+        <p>
+          Things the player can pick up, carry, combine and wear. Authored in the{' '}
+          <strong>Objects</strong> manager; at play they appear in a framed
+          inventory grid beside the story, which takes its own lane on a wide
+          screen so the prose keeps its width.
+        </p>
+        <h4>What a tile offers</h4>
+        <ul>
+          <li>
+            <strong>Look at</strong> prints the object&apos;s description into the
+            story.
+          </li>
+          <li>
+            <strong>Take</strong> moves it from the scene into Carrying, and can
+            set variables (so <code>{'{ bookTaken ? … }'}</code> works).
+          </li>
+          <li>
+            <strong>Use</strong> / <strong>Combine</strong> runs a recipe — a
+            combination is always a pair.
+          </li>
+          <li>
+            <strong>Wear</strong> / <strong>Remove</strong> put a wearable object
+            on or take it off.
+          </li>
+        </ul>
+        <h4>Wearable objects</h4>
+        <p>
+          Mark an object <strong>Wearable</strong> and it gains Wear and Remove.
+          Wearing applies its wear effects and removing applies its remove
+          effects, so &ldquo;the player is wearing this&rdquo; becomes a variable
+          — gate a path on it. A hat that must be worn to enter the cave, a
+          disguise that lets the player pass. It sets variables and the ordinary
+          condition system does the rest; it is not a stats system, and the object
+          stays in Carrying rather than being consumed.
+        </p>
+      </>
+    )
+  },
   [ELEMENT_TYPE.WORLD]: {
     title: 'The storyworld',
     body: (
@@ -257,12 +300,22 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
             <strong>Cover</strong> and <strong>Background</strong> images.
           </li>
           <li>
-            <strong>Colours</strong> layer over the player&apos;s theme — a
-            colour left off keeps the theme&apos;s own.
+            <strong>Theme</strong> — the base palette. Leave it to the player, or
+            lock the story to dark or light (the player&apos;s own theme toggle is
+            then hidden).
+          </li>
+          <li>
+            <strong>Colours</strong> layer over that theme — a colour left off
+            keeps the theme&apos;s own.
           </li>
           <li>
             <strong>Transition</strong> — how each new event enters the stream
             (Fade, Slide or None).
+          </li>
+          <li>
+            <strong>Layout</strong> — where the story sits on a wide screen (Left,
+            Center or Right), leaving room beside it. On a narrow window the story
+            fills the width and this has no effect.
           </li>
           <li>
             <strong>Choices</strong> — the default way a set of choices is laid
@@ -619,6 +672,7 @@ export const HELP_GROUPS: { label: string; topics: HelpTopic[] }[] = [
       'SCENE_TRIGGERS',
       'ASSET_MANAGER',
       'INTERFACE_TEXT',
+      'OBJECTS',
       'EXPRESSIONS'
     ]
   },
