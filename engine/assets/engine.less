@@ -418,6 +418,19 @@
     gap: 0.2rem;
   }
 
+  // Anchor positions for the generic silhouette, as percentages of the figure box:
+  // head at the crown, face beside it, neck under it, body at the chest, hands and
+  // a held item at either side, feet at the bottom. A skin overrides these in
+  // skins.less to land on its own body art's boxes. Kept in CSS, not the component,
+  // so an export-only skin can move them without the composer preview following.
+  .paperdoll-slot--HEAD  { left: 50%; top: 8%; }
+  .paperdoll-slot--FACE  { left: 76%; top: 15%; }
+  .paperdoll-slot--NECK  { left: 50%; top: 26%; }
+  .paperdoll-slot--BODY  { left: 50%; top: 46%; }
+  .paperdoll-slot--HANDS { left: 18%; top: 54%; }
+  .paperdoll-slot--HELD  { left: 82%; top: 54%; }
+  .paperdoll-slot--FEET  { left: 50%; top: 87%; }
+
   .paperdoll-slot-figure {
     display: grid;
     place-items: center;

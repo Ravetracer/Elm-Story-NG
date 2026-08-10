@@ -35,9 +35,31 @@
     .nineslice('../skins/medieval/panel.webp', 30, 16px);
   }
 
+  // The equipment body art *is* the figure here, not a frame around it. It carries
+  // its own slot boxes, so the generic silhouette and the slot labels are hidden and
+  // the anchors are moved onto the drawn boxes below. The figure takes the art's own
+  // aspect ratio (265x435) so `contain` fills the width and the anchor percentages
+  // line up with the boxes rather than with letterboxing.
   .paperdoll-figure {
-    .nineslice('../skins/medieval/panel.webp', 30, 16px);
+    border: none;
+    background: url('../skins/medieval/body.webp') center / contain no-repeat;
+    aspect-ratio: 265 / 435;
   }
+
+  .paperdoll-silhouette,
+  .paperdoll-slot-label {
+    display: none;
+  }
+
+  // Our seven slots onto seven of the body art's boxes; the boxes we do not map to
+  // stay as drawn decoration. First-cut coordinates — tune against a real export.
+  .paperdoll-slot--HEAD  { left: 50%; top: 8%; }
+  .paperdoll-slot--FACE  { left: 80%; top: 22%; }
+  .paperdoll-slot--NECK  { left: 20%; top: 22%; }
+  .paperdoll-slot--BODY  { left: 50%; top: 30%; }
+  .paperdoll-slot--HANDS { left: 12%; top: 43%; }
+  .paperdoll-slot--HELD  { left: 88%; top: 43%; }
+  .paperdoll-slot--FEET  { left: 50%; top: 78%; }
 
   .object-tile,
   .paperdoll-slot-figure {

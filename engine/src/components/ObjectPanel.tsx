@@ -148,26 +148,27 @@ const initialsOf = (title: string): string =>
     .join('')
 
 /**
- * Where each equip slot sits on the paperdoll figure, and the word that labels it.
+ * The equip slots the paperdoll draws, in figure order, and the word that labels
+ * each.
  *
- * Percentages against the figure box, tuned to the silhouette drawn below: head at
- * the crown, face beside it, neck under it, body at the chest, hands and a held item
- * at either side, feet at the bottom. Phase 4 skin art replaces the silhouette but
- * keeps these anchors, which is the whole reason `EQUIP_SLOT` is a closed set.
+ * **The anchor positions live in CSS, not here** — `.paperdoll-slot--HEAD` etc. in
+ * `engine.less` for the generic silhouette, overridden per skin in `skins.less` to
+ * land on that skin's baked slot boxes. Keeping them in CSS is what lets a skin
+ * (which is export-only) move the anchors without this component knowing which skin
+ * is active, so the composer preview stays on the generic layout. This ordering is
+ * the whole reason `EQUIP_SLOT` is a closed set.
  */
 const SLOT_LAYOUT: {
   slot: EQUIP_SLOT
-  left: string
-  top: string
   textKey: INTERFACE_TEXT_KEY
 }[] = [
-  { slot: EQUIP_SLOT.HEAD, left: '50%', top: '8%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HEAD },
-  { slot: EQUIP_SLOT.FACE, left: '76%', top: '15%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FACE },
-  { slot: EQUIP_SLOT.NECK, left: '50%', top: '26%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_NECK },
-  { slot: EQUIP_SLOT.BODY, left: '50%', top: '46%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_BODY },
-  { slot: EQUIP_SLOT.HANDS, left: '18%', top: '54%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HANDS },
-  { slot: EQUIP_SLOT.HELD, left: '82%', top: '54%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HELD },
-  { slot: EQUIP_SLOT.FEET, left: '50%', top: '87%', textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FEET }
+  { slot: EQUIP_SLOT.HEAD, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HEAD },
+  { slot: EQUIP_SLOT.FACE, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FACE },
+  { slot: EQUIP_SLOT.NECK, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_NECK },
+  { slot: EQUIP_SLOT.BODY, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_BODY },
+  { slot: EQUIP_SLOT.HANDS, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HANDS },
+  { slot: EQUIP_SLOT.HELD, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_HELD },
+  { slot: EQUIP_SLOT.FEET, textKey: INTERFACE_TEXT_KEY.OBJECT_SLOT_FEET }
 ]
 
 /**
@@ -177,12 +178,11 @@ const SLOT_LAYOUT: {
  * target (the engine ships no drag-and-drop, and would not want to inside a PWA).
  */
 const PaperdollSlot: React.FC<{
-  left: string
-  top: string
+  slot: EQUIP_SLOT
   label: string
   object?: EngineObjectData
   onRemove: (objectId: ElementId) => void
-}> = ({ left, top, label, object, onRemove }) => {
+}> = ({ slot, label, object, onRemove }) => {
   const imageData = useImageLoader({
     eventId: object ? object.id : `empty-${label}`,
     assetId: object?.assetId,
@@ -193,7 +193,7 @@ const PaperdollSlot: React.FC<{
   const name = object ? `${label}: ${object.title}` : label
 
   return (
-    <div className="paperdoll-slot" style={{ left, top }}>
+    <div className={`paperdoll-slot paperdoll-slot--${slot}`}>
       {object ? (
         <button
           type="button"
@@ -235,8 +235,6 @@ const Paperdoll: React.FC<{
   title: string
   slots: {
     slot: EQUIP_SLOT
-    left: string
-    top: string
     label: string
     object?: EngineObjectData
   }[]
@@ -263,8 +261,7 @@ const Paperdoll: React.FC<{
       {slots.map((entry) => (
         <PaperdollSlot
           key={entry.slot}
-          left={entry.left}
-          top={entry.top}
+          slot={entry.slot}
           label={entry.label}
           object={entry.object}
           onRemove={onRemove}
