@@ -411,6 +411,11 @@ code {
   box-shadow: var(--neon-box);
   overflow: hidden;
 }
+.mock-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .mock-bar {
   display: flex;
   gap: 7px;

@@ -20,6 +20,10 @@ import {
 // imported as a URL asset Vite bundles locally.
 import wordmarkUrl from '../../src/components/Modal/ESGModal/banner.svg'
 
+// A real shot of the composer for the "what it is" panel — the same full-window
+// capture the walkthrough annotates, shown here unannotated inside the neon frame.
+import composerUrl from '../assets/walkthrough/composer-anatomy.png'
+
 const FEATURES = [
   {
     Icon: MapIcon,
@@ -137,19 +141,13 @@ const Landing: React.FC = () => (
           </ul>
         </div>
 
-        <div className="mock" aria-hidden="true">
-          <div className="mock-bar">
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="mock-body">
-            <div className="mock-node" />
-            <div className="mock-row" />
-            <div className="mock-row short" />
-            <div className="mock-node" />
-            <div className="mock-row" />
-          </div>
+        <div className="mock">
+          <img
+            className="mock-shot"
+            src={composerUrl}
+            alt="The Elm Story - NG composer: the storyworld outline, the scene map and the inspector"
+            loading="lazy"
+          />
         </div>
       </div>
     </section>
