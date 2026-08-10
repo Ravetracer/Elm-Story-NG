@@ -159,20 +159,25 @@ export class AppDatabase extends Dexie {
 
   public async removeStudio(studioId: StudioId) {
     try {
-      await this.transaction('rw', this.studios, async () => {
-        if (await this.getComponent(APP_TABLE.STUDIOS, studioId)) {
-          await Promise.all([
-            ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSETS, {
-              studioId,
-              type: 'STUDIO'
-            }),
-            this.studios.delete(studioId)
-          ])
-        } else {
-          throw new Error(
-            `Unable to remove studio with ID: '${studioId}'. Does not exist.`
-          )
-        }
+      if (!(await this.getComponent(APP_TABLE.STUDIOS, studioId))) {
+        throw new Error(
+          `Unable to remove studio with ID: '${studioId}'. Does not exist.`
+        )
+      }
+
+      // The row delete stands on its own — a single keyed delete is already its
+      // own transaction, and `liveQuery` (the dashboard's `useStudios`) observes
+      // it, so the studio disappears without a restart.
+      await this.studios.delete(studioId)
+
+      // The asset trash is a foreign, non-Dexie promise and must NOT sit inside a
+      // Dexie transaction or a `Promise.all` beside a Dexie op: awaiting it there
+      // leaves Dexie's tracking zone, and the row delete's mutation is never
+      // broadcast — which is exactly the "deleted but the list does not refresh
+      // until restart" bug. Fire it after the delete, on its own.
+      await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSETS, {
+        studioId,
+        type: 'STUDIO'
       })
     } catch (error) {
       throw error
@@ -558,12 +563,12 @@ export class LibraryDatabase extends Dexie {
        * lives outside this database — the studio's `worlds` array — and the
        * preview's localStorage meta are handled by the api-layer `removeWorld`.
        */
+      // Dexie deletes only — the foreign asset-trash IPC is pulled out below.
+      // Mixing it into this `Promise.all` awaited a non-Dexie promise beside Dexie
+      // ops, which leaves Dexie's tracking zone and can suppress the mutation
+      // broadcast `liveQuery` needs — the "deleted but the list does not refresh
+      // until restart" bug this method shared with `removeStudio`.
       await Promise.all([
-        ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSETS, {
-          studioId,
-          worldId,
-          type: 'GAME'
-        }),
         this.bookmarks.where({ worldId }).delete(),
         this.characters.where({ worldId }).delete(),
         this.choices.where({ worldId }).delete(),
@@ -588,6 +593,14 @@ export class LibraryDatabase extends Dexie {
             `Unable to remove world with ID: '${worldId}'. Does not exist.`
           )
         }
+      })
+
+      // The world's asset directory, trashed on its own after the row is gone —
+      // never inside a transaction (see the note above).
+      await ipcRenderer.invoke(WINDOW_EVENT_TYPE.REMOVE_ASSETS, {
+        studioId,
+        worldId,
+        type: 'GAME'
       })
     } catch (error) {
       throw error
