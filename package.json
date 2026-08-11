@@ -2,7 +2,7 @@
   "name": "esg-app",
   "productName": "Elm Story - NG",
   "description": "Elm Story - NG: a continuation of the Elm Story storyworld editor.",
-  "version": "0.78.2",
+  "version": "0.78.3",
   "author": {
     "name": "Ravetracer",
     "email": "me@ravetracer.de"
@@ -37,6 +37,7 @@
     "preview:docs": "vite preview --config vite.docs.config.mts",
     "preview": "electron-vite preview",
     "package": "npm run build && electron-builder build --publish never",
+    "release": "npm run build && electron-builder --linux --publish always",
     "typecheck": "tsc --noEmit && tsc --noEmit -p engine/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -54,6 +55,12 @@
   "build": {
     "productName": "Elm Story - NG",
     "appId": "com.esg.elmstory.ng",
+    "publish": {
+      "provider": "github",
+      "owner": "Ravetracer",
+      "repo": "Elm-Story-NG",
+      "releaseType": "draft"
+    },
     "files": [
       "out/**/*",
       "package.json"
@@ -91,7 +98,11 @@
       "target": [
         "AppImage"
       ],
-      "category": "Development"
+      "category": "Development",
+      "artifactName": "Elm-Story-NG-${version}.${ext}",
+      "desktopName": "elm-story-ng.desktop",
+      "synopsis": "A visual editor for branching narrative storyworlds",
+      "syncDesktopName": true
     },
     "directories": {
       "buildResources": "assets",

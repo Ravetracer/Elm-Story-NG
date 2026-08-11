@@ -1,0 +1,49 @@
+name: Release (Linux AppImage)
+
+# Builds the Linux AppImage and uploads it to a GitHub release.
+#
+# Trigger by pushing a tag that matches the package version, e.g.
+#   npm version patch        # bumps package.json + creates the tag
+#   git push --follow-tags
+# or run it by hand from the Actions tab (workflow_dispatch).
+#
+# electron-builder publishes to a **draft** release named `v<version>` (see the
+# `publish` block in package.json). The draft is not public until you review it
+# and click Publish in the Releases page — so a run never ships anything on its
+# own. See dev-doc/releasing.md.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+# The built-in GITHUB_TOKEN needs write access to create/update the release.
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Runs the app's postinstall (engine deps + the Electron binary fetch via
+      # scripts/ensure-electron.mjs). legacy-peer-deps comes from .npmrc.
+      - name: Install dependencies
+        run: npm ci
+
+      # `release` = build (engine:sync + typecheck + electron-vite build) then
+      # electron-builder --linux --publish always. GH_TOKEN lets it upload.
+      - name: Build and publish AppImage
+        run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
