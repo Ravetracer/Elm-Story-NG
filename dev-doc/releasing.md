@@ -85,6 +85,20 @@ already names.
   signing env vars). Not worth it for a hobby fork.
 - **Windows can be cross-built from Linux with Wine**, but CI uses a real
   `windows-latest` runner instead — no Wine setup, no NSIS surprises.
+- **`engine:install` uses `npm ci`, not `npm install`, and that was a Windows
+  fix.** The root `postinstall` installs the engine's deps, and `npm install`
+  there hoists `@babel` to the engine's top level and then tries to delete the
+  nested copies under `react-error-boundary` / `match-sorter`. On the
+  `windows-latest` runner that `rmdir` fails with **EPERM** (file-handle
+  locking), npm exits 1, and the whole `npm ci` step fails — Linux allows the
+  rmdir, so it only ever broke Windows. `npm ci` wipes `node_modules` once and
+  places every package at its lockfile path in a single pass with no
+  retire-and-delete step, so the EPERM cannot happen. The cost: **`engine/package-lock.json`
+  must stay in sync with `engine/package.json`** — after changing an engine
+  dependency, run `npm --prefix ./engine install` once to refresh the lock and
+  commit it, or the next root install fails everywhere with npm's
+  "can only install packages when your package.json and package-lock.json are
+  in sync" error.
 - **Local dry run:** `npm run build && npx electron-builder --linux --publish
   never` packs `release/Elm-Story-NG-<version>.AppImage` without uploading, which
   is how the config was validated.

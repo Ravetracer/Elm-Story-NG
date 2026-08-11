@@ -44,7 +44,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"{src,engine/src}/**/*.{ts,tsx,less}\" \"*.{json,ts}\"",
-    "engine:install": "npm --prefix ./engine install",
+    "engine:install": "npm --prefix ./engine ci",
     "engine:build": "npm --prefix ./engine run build",
     "engine:styles": "rimraf ./src/styles/engine.less ./src/styles/engine-editor.less && copyfiles -f ./engine/assets/engine.less ./engine/assets/engine-editor.less ./src/styles",
     "engine:embed": "rimraf ./src/components/Storyteller/embedded && copyfiles -u 2 \"./engine/src/**/*\" ./src/components/Storyteller/embedded && rimraf ./src/components/Storyteller/embedded/main.tsx",
