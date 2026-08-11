@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildTemplateVariables,
-  getExpressionErrorFlags
+  getExpressionErrorFlags,
+  getExpressionErrors
 } from '../lib/contentEditor/expressionValidation'
 
 import { VARIABLE_TYPE } from '../data/types'
@@ -63,6 +64,32 @@ describe('flagging expressions that will not resolve', () => {
         variables
       )
     ).toEqual([false, true, false])
+  })
+
+  it('names the unknown variable so the tooltip can say why', () => {
+    const [message] = getExpressionErrors('{ helth }', variables)
+
+    expect(message).toContain('helth')
+    expect(message).toContain('unknown variable')
+  })
+
+  it('explains an unsupported operator specifically', () => {
+    const [message] = getExpressionErrors('{ health > 50 }', variables)
+
+    expect(message).toContain('not supported')
+  })
+
+  it('gives a generic reason for an evaluation-level failure', () => {
+    // Division by zero parses (the operator is supported) and only fails when
+    // evaluated, so there is no specific parse message — the reader gets the
+    // generic line.
+    expect(getExpressionErrors('{ health / 0 }', variables)).toEqual([
+      'This expression will not resolve.'
+    ])
+  })
+
+  it('reports no reason for a resolvable expression', () => {
+    expect(getExpressionErrors('{ health }', variables)).toEqual([null])
   })
 
   it('does not let a falsy-resolving expression shift the alignment', () => {

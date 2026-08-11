@@ -87,15 +87,33 @@ engine's `decorate` use — and returns a flag per expression, aligned with
 whole-string pass, because `getProcessedTemplate` drops an expression that
 resolves to a falsy value from its output, which would shift the alignment.
 
+`getExpressionErrors` returns a **reason** per expression (or null), not just a
+flag: a parse-level failure — an unknown variable or method, an unsupported
+operator — already carries a specific message (`'helth' is an unknown variable`),
+and an evaluation-level failure (divide-by-zero, a bad type) gets a generic line.
+`getExpressionErrorFlags` is the boolean form, derived from it.
+
 `EventContent`'s `decorate` calls it against the world's variables (title-keyed,
-`useMemo`'d) and adds an `expressionError` range over any expression that fails —
-**except the one the caret is currently inside**, so a half-typed expression (and
-the auto-paired `{  }`, which is an "error" until it is filled) is not scolded
-mid-keystroke. It reads `editor.selection` live, so the flag appears the moment the
-caret leaves a broken expression and clears when it is fixed. `EventContentLeaf`
-renders the flag as a wavy underline in `--warning-message-color` (the spellcheck
-idiom), overlaid on the normal expression highlight. `CustomRange` and the leaf
-type carry the new `expressionError?: boolean`.
+`useMemo`'d) and adds an `expressionError` range — carrying the reason as
+`expressionErrorMessage` — over any expression that fails, **except the one the
+caret is currently inside**, so a half-typed expression (and the auto-paired
+`{  }`, which is an "error" until it is filled) is not scolded mid-keystroke. It
+reads `editor.selection` live, so the flag appears the moment the caret leaves a
+broken expression and clears when it is fixed. `EventContentLeaf` renders the flag
+as a wavy underline in `--warning-message-color` (the spellcheck idiom), overlaid
+on the normal expression highlight, with the reason as a native `title` tooltip.
+`CustomRange` and the leaf type carry the new `expressionError?: boolean` and
+`expressionErrorMessage?: string`.
+
+## Discoverability
+
+None of `{`, `Ctrl+Space` or the underline is worth much unimplemented in the
+author's head, so two visible cues name them: the content editor's empty-field
+**placeholder** ("Type / for commands, or { (or Ctrl+Space) for variables and
+expressions…") and a paragraph in the **variable help sheet**
+(`VariableManager/VariableHelp.tsx`). That sheet has a hand-kept plain-React twin
+on the docs site (`docs/pages/Expressions.tsx`) — per `CLAUDE.md`, the one place
+documentation is duplicated, so the paragraph was added to both.
 
 ## The moving parts
 
@@ -157,7 +175,8 @@ type carry the new `expressionError?: boolean`.
   composes each into a complete expression, and runs it through the real
   `lib/templates.ts` pipeline — so the catalogue cannot drift into offering a form
   the parser rejects (the same discipline as `variableHelpExamples.test.ts`).
-- `src/__tests__/expressionValidation.test.ts` pins `getExpressionErrorFlags`:
-  resolvable forms pass, the typo / missing-conditional / unknown-method /
-  divide-by-zero cases flag, multiple expressions report independently in document
-  order, and a falsy-resolving expression does not shift the alignment.
+- `src/__tests__/expressionValidation.test.ts` pins `getExpressionErrorFlags` and
+  `getExpressionErrors`: resolvable forms pass, the typo / unsupported-operator /
+  unknown-method / divide-by-zero cases flag, the reason names the unknown variable
+  (for the tooltip), multiple expressions report independently in document order,
+  and a falsy-resolving expression does not shift the alignment.

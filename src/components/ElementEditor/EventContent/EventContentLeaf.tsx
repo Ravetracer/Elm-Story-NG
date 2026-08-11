@@ -45,6 +45,11 @@ const EventContentLeaf: React.FC<{
     <span
       {...attributes}
       className={classNames}
+      // The reason a flagged expression will not resolve, shown on hover — a
+      // native title for the same reason EventSnippet uses one.
+      title={
+        leaf.expressionError ? leaf.expressionErrorMessage : undefined
+      }
       // elmstorygames/feedback#223
       spellCheck={leaf.expression ? false : true}
     >

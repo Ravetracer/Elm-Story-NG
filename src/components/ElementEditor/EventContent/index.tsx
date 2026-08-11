@@ -35,7 +35,7 @@ import {
 
 import {
   buildTemplateVariables,
-  getExpressionErrorFlags
+  getExpressionErrors
 } from '../../../lib/contentEditor/expressionValidation'
 
 import React, {
@@ -509,8 +509,9 @@ const EventContent: React.FC<{
 
       if (expressionRanges.length === 0) return ranges
 
-      // Which expressions fail to resolve, aligned with expressionRanges.
-      const errorFlags = getExpressionErrorFlags(node.text, templateVariables)
+      // Why each expression fails to resolve (or null), aligned with
+      // expressionRanges.
+      const errorMessages = getExpressionErrors(node.text, templateVariables)
 
       // The caret offset on this node, or null — used to leave the expression the
       // author is actively typing unflagged until they move out of it.
@@ -544,9 +545,10 @@ const EventContent: React.FC<{
         const caretInside =
           caret !== null && caret > range.start && caret < range.end
 
-        if (errorFlags[index] && !caretInside) {
+        if (errorMessages[index] && !caretInside) {
           ranges.push({
             expressionError: true,
+            expressionErrorMessage: errorMessages[index] as string,
             anchor: { path, offset: range.start },
             focus: { path, offset: range.end }
           })
@@ -1313,7 +1315,7 @@ const EventContent: React.FC<{
                   className={styles.editable}
                   // The two trigger characters have no other visible cue; the
                   // empty-event placeholder is where a new author sees them.
-                  placeholder="Type / for commands, or { to insert a variable…"
+                  placeholder="Type / for commands, or { (or Ctrl+Space) for variables and expressions…"
                   renderElement={renderElement}
                   renderLeaf={renderLeaf}
                   decorate={decorate}

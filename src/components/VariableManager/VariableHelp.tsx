@@ -66,6 +66,14 @@ export const VariableHelpContent: React.FC = () => (
         named by its <strong>title</strong>, and four forms are supported.
       </p>
 
+      <p className={styles.note}>
+        The editor helps you write these. Typing <code>{'{'}</code> — or pressing{' '}
+        <code>Ctrl+Space</code> — opens a picker of the world&rsquo;s variables;
+        once one is in place, <code>Ctrl+Space</code> again suggests the operators,
+        methods and condition that fit its type. An expression that will not
+        resolve is underlined in the editor, with the reason on hover.
+      </p>
+
       <h5>1. The value itself</h5>
 
       <Example

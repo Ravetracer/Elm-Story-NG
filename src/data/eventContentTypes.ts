@@ -15,6 +15,7 @@ export interface CustomRange extends Range {
   expressionStart?: boolean
   expressionEnd?: boolean
   expressionError?: boolean
+  expressionErrorMessage?: string
 }
 
 export type EditorType = BaseEditor & ReactEditor
@@ -174,6 +175,7 @@ export type EventContentLeaf = {
   expressionStart?: boolean
   expressionEnd?: boolean
   expressionError?: boolean
+  expressionErrorMessage?: string
 }
 
 export enum LEAF_FORMATS {

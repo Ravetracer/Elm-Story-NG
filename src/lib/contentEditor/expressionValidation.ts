@@ -43,29 +43,54 @@ export const buildTemplateVariables = (
 }
 
 /**
- * For each `{ … }` in `text`, in document order, whether it fails to resolve —
- * aligned one-to-one with `getTemplateExpressionRanges(text)`.
+ * For each `{ … }` in `text`, in document order, an author-facing reason it will
+ * not resolve, or `null` when it is fine — aligned one-to-one with
+ * `getTemplateExpressionRanges(text)`.
+ *
+ * A parse-level failure (an unknown variable or method, the common typo/rename
+ * case) already carries a specific message; an evaluation-level failure (a
+ * comparison with no conditional, a bad type, divide-by-zero) is only known to be
+ * broken, so it gets a generic line. Evaluated one expression at a time: a
+ * whole-string pass drops any expression that resolves to a falsy value from its
+ * output (`getProcessedTemplate` splits it out), which would shift the alignment
+ * with the ranges.
  */
-export const getExpressionErrorFlags = (
+export const getExpressionErrors = (
   text: string,
   variables: { [title: string]: TemplateVariable }
-): boolean[] => {
+): (string | null)[] => {
   const expressions = getTemplateExpressions(text)
 
   if (expressions.length === 0) return []
 
   const parsed = parseTemplateExpressions(expressions, variables, gameMethods)
 
-  // Evaluated one expression at a time: a whole-string pass drops any expression
-  // that resolves to a falsy value from its output (`getProcessedTemplate` splits
-  // it out), which would shift the alignment with the ranges.
-  return expressions.map((expression, index) =>
-    getProcessedTemplate(
+  return expressions.map((expression, index) => {
+    const node = parsed[index]
+
+    // Only an ExpressionError node carries a `message`; use it when present.
+    const parseMessage =
+      node && 'message' in node ? (node.message as string) : null
+
+    if (parseMessage) return parseMessage
+
+    const errored = getProcessedTemplate(
       `{${expression}}`,
       [expression],
-      [parsed[index]],
+      [node],
       variables,
       gameMethods
     ).includes('esg-error')
-  )
+
+    return errored ? 'This expression will not resolve.' : null
+  })
 }
+
+/**
+ * The boolean form of {@link getExpressionErrors}: whether each expression fails.
+ */
+export const getExpressionErrorFlags = (
+  text: string,
+  variables: { [title: string]: TemplateVariable }
+): boolean[] =>
+  getExpressionErrors(text, variables).map((message) => message !== null)
