@@ -1,22 +1,38 @@
-name: Release (Linux AppImage)
+name: Release (Linux AppImage + Windows installer)
 
-# Builds the Linux AppImage and uploads it to a GitHub release.
+# Builds the desktop binaries and uploads them to a GitHub release.
+#
+#   - Linux:   AppImage
+#   - Windows: NSIS installer (.exe)
 #
 # Trigger by pushing a tag that matches the package version, e.g.
 #   npm version patch        # bumps package.json + creates the tag
 #   git push --follow-tags
-# or run it by hand from the Actions tab (workflow_dispatch).
+# or run it by hand from the Actions tab (workflow_dispatch), where the
+# `platforms` input picks which binaries to build.
 #
-# electron-builder publishes to a **draft** release named `v<version>` (see the
-# `publish` block in package.json). The draft is not public until you review it
-# and click Publish in the Releases page — so a run never ships anything on its
-# own. See dev-doc/releasing.md.
+# electron-builder finds the release whose tag is `v<version>` (from
+# package.json) and uploads the artifacts to it — draft or published. A
+# `releaseType: draft` (see the `publish` block in package.json) only applies
+# when it has to *create* the release; uploading into one that already exists
+# leaves its draft/published state alone. So a manual run at the current
+# package.json version adds binaries to the existing release without creating a
+# new tag or release. See dev-doc/releasing.md.
 
 on:
   push:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Which binaries to build'
+        type: choice
+        default: all
+        options:
+          - all
+          - linux
+          - windows
 
 # The built-in GITHUB_TOKEN needs write access to create/update the release.
 permissions:
@@ -24,6 +40,9 @@ permissions:
 
 jobs:
   appimage:
+    # On a tag push, `github.event.inputs.platforms` is empty, so build. On a
+    # manual run, only when linux was requested.
+    if: ${{ github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","linux"]'), github.event.inputs.platforms) }}
     runs-on: ubuntu-latest
 
     steps:
@@ -45,5 +64,31 @@ jobs:
       # electron-builder --linux --publish always. GH_TOKEN lets it upload.
       - name: Build and publish AppImage
         run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  windows:
+    if: ${{ github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","windows"]'), github.event.inputs.platforms) }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Same build as `release`, then electron-builder packs the NSIS installer
+      # and uploads it to the `v<version>` release. The binary is unsigned:
+      # Windows SmartScreen shows a "protected your PC" prompt the user clicks
+      # through. Code signing would go here (win.certificateFile / env vars).
+      - name: Build and publish Windows installer
+        run: npm run build && npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

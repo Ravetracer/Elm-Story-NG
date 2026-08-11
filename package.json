@@ -92,7 +92,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "artifactName": "Elm-Story-NG-${version}-Setup.${ext}"
     },
     "linux": {
       "target": [
