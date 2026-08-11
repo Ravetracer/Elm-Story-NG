@@ -7,6 +7,7 @@ import {
   isElementActive,
   isElementEmpty,
   isLeafActive,
+  getTextToCaret,
   showCommandMenu,
   showVariableMenu,
   syncCharactersFromEventContentToEventData,
@@ -23,6 +24,14 @@ import useEventListener from '@use-it/event-listener'
 import isHotkey from 'is-hotkey'
 
 import { getTemplateExpressionRanges } from '../../../lib/templates'
+
+import {
+  ExpressionSuggestion,
+  classifyExpressionContext,
+  getExpressionInnerToCaret,
+  getExpressionSuggestions,
+  inferContinuationOperand
+} from '../../../lib/contentEditor/expressionHelper'
 
 import React, { useState, useEffect, useCallback, useContext } from 'react'
 
@@ -94,6 +103,7 @@ import EventContentElement from './EventContentElement'
 import EventContentLeaf from './EventContentLeaf'
 import CommandMenu from './Tools/CommandMenu'
 import VariableMenu from './Tools/VariableMenu'
+import ExpressionHelperMenu from './Tools/ExpressionHelperMenu'
 import EventContentToolbar from './EventContentToolbar'
 
 import api from '../../../api'
@@ -117,6 +127,12 @@ const defaultCommandMenuProps = {
 const defaultVariableMenuProps = {
   show: false,
   filter: undefined,
+  target: undefined,
+  index: 0
+}
+
+const defaultHelperMenuProps = {
+  show: false,
   target: undefined,
   index: 0
 }
@@ -190,6 +206,18 @@ const EventContent: React.FC<{
     [totalVariableMenuItems, setTotalVariableMenuItems] = useState(0),
     [selectedVariableMenuItem, setSelectedVariableMenuItem] = useState<
       string | undefined
+    >(undefined),
+    [helperMenuProps, setHelperMenuProps] = useState<{
+      show: boolean
+      target: BaseRange | undefined
+      index: number
+    }>(defaultHelperMenuProps),
+    [helperSuggestions, setHelperSuggestions] = useState<ExpressionSuggestion[]>(
+      []
+    ),
+    [totalHelperMenuItems, setTotalHelperMenuItems] = useState(0),
+    [selectedHelperMenuItem, setSelectedHelperMenuItem] = useState<
+      ExpressionSuggestion | undefined
     >(undefined),
     [ready, setReady] = useState(false),
     // so we know what images and characters have been removed
@@ -636,6 +664,38 @@ const EventContent: React.FC<{
     [editor, variableMenuProps.target]
   )
 
+  const resolveVariableType = useCallback(
+    (title: string) =>
+      variables.find(
+        (variable) => variable.title.toLowerCase() === title.toLowerCase()
+      )?.type ?? null,
+    [variables]
+  )
+
+  const processHelperMenuOperation = useCallback(
+    (suggestion: ExpressionSuggestion) => {
+      setHelperMenuProps(defaultHelperMenuProps)
+
+      Transforms.insertText(editor, suggestion.insert)
+
+      // Drop the caret inside the first `""` of a condition skeleton; other
+      // snippets leave it at the end, ready for the next operand.
+      if (suggestion.caretFromEnd > 0) {
+        // TODO: stack hack
+        setTimeout(
+          () =>
+            Transforms.move(editor, {
+              distance: suggestion.caretFromEnd,
+              unit: 'offset',
+              reverse: true
+            }),
+          1
+        )
+      }
+    },
+    [editor]
+  )
+
   const processHotkey = useCallback(
     (hotkey: string) => {
       let selection: BaseSelection | undefined = undefined
@@ -679,43 +739,64 @@ const EventContent: React.FC<{
           }
 
           return
-        case HOTKEY_EXPRESSION.OPEN_VARIABLE_MENU:
+        case HOTKEY_EXPRESSION.OPEN_EXPRESSION_MENU: {
           selection = editor.selection
 
           if (!selection) return
 
-          if (selectedExpression.isInside) {
-            // Already inside an expression: no edit happens, so onChange will not
-            // fire — open the picker at the caret explicitly.
-            const [vShow, vFilter, vTarget] = showVariableMenu(editor)
+          if (!selectedExpression.isInside) {
+            // Outside an expression: insert an empty `{  }` and drop the caret
+            // inside, exactly as `{` does. The resulting selection change makes
+            // onChange open the variable picker on the empty operand.
+            Transforms.insertText(editor, '{  }')
 
-            setVariableMenuProps({
-              show: vShow,
-              filter: vFilter,
-              target: vTarget,
-              index: 0
-            })
+            // TODO: stack hack
+            setTimeout(
+              () =>
+                Transforms.move(editor, {
+                  distance: 2,
+                  unit: 'offset',
+                  reverse: true
+                }),
+              1
+            )
 
             return
           }
 
-          // Outside an expression: insert an empty `{  }` and drop the caret
-          // inside, exactly as `{` does. The resulting selection change makes
-          // onChange open the picker.
-          Transforms.insertText(editor, '{  }')
+          // Already inside: no edit happens, so onChange will not fire — decide
+          // which menu to open from where the caret sits in the expression.
+          const inner = getExpressionInnerToCaret(getTextToCaret(editor) ?? '')
 
-          // TODO: stack hack
-          setTimeout(
-            () =>
-              Transforms.move(editor, {
-                distance: 2,
-                unit: 'offset',
-                reverse: true
-              }),
-            1
-          )
+          if (inner === null) return
+
+          if (classifyExpressionContext(inner) === 'continuation') {
+            // Just after a complete operand → offer type-aware continuations.
+            const { type, isVariable } = inferContinuationOperand(
+              inner,
+              resolveVariableType
+            )
+
+            setVariableMenuProps(defaultVariableMenuProps)
+            setHelperSuggestions(getExpressionSuggestions(type, isVariable))
+            setHelperMenuProps({ show: true, target: selection, index: 0 })
+
+            return
+          }
+
+          // Operand position → (re)open the variable picker at the caret.
+          const [vShow, vFilter, vTarget] = showVariableMenu(editor)
+
+          setHelperMenuProps(defaultHelperMenuProps)
+          setVariableMenuProps({
+            show: vShow,
+            filter: vFilter,
+            target: vTarget,
+            index: 0
+          })
 
           return
+        }
         case HOTKEY_SELECTION.MENU_UP:
           if (
             commandMenuProps.show &&
@@ -736,6 +817,16 @@ const EventContent: React.FC<{
             setVariableMenuProps({
               ...variableMenuProps,
               index: variableMenuProps.index - 1
+            })
+          } else if (
+            helperMenuProps.show &&
+            totalHelperMenuItems > 0 &&
+            helperMenuProps.index > 0 &&
+            helperMenuProps.index + 1 <= totalHelperMenuItems
+          ) {
+            setHelperMenuProps({
+              ...helperMenuProps,
+              index: helperMenuProps.index - 1
             })
           }
 
@@ -761,6 +852,16 @@ const EventContent: React.FC<{
               ...variableMenuProps,
               index: variableMenuProps.index + 1
             })
+          } else if (
+            helperMenuProps.show &&
+            totalHelperMenuItems > 0 &&
+            helperMenuProps.index >= 0 &&
+            helperMenuProps.index + 1 < totalHelperMenuItems
+          ) {
+            setHelperMenuProps({
+              ...helperMenuProps,
+              index: helperMenuProps.index + 1
+            })
           }
 
           return
@@ -770,6 +871,8 @@ const EventContent: React.FC<{
             processCommandMenuOperation(selectedCommandMenuItem)
           } else if (variableMenuProps.show && selectedVariableMenuItem) {
             processVariableMenuOperation(selectedVariableMenuItem)
+          } else if (helperMenuProps.show && selectedHelperMenuItem) {
+            processHelperMenuOperation(selectedHelperMenuItem)
           }
 
           return
@@ -791,6 +894,12 @@ const EventContent: React.FC<{
 
           if (variableMenuProps.show) {
             setVariableMenuProps(defaultVariableMenuProps)
+
+            return
+          }
+
+          if (helperMenuProps.show) {
+            setHelperMenuProps(defaultHelperMenuProps)
 
             return
           }
@@ -823,7 +932,12 @@ const EventContent: React.FC<{
       totalVariableMenuItems,
       selectedVariableMenuItem,
       processVariableMenuOperation,
-      // OPEN_VARIABLE_MENU and EXIT both read the current expression state
+      helperMenuProps,
+      totalHelperMenuItems,
+      selectedHelperMenuItem,
+      processHelperMenuOperation,
+      resolveVariableType,
+      // OPEN_EXPRESSION_MENU and EXIT both read the current expression state
       selectedExpression,
       // without this the escape branch reads the mode as it was on mount and
       // closes the editor instead of stepping out of distraction-free
@@ -924,9 +1038,14 @@ const EventContent: React.FC<{
   }, [variableMenuProps.show])
 
   useEffect(() => {
+    !helperMenuProps.show && setSelectedHelperMenuItem(undefined)
+  }, [helperMenuProps.show])
+
+  useEffect(() => {
     if (event?.id !== composer.selectedSceneMapEvent) {
       setCommandMenuProps(defaultCommandMenuProps)
       setVariableMenuProps(defaultVariableMenuProps)
+      setHelperMenuProps(defaultHelperMenuProps)
     }
   }, [composer.selectedSceneMapEvent])
 
@@ -1059,20 +1178,38 @@ const EventContent: React.FC<{
 
                   setCommandMenuProps({ show, filter, target, index: 0 })
 
-                  // The `/` and `{` triggers cannot both match at one caret, but
-                  // keep them exclusive anyway: the command menu wins, otherwise
-                  // ask whether the caret sits inside a `{ … }` expression.
+                  // Only one of the three menus is ever shown. The command menu
+                  // wins; otherwise a Ctrl+Space helper stays open as long as the
+                  // caret is still just after an operand, and failing that the
+                  // variable picker follows the caret inside a `{ … }`.
                   if (show) {
                     setVariableMenuProps(defaultVariableMenuProps)
+                    setHelperMenuProps(defaultHelperMenuProps)
                   } else {
-                    const [vShow, vFilter, vTarget] = showVariableMenu(editor)
+                    const inner = getExpressionInnerToCaret(
+                      getTextToCaret(editor) ?? ''
+                    )
+                    const helperStillValid =
+                      helperMenuProps.show &&
+                      inner !== null &&
+                      classifyExpressionContext(inner) === 'continuation'
 
-                    setVariableMenuProps({
-                      show: vShow,
-                      filter: vFilter,
-                      target: vTarget,
-                      index: 0
-                    })
+                    if (helperStillValid) {
+                      setVariableMenuProps(defaultVariableMenuProps)
+                    } else {
+                      if (helperMenuProps.show) {
+                        setHelperMenuProps(defaultHelperMenuProps)
+                      }
+
+                      const [vShow, vFilter, vTarget] = showVariableMenu(editor)
+
+                      setVariableMenuProps({
+                        show: vShow,
+                        filter: vFilter,
+                        target: vTarget,
+                        index: 0
+                      })
+                    }
                   }
 
                   saveContent.cancel()
@@ -1105,6 +1242,17 @@ const EventContent: React.FC<{
                 onItemTotal={(total) => setTotalVariableMenuItems(total)}
                 onItemSelect={(title) => setSelectedVariableMenuItem(title)}
                 onItemClick={(title) => processVariableMenuOperation(title)}
+              />
+              <ExpressionHelperMenu
+                {...helperMenuProps}
+                suggestions={helperSuggestions}
+                onItemTotal={(total) => setTotalHelperMenuItems(total)}
+                onItemSelect={(suggestion) =>
+                  setSelectedHelperMenuItem(suggestion)
+                }
+                onItemClick={(suggestion) =>
+                  processHelperMenuOperation(suggestion)
+                }
               />
               <EventContentToolbar />
 
@@ -1140,15 +1288,17 @@ const EventContent: React.FC<{
                     }
 
                     /*
-                     * Alt+Space opens the variable picker, IDE-style. Matched on
+                     * Ctrl+Space opens the expression menu, IDE-style — the
+                     * variable picker at an operand position, the type-aware
+                     * continuation helper just after an operand. Matched on
                      * `event.code === 'Space'` (the physical key) rather than
                      * through the is-hotkey/keyCode loop, so it is
                      * layout-independent and reliably preventDefault-able — the
                      * same reason `{` is matched on `event.key` above.
                      */
-                    if (_event.altKey && _event.code === 'Space') {
+                    if (_event.ctrlKey && _event.code === 'Space') {
                       _event.preventDefault()
-                      processHotkey(HOTKEY_EXPRESSION.OPEN_VARIABLE_MENU)
+                      processHotkey(HOTKEY_EXPRESSION.OPEN_EXPRESSION_MENU)
                       setIsAllSelected(false)
 
                       return
@@ -1161,6 +1311,8 @@ const EventContent: React.FC<{
                             totalCommandMenuItems === 0) &&
                           (!variableMenuProps.show ||
                             totalVariableMenuItems === 0) &&
+                          (!helperMenuProps.show ||
+                            totalHelperMenuItems === 0) &&
                           (HOTKEYS[hotkey] === HOTKEY_BASIC.ENTER ||
                             HOTKEYS[hotkey] === HOTKEY_BASIC.TAB ||
                             HOTKEYS[hotkey] === HOTKEY_SELECTION.MENU_UP ||

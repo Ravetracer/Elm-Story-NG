@@ -296,7 +296,8 @@ only runs on a real transition, so a resume stays silent while the persisted
   inline player could be added later.
 - **Template-expression variable autocomplete** — **done** (2026-08-11), see
   `dev-doc/variable-picker.md`. A variable picker inside `{ }` in the content
-  editor, plus an `Alt+Space` shortcut, modelled on the `/` command menu.
+  editor plus a type-aware expression helper, both reachable via `Ctrl+Space` and
+  modelled on the `/` command menu.
 - **AltGr `}` vs the `Ctrl+Alt+0` zoom accelerator** — see `dev-doc/keyboard.md`;
   matters little because `{` auto-pairs the closing brace.
 

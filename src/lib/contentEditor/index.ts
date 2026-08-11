@@ -333,6 +333,26 @@ export const showCommandMenu = (
   return [false, undefined, undefined]
 }
 
+// The text on the current leaf from its start up to a collapsed caret, or
+// undefined when there is no collapsed selection. Shared by the `{` picker and
+// the expression helper's caret-context classifier so they read the same string.
+export const getTextToCaret = (editor: EditorType): string | undefined => {
+  const { selection } = editor
+
+  if (!selection || !Range.isCollapsed(selection)) return undefined
+
+  const [start] = Range.edges(selection)
+  const end =
+    start &&
+    Editor.before(editor, start, {
+      unit: 'offset',
+      distance: start.offset
+    })
+  const textRange = end && Editor.range(editor, end, start)
+
+  return textRange ? Editor.string(editor, textRange) : undefined
+}
+
 // The `{` expression trigger's variable picker — the `{ }` analog of
 // showCommandMenu. It fires while the caret sits inside an unclosed `{ … }` (the
 // closing brace is auto-paired *ahead* of the caret, so it is not part of the
@@ -348,14 +368,7 @@ export const showVariableMenu = (
     return [false, undefined, undefined]
 
   const [start] = Range.edges(selection)
-  const end =
-    start &&
-    Editor.before(editor, start, {
-      unit: 'offset',
-      distance: start.offset
-    })
-  const textRange = end && Editor.range(editor, end, start)
-  const text = textRange && Editor.string(editor, textRange)
+  const text = getTextToCaret(editor)
 
   if (!text) return [false, undefined, undefined]
 
