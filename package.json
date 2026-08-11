@@ -100,7 +100,7 @@
       ],
       "category": "Development",
       "artifactName": "Elm-Story-NG-${version}.${ext}",
-      "desktopName": "elm-story-ng.desktop",
+      "executableName": "elm-story-ng",
       "synopsis": "A visual editor for branching narrative storyworlds",
       "syncDesktopName": true
     },
