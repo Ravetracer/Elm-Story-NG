@@ -26,7 +26,7 @@ goes through a variable" (character relationships reach it through their optiona
 `World.currencyLabel` (the word beside the value) are optional fields, so like
 `coverAssetId`/`backgroundAssetId`/`choicePresentation` they need **no Dexie
 migration** — Dexie only indexes, and neither is indexed. They thread through the
-same eight seams every world field does, each a known silent-failure trap:
+same **nine** seams every world field does, each a known silent-failure trap:
 
 | seam | file |
 | --- | --- |
@@ -38,11 +38,25 @@ same eight seams every world field does, each a known silent-failure trap:
 | transport type | `src/lib/transport/types/0.8.0.ts` `RootData` |
 | engine data type | `engine/src/types/index.ts` `EngineWorldData` |
 | runtime `worldInfo` pick + its type | `engine/src/components/Installer.tsx` `WORLD_INFO_FIELDS` **and** `engine/src/contexts/EngineContext.tsx`'s `worldInfo` shape |
+| **engine install re-assembly** (**export-only, silent**) | `engine/src/lib/api.ts` `saveWorldData` — the destructure of `engineData._` **and** the object it re-assembles for the write |
 
-The last row is the double trap: the field has to be **both** in `WORLD_INFO_FIELDS`
-(or it arrives `undefined` and the readout never appears) **and** in the hand-written
-`worldInfo` type (or TypeScript can't see it). Same failure mode `interfaceText`
-and `choicePresentation` document there.
+Two of those rows are the ones that actually bite:
+
+- **The `worldInfo` row is a double trap:** the field has to be **both** in
+  `WORLD_INFO_FIELDS` (or it arrives `undefined` and the readout never appears)
+  **and** in the hand-written `worldInfo` type (or TypeScript can't see it). Same
+  failure mode `interfaceText` and `choicePresentation` document there.
+- **The `api.ts` install row is invisible in the composer and only bites in an
+  export**, which is what makes it the worst one. `saveWorldData` copies world
+  fields through **two hand-written lists** (a destructure of `engineData._`, then
+  the object it re-assembles) — and *both* must name the field. The composer
+  preview reads the world record directly through a live query, so it looks fine
+  there; only an installed PWA runs this path, so the field silently vanishes on
+  export alone. This is the exact class as the 0.69.1 `theme`/`skin` install-drop,
+  and it is what kept the money readout dark in the first export (found by driving
+  the export in a browser and reading the installed world row's keys — the packed
+  data had the field, the installed row did not). If a new world field shows in
+  the preview but not in an export, check here first.
 
 ## The readout — `engine/src/components/ObjectPanel.tsx`
 
@@ -76,6 +90,13 @@ and `choicePresentation` document there.
   theme, the text is a **fixed warm off-white** (`#f0e8d0`) rather than the reading
   colour — the one place the money readout does not follow the theme. Also CC BY-SA
   4.0, credited alongside the coin.
+  - **Embed the base64 programmatically, never by hand.** The first cut pasted the
+    plate's base64 with stray trailing padding (1419 chars for a 1062-byte payload
+    that needs none); ImageMagick tolerated it but Chromium's image decoder
+    rejected it, so the plate box sized correctly (219×53) and simply never
+    painted. Regenerate the data URI with a script that reads the file and writes
+    the exact `base64` output into the stylesheet, and verify it round-trips
+    (`b64decode(embedded) == bytes`).
 
 ## The editor — `WorldProperties/WorldCurrency.tsx`
 
