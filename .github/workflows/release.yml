@@ -11,13 +11,18 @@ name: Release (Linux AppImage + Windows installer)
 # or run it by hand from the Actions tab (workflow_dispatch), where the
 # `platforms` input picks which binaries to build.
 #
-# electron-builder finds the release whose tag is `v<version>` (from
-# package.json) and uploads the artifacts to it — draft or published. A
-# `releaseType: draft` (see the `publish` block in package.json) only applies
-# when it has to *create* the release; uploading into one that already exists
-# leaves its draft/published state alone. So a manual run at the current
-# package.json version adds binaries to the existing release without creating a
-# new tag or release. See dev-doc/releasing.md.
+# Publishing is done with the `gh` CLI, NOT electron-builder's own publisher.
+# electron-builder always manages a *draft* release; once a draft is published,
+# a later run finds no draft, creates a fresh one, and the artifact lands in a
+# phantom draft invisible on the public tag page. `gh release upload <tag>`
+# instead targets the release that owns the tag — draft or published — so
+# re-runs attach to the existing release. `--clobber` makes them idempotent.
+#
+# The release is created as a draft if it does not exist yet, so a tag push
+# still produces a draft for you to review and Publish. Uploading into a release
+# that already exists leaves its draft/published state alone, which is what lets
+# a manual run add a binary to an already-published release without cutting a
+# new one. See dev-doc/releasing.md.
 
 on:
   push:
@@ -60,15 +65,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # `release` = build (engine:sync + typecheck + electron-vite build) then
-      # electron-builder --linux --publish always. GH_TOKEN lets it upload.
-      - name: Build and publish AppImage
-        run: npm run release
+      # `build` = engine:sync + typecheck + electron-vite build; then
+      # electron-builder packs the AppImage into release/ without publishing.
+      - name: Build AppImage
+        run: npm run build && npx electron-builder --linux --publish never
+
+      - name: Upload AppImage to the release
+        shell: bash
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --draft --title "Elm-Story-NG $TAG" --notes "Desktop binaries for $TAG."
+          gh release upload "$TAG" release/*.AppImage release/latest-linux.yml --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   windows:
-    if: ${{ github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","windows"]'), github.event.inputs.platforms) }}
+    # Runs after appimage so the two jobs can never race to create two drafts
+    # for one tag. `always()` keeps it running when appimage is skipped (a
+    # windows-only manual run) or fails (the .exe is still worth shipping).
+    needs: appimage
+    if: ${{ always() && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","windows"]'), github.event.inputs.platforms)) }}
     runs-on: windows-latest
 
     steps:
@@ -84,11 +101,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Same build as `release`, then electron-builder packs the NSIS installer
-      # and uploads it to the `v<version>` release. The binary is unsigned:
-      # Windows SmartScreen shows a "protected your PC" prompt the user clicks
-      # through. Code signing would go here (win.certificateFile / env vars).
-      - name: Build and publish Windows installer
-        run: npm run build && npx electron-builder --win --publish always
+      # The installer is unsigned: Windows SmartScreen shows a "protected your
+      # PC" prompt the user clicks through. Code signing would go in the
+      # electron-builder win config (certificateFile / signing env vars).
+      - name: Build Windows installer
+        run: npm run build && npx electron-builder --win --publish never
+
+      - name: Upload installer to the release
+        shell: bash
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --draft --title "Elm-Story-NG $TAG" --notes "Desktop binaries for $TAG."
+          gh release upload "$TAG" release/*-Setup.exe release/latest.yml --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

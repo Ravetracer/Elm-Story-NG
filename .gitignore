@@ -84,3 +84,6 @@ src/styles/engine-editor.less
 
 # Local dev scratch (screenshots shared into the session, etc.)
 \!dev/
+
+# CI log dumps saved for debugging
+\!logs/
