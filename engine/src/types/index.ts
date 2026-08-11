@@ -435,10 +435,9 @@ export enum ENGINE_THEME {
   CONSOLE = 'CONSOLE'
 }
 
-/** A bundled 9-slice game-UI skin; mirrors the editor's `ENGINE_SKIN`. */
+/** The bundled 9-slice game-UI skin; mirrors the editor's `ENGINE_SKIN`. */
 export enum ENGINE_SKIN {
-  MEDIEVAL = 'MEDIEVAL',
-  SCIFI = 'SCIFI'
+  MEDIEVAL = 'MEDIEVAL'
 }
 
 export enum ENGINE_FONT {

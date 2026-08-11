@@ -314,6 +314,19 @@ derived-quantity model is deliberate; a census-with-positions would fight it.
 
 ## Phase 4 — the skin (ornate art), last and most expensive
 
+> **Update (0.78.0): reduced to one skin, on/off.** SCIFI was removed — it shipped
+> no paperdoll body art (it kept the generic silhouette inside a frame) and doubled
+> the packed art for little gain. `ENGINE_SKIN` now has the single member MEDIEVAL,
+> so `World.skin` is effectively an on/off toggle and `SkinSelect` is a `Switch`
+> (on → MEDIEVAL, off → `undefined`); the enum is kept rather than a boolean so a
+> second skin can return without a schema change. Removed: the `scifi/` art folder,
+> its `[data-skin='SCIFI']` block in `skins.less`, its `SkinSelect` option, its
+> schema enum value (`["MEDIEVAL"]`) and its `CREDITS.md` row. A stale `skin:
+> "SCIFI"` on a local world reads as off and clears on first toggle; an imported
+> file carrying it now fails schema validation, which is acceptable at this stage.
+> Everything value-agnostic (export prune, `Installer` pick, `Presentation`) needed
+> no change. The first-cut record below is left as written.
+
 > **Shipped (0.66.0–0.69.0), first cut.** Two bundled skins — **MEDIEVAL** (Wenrexa
 > GUI Game #6) and **SCIFI** (GUI Game #16), both **CC BY-SA 4.0**, attributed in
 > `CREDITS.md` and `engine/public/skins/CREDITS.md`; the licence was confirmed off

@@ -586,8 +586,7 @@ export enum ENGINE_THEME {
 }
 
 export enum ENGINE_SKIN {
-  MEDIEVAL = 'MEDIEVAL',
-  SCIFI = 'SCIFI'
+  MEDIEVAL = 'MEDIEVAL'
 }
 
 export enum ENGINE_FONT {

@@ -330,11 +330,11 @@ export const HELP_CONTENT: Partial<Record<HelpTopic, HelpEntry>> = {
             keeps the theme&apos;s own.
           </li>
           <li>
-            <strong>Skin</strong> — a bundled game-UI look (Medieval or Sci-fi)
-            that frames the inventory, the character paperdoll, the choice modal
-            and the panels with art. None is the flat default. The skin shows in
-            the exported story, not the preview, and only the chosen skin&apos;s
-            art is packed into an export.
+            <strong>Skin</strong> — a bundled medieval game-UI look that frames the
+            inventory, the character paperdoll, the choice modal and the panels
+            with art. Off is the flat default. The skin shows in the exported
+            story, not the preview, and its art is packed into an export only when
+            it is on.
           </li>
           <li>
             <strong>Transition</strong> — how each new event enters the stream

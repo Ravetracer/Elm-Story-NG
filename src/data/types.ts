@@ -486,15 +486,16 @@ export enum ENGINE_THEME {
 }
 
 /**
- * A bundled game-UI skin — 9-slice frame art that dresses the inventory, the
- * character paperdoll, the choice modal and the panels. A closed curated set, one
- * folder of art per member; absent on a world means no skin (the flat themed
- * chrome). MEDIEVAL is the Wenrexa RPG kit (#6), SCIFI the minimalist space kit
- * (#16); both are CC BY-SA 4.0, credited in CREDITS and the export.
+ * The bundled game-UI skin — 9-slice frame art that dresses the inventory, the
+ * character paperdoll, the choice modal and the panels. There is one skin,
+ * MEDIEVAL (the Wenrexa RPG kit #6, CC BY-SA 4.0, credited in CREDITS and the
+ * export), so `World.skin` is effectively an on/off toggle: set to MEDIEVAL, or
+ * absent for the flat themed chrome. Kept as an enum rather than a boolean so a
+ * second skin can be added later without a schema change. (The SCIFI skin was
+ * removed — it lacked the paperdoll and doubled the packed art for little gain.)
  */
 export enum ENGINE_SKIN {
-  MEDIEVAL = 'MEDIEVAL',
-  SCIFI = 'SCIFI'
+  MEDIEVAL = 'MEDIEVAL'
 }
 
 /**
