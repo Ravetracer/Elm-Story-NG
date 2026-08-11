@@ -210,6 +210,12 @@ for imports. Fixtures must live inside the project root (Playwright allowed-root
 
 ## Non-goal: a collaboration / cloud backend (rejected, and why)
 
+**Partly revisited (2026-08-11) — see `cloud-backup-backend.md`.** The *backup*
+half of this was un-rejected: a Symfony snapshot store with login, for
+single-author safety-net storage against IndexedDB eviction. The reasoning below
+still holds for the part that stays rejected — *real-time* collaboration — and the
+new plan builds only the snapshot store this section itself conceded was sound.
+
 Preserved from the retired roadmap because the reasoning outlives the idea. A PHP
 backend with logins was considered and dropped: shared PHP hosting cannot hold a
 WebSocket (mod_php dies per request), so real-time collaboration was never on the
