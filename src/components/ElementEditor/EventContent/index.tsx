@@ -69,7 +69,7 @@ import {
   DEFAULT_EVENT_CONTENT
 } from '../../../data/eventContentTypes'
 
-import { DragStart, DropResult } from 'react-beautiful-dnd'
+import { DragStart, DropResult } from '@hello-pangea/dnd'
 
 import { CompressOutlined, ExpandOutlined } from '@ant-design/icons'
 

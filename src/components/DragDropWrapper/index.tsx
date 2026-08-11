@@ -7,7 +7,7 @@ import {
   Droppable,
   DropResult,
   ResponderProvided
-} from 'react-beautiful-dnd'
+} from '@hello-pangea/dnd'
 
 const DragDropWrapper: React.FC<{
   onBeforeDragStart?: (initial: DragStart) => void

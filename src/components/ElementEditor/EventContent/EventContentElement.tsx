@@ -15,7 +15,7 @@ import { useChoice } from '../../../hooks'
 
 import api from '../../../api'
 
-import { Draggable } from 'react-beautiful-dnd'
+import { Draggable } from '@hello-pangea/dnd'
 import { Transforms, Editor } from 'slate'
 import { ReactEditor, useSelected, useSlate } from 'slate-react'
 
