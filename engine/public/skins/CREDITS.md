@@ -1,26 +1,31 @@
-# Skin art credits and licence
+# Skin and inventory art credits and licence
 
 The 9-slice frame art bundled here dresses the storyteller's inventory, character
-paperdoll, choice modal and panels when a storyworld selects a skin. It is derived
-from the Wenrexa GUI asset kits and is used and redistributed under the **Creative
-Commons Attribution-ShareAlike 4.0 International** licence (CC BY-SA 4.0).
+paperdoll, choice modal and panels when a storyworld selects a skin. The currency
+coin drawn beside the money value in the object rail is from the same source and is
+part of the base chrome — it shows in every storyworld, skin or none, embedded in
+the engine stylesheet. All of it is derived from the Wenrexa GUI asset kits and is
+used and redistributed under the **Creative Commons Attribution-ShareAlike 4.0
+International** licence (CC BY-SA 4.0).
 
 - Licence: https://creativecommons.org/licenses/by-sa/4.0/
 - Author: **Wenrexa** — https://wenrexa.itch.io
 
 ## Attribution and modifications
 
-| skin folder | source kit | files | modification |
+| where | source kit | files | modification |
 | --- | --- | --- | --- |
 | `medieval/` | Wenrexa "GUI Game #6 [RPG, RTS, MMO, Action, Medieval]" | `panel.webp`, `cell.webp`, `button.webp`, `body.webp` | individual PNG elements re-encoded to WebP for use as CSS 9-slice frames; no pixels redrawn |
 | `scifi/` | Wenrexa "GUI Game #16 [Space, Minimalism, Action, SciFi, RTS]" | `panel.webp`, `cell.webp`, `button.webp` | individual PNG elements re-encoded to WebP for use as CSS 9-slice frames; no pixels redrawn |
+| currency coin (base chrome) | Wenrexa "GUI Game #6 [RPG, RTS, MMO, Action, Medieval]" | `PanelInventory_IconMoney.png` | re-encoded to WebP and embedded as a data URI in the engine stylesheet; metadata stripped, no pixels redrawn |
 
 ## ShareAlike
 
 Under CC BY-SA 4.0 these derived art files, and any further adaptations of them,
-are themselves licensed CC BY-SA 4.0. This obligation covers the art in this
-folder; it does not extend to the application's source code or to an author's
-storyworld, which merely include this art as a separate aggregated work.
+are themselves licensed CC BY-SA 4.0. This obligation covers the art itself —
+including the coin embedded in the stylesheet — but not the application's source
+code or an author's storyworld, which merely include this art as a separate
+aggregated work.
 
 The original kits may not be resold in their pure form. Bundling them here to style
 the storyteller's output is a permitted use, not a resale.

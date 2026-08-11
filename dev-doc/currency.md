@@ -59,11 +59,16 @@ and `choicePresentation` document there.
   fire for a currency readout, so a world with money and no objects still shows the
   money line (and reserves the rail's width so it doesn't overlap the prose).
 - **The coin is a shipped default, skin-overridable.** `.object-panel-currency-coin`
-  in `engine/assets/engine.less` carries a small inline gold-coin SVG (base64 data
-  URI, so it resolves in both the editor build and an export with no file path). A
-  skin dresses the rest of the rail; it can replace the coin by overriding
-  `background` in `skins.less`. The label is drawn small-caps and dimmed, the value
-  in tabular figures.
+  in `engine/assets/engine.less` carries Wenrexa's "GUI Game #6" money icon
+  (`PanelInventory_IconMoney.png`, the same kit the medieval skin is cut from),
+  re-encoded to a 19×19 lossless WebP and embedded as a base64 data URI — so it
+  resolves in both the editor build and an export with no file path, the paperdoll
+  silhouette's reasoning. It is **CC BY-SA 4.0** and credited in
+  `engine/public/skins/CREDITS.md`, which is always packed on export
+  (`main.ts` keeps `CREDITS.md` even when it strips the unused skins). A skin
+  dresses the rest of the rail; it can replace the coin by overriding `background`
+  in `skins.less`. The label is drawn small-caps and dimmed, the value in tabular
+  figures.
 
 ## The editor — `WorldProperties/WorldCurrency.tsx`
 

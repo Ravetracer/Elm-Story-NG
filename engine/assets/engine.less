@@ -705,13 +705,16 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // A shipped default coin, drawn in front of the value. A skin dresses the rest of
-  // the rail; it can replace this by overriding `background` in skins.less.
+  // The default coin, drawn in front of the value: Wenrexa's "GUI Game #6" money
+  // icon (the same kit the medieval skin is cut from), embedded here so it resolves
+  // in both the editor build and an export with no file path — the paperdoll
+  // silhouette's reasoning. CC BY-SA 4.0, credited in skins/CREDITS.md. A skin can
+  // replace it by overriding `background` in skins.less.
   .object-panel-currency-coin {
     flex: 0 0 auto;
     width: 1.6rem;
     height: 1.6rem;
-    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTEiIGZpbGw9IiNlOGI1MmUiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYjM4MjFhIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2IzODIxYSIgc3Ryb2tlLXdpZHRoPSIxIiBvcGFjaXR5PSIwLjYiLz48Y2lyY2xlIGN4PSI5IiBjeT0iOSIgcj0iMi4yIiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIwLjM1Ii8+PC9zdmc+')
+    background: url('data:image/webp;base64,UklGRtYBAABXRUJQVlA4TMoBAAAvEoAEENfCqLZtJecLMHPrQv8CBGHm8KSGq0iSFKuO4ZdcnJPzr4IZ3ptph20kKVL1zDHmn+c9LrSaSFKk9i8EQ2igiEnvDcCm86efHAkeg3rSzf5IUNA/wAiLHOPa8T4CSa6gAfSPdAyKf7fzRmBgDnBxF1MnH8yDC04wK/5bVAGSWRODRj5xmbkYo2cHYRGAPHBZMNFg5krmxXvDgyoEZtbZt8LT+3/IT+RnWTd+q3MYOfi9eNaJCd+VEBwgABcYYAEJLKCAAhYQwFr7TychBDZ1X3X7VZXoqqZmtjRdCOCAINu26ShJ27Zt247tZP4z+e9V9RAe7jsnov9G27ap4djyRSxSKubSSZcTxHT5pM6qK2f59/n6cIPX8JfMmmjg9+O1iiYJ5fp1eaxzTNpYib9XR8Dt84u3AOSXpQLfdkTuniJORAx9lvXGxum9ysPUmU1zaqJ5fnK4u43gzpoT08kMORDCuohciMhaCMNMpTnYN36wtbo8t2y39sfdUDKT5czI2NKeSjhikyiwMgosbkYcAJv0Jf5M9hrTml9Z8L3GiEuWYnl+9PfoxCsfz/K9HVcFR2gFfqqznUTX11wS5X920mtmUqLVdA==')
       center / contain no-repeat;
   }
 
