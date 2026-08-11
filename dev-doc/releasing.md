@@ -1,7 +1,8 @@
-# Releasing a Linux AppImage
+# Releasing desktop binaries
 
-The desktop app is published as a **Linux AppImage** attached to a GitHub
-release, built in CI so no one has to package locally.
+The desktop app is published as a **Linux AppImage** and a **Windows NSIS
+installer** attached to a GitHub release, built in CI so no one has to package
+locally. macOS (dmg) is configured in `build` but not wired to a CI runner.
 
 ## How to cut a release
 
@@ -14,15 +15,36 @@ release, built in CI so no one has to package locally.
    ```
 
    (Or bump `package.json` by hand, commit, then `git tag v<version> && git push --follow-tags`.)
-3. The **Release (Linux AppImage)** workflow (`.github/workflows/release.yml`)
-   runs on the `v*.*.*` tag: it builds the AppImage and uploads it to a
-   **draft** GitHub release named `v<version>`.
+3. The **Release** workflow (`.github/workflows/release.yml`) runs on the
+   `v*.*.*` tag. It has two jobs — `appimage` (ubuntu-latest) and `windows`
+   (windows-latest) — that build the Linux AppImage and the Windows installer
+   and upload both to a **draft** GitHub release named `v<version>`.
 4. Open **Releases** on GitHub, review the draft (add notes, check the
-   `.AppImage` is attached), and click **Publish**. Nothing is public until you do.
+   `.AppImage` and `.exe` are attached), and click **Publish**. Nothing is
+   public until you do.
 
 You can also run the workflow by hand from the **Actions** tab
-(`workflow_dispatch`) — it still uploads to the draft for the current
-`package.json` version.
+(`workflow_dispatch`). It takes a `platforms` input (`all` / `linux` /
+`windows`) so you can build just one. It uploads to the release matching the
+current `package.json` version.
+
+## Adding a binary to an *existing* release (no new tag)
+
+electron-builder uploads into whatever release has the tag `v<version>` for the
+current `package.json` version — **draft or already published** — and only
+creates one if none exists. So to add a missing binary (e.g. the Windows `.exe`
+to an already-shipped `v0.78.6`) **without cutting a new release**:
+
+1. Leave `package.json`'s version at the target version. **Do not bump it** — a
+   bump would make the run target a different, non-existent release and create a
+   new draft instead.
+2. Actions tab → **Release** → **Run workflow** on `main`, `platforms: windows`.
+3. The `.exe` is attached to the existing `v0.78.6` release; its draft/published
+   state is left unchanged.
+
+This is the one time the "bump the version on every change" rule is
+deliberately skipped: the whole point is to hit the release the current version
+already names.
 
 ## What the pieces are
 
@@ -53,9 +75,16 @@ You can also run the workflow by hand from the **Actions** tab
 - **No native modules, so no `electron-rebuild`** — CI stays a plain
   install + build. If AppImage ever complains about **FUSE**, that is a
   *run* requirement on the user's machine (`libfuse2`), not a build one.
-- **Only Linux is wired to publish.** `mac` (dmg) and `win` (nsis) targets exist
-  in `build` but the workflow builds `--linux` only. macOS/Windows would each
-  need their own runner (and signing) — add later if wanted.
+- **Linux and Windows are wired to publish; macOS is not.** The `mac` (dmg)
+  target exists in `build` but no CI runner builds it — it would need its own
+  `macos-latest` job (and Apple signing/notarization) to ship.
+- **The Windows installer is unsigned.** Windows 11 SmartScreen shows a
+  "Windows protected your PC" prompt; the user clicks *More info → Run anyway*.
+  Removing it needs an Authenticode certificate (OV builds reputation over
+  downloads; EV trusts immediately) wired into `build.win` (`certificateFile` /
+  signing env vars). Not worth it for a hobby fork.
+- **Windows can be cross-built from Linux with Wine**, but CI uses a real
+  `windows-latest` runner instead — no Wine setup, no NSIS surprises.
 - **Local dry run:** `npm run build && npx electron-builder --linux --publish
   never` packs `release/Elm-Story-NG-<version>.AppImage` without uploading, which
   is how the config was validated.
