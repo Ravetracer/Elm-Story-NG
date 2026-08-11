@@ -693,16 +693,34 @@
   }
 
   // The currency readout, below the inventory: a coin, the value, and the author's
-  // optional label. A NUMBER variable is behind it — this is only its presentation.
+  // optional label, centred on a money plate. A NUMBER variable is behind it —
+  // this is only its presentation.
+  //
+  // The plate is Wenrexa's "GUI Game #6" settings-slider panel — an ornate metal
+  // frame around a dark inset track — used as the background and centred in the
+  // rail, with the content centred on it. The track is dark in either theme, so
+  // the text is a fixed warm off-white rather than the reading colour. Embedded as
+  // a data URI for the same resolve-everywhere reason as the coin; CC BY-SA 4.0,
+  // credited in skins/CREDITS.md.
   .object-panel-currency {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
-    margin-top: 0.8rem;
-    padding-top: 0.8rem;
-    border-top: 0.1rem solid var(--renderer-border-color);
+    align-self: center;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 21.9rem;
+    aspect-ratio: 219 / 53;
+    // keeps the content off the frame's ornate corners, over the dark inset
+    padding: 0 2.4rem;
+    margin-top: 0.4rem;
+    background: url('data:image/webp;base64,UklGRh4EAABXRUJQVlA4WAoAAAAQAAAA2gAANAAAQUxQSDEBAAABgFvbtmrlJPem/+Mu0c2wr7hTAMRE7laK04C7k1LBgwKIoIrnL3Lb6BgRwbht20DSTeBX29ME5FGWamopdNostDSlGMXPyA7CqvtXtg7PbB5urfZXR/aL+iC8TGQ63RxduFYsR9XrhdHOmBreIBlRxonKOjcPztx8kAzLRUN6OIup4Q1ysNlZRiQ2LUxuCqLMASgOMkSdZ6A46/yfDR97AMVFJ6tdlkBx35seejZA8TLavKFZoHgbb92xUPE+WTiCxcdU5xksPmf++FM4BHZUaN0GdsBrXsd1LJ+AdplitSuvsK7AxMceUT1cQHsk/OeNIjupqKYbpqrIMTb4QRQb0CojaG0YtKLPc4d5o7rkjjfx7TDDGyQjyrj3SHU1/vVsdAdhqaZWp7S4NdLNc5QHIQBWUDggxgIAADAUAJ0BKtsANQA+hTiWR6UjoiE5FAgAoBCJZwDR7cnHgR1G0N28wb7/idxAAu9Z+/Il8gn1fkNaXjWwwL/8L0poeEp97rMv1HeTic5TgkSxSErkYYdWemjoblCcaffZOjs7/IUj0Rb6g/Jgfqf+WmA4HhL9w9IuvxKnkhgX/4XU6eczW5OI0Ojr9nlYf1BtYhfNFu4iDIEHgCv8suC9Jb3nnd+a99mzR2UAAP76goWZe7A4EiB01IXbHa6BfFNSyv3zJvHZLwLjcRgAyf4UvL0ivkhtGdcekt7qzqtaZ+N+6zA6PqFlAMFnLbNHWyoHryXiaEoHCQkzieO8NkqImstUZzqgK6k0ytptCEM8w49QByeXN6IGd8dl3Qdcxe67BIRQIlP31+Ts3/mUTeJlo1R7ozO5eE6AiNN6z572xoGn9r0wf8fy3HdL/OCiRcujIPP4xhGo+tXcHO5l1veQl8yt82cufo+5nOw8t685aN7bH2ZG5VFDYMInKByG3BeX2Tb3T8++gIPul/tNR0Qd0EZHwuEtOQAAAAtOJF1Iw+j9Vv5iQrcRMYVDetHT+57YMVqDk4/rA6PxigpTm/M3hXoRzbhKH7CvtOxPWYFwoUs29nh7tWm+6ZFxtqmqWgSLscwwR5Pd8CDxBzoo8+2PMb4GnopI8hLxd0FCi6kGaXmb/cvCvbF6GcJcfSRDOSD91qiFTuAJWn8t3ZjVr+mbNieO4LKUamrMMxGzst+q26Q+rgvj2/XeCjd++jfIQWs1rRNEubkkdHRh21BUzVVMYNcewR3wdpGG1w/6DC9yNB3/AHs6+G55mox6CyWFdRyBAqNFuqz8woD2X9PJgb1IS3IMjEEeWQ4+1IanQ1ZDtw98lhOJPVyHwET+UWd2SYgfmA09NBgqjfi7irKws53G/rlp7Yo1XXNpZ2xZXSMPBr9R8/UzQAAA==')
+      center / contain no-repeat;
+    color: #f0e8d0;
     font-size: 1.5rem;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   // The default coin, drawn in front of the value: Wenrexa's "GUI Game #6" money
@@ -728,7 +746,7 @@
     font-size: 1.1rem;
     letter-spacing: 0.05rem;
     text-transform: uppercase;
-    opacity: 0.6;
+    opacity: 0.75;
   }
 
   // The verbs for one object, drawn beside its tile and overhanging the rail into

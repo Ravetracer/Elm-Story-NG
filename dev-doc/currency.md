@@ -69,6 +69,13 @@ and `choicePresentation` document there.
   dresses the rest of the rail; it can replace the coin by overriding `background`
   in `skins.less`. The label is drawn small-caps and dimmed, the value in tabular
   figures.
+- **The readout sits on a money plate.** `PanelSettings_Slider.png` from the same
+  kit — an ornate frame around a dark inset track — is the `.object-panel-currency`
+  background (lossy WebP data URI, `aspect-ratio: 219 / 53`), centred in the rail
+  with the coin, value and label centred on it. Because the track is dark in either
+  theme, the text is a **fixed warm off-white** (`#f0e8d0`) rather than the reading
+  colour — the one place the money readout does not follow the theme. Also CC BY-SA
+  4.0, credited alongside the coin.
 
 ## The editor — `WorldProperties/WorldCurrency.tsx`
 
