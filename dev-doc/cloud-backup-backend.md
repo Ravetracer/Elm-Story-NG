@@ -195,18 +195,76 @@ Worth it once people actually ask for it. Premature if they do not — the exist
 export ZIP is still a real backup for the disciplined author, and this feature's
 whole value is removing the discipline requirement.
 
-## First slice, if/when this starts
+## Milestones
 
-1. Symfony skeleton, User entity, register/login, session auth, CORS for the editor
-   origin. Prove a logged-in `GET /worlds` returns `[]`.
-2. `PUT`/`GET /worlds/{worldId}` for the JSON blob only (no assets yet), with
-   ETag/`If-Match` and the 409 body. Prove one browser can push a world and a
-   second, freshly-evicted browser can pull it back — JSON only, images broken.
-3. Asset manifest + content-addressed upload/download; images/audio survive the
-   round trip.
-4. `cloudSync.ts` + `AppContext` auth + dashboard "cloud worlds" + the sync UI,
-   folding into the existing `StorageBanner` backup messaging.
-5. Ops: quotas, deletion, backups, privacy note.
+Phased so each one is shippable and provable on its own, and so the cheapest
+possible slice validates the whole idea before the expensive parts are built. The
+server side (M0–M3) is a separate repository/deployable; the client side (M4)
+lands in this repo behind `IS_WEB_BUILD`. **M2 is the go/no-go gate** — a JSON-only
+round trip already proves the safety net end to end, so stop and evaluate there
+before committing to assets and UI. Each phase names its own exit criterion; do not
+advance until it is met.
 
-Stop after 2 to validate the whole idea cheaply — a JSON-only round trip already
-proves the safety net works end to end.
+### M0 — Backend skeleton + auth
+- **Goal:** a deployed Symfony app that knows who a user is.
+- **Deliverables:** Symfony skeleton, `User` entity + Doctrine migration,
+  `POST /register` / `POST /login` / `POST /logout`, session auth (cookie on the
+  shared parent domain), CORS configured for the editor origin, login rate limit.
+- **Exit:** a logged-in `GET /worlds` returns `[]` with 200; an anonymous call
+  returns 401; CORS preflight from the editor origin passes.
+
+### M1 — World JSON store
+- **Goal:** the server holds and returns a world's structure blob. No assets yet.
+- **Deliverables:** `WorldSnapshot` entity `(userId, worldId)` unique, blob on the
+  filesystem with the path in the row, `version` integer; `PUT /worlds/{worldId}`
+  (create + update) and `GET /worlds/{worldId}` with an `ETag` from `version`;
+  `GET /worlds` listing; `DELETE /worlds/{worldId}` soft-delete.
+- **Exit:** curl can PUT a world JSON, GET it back byte-identical, and see it in the
+  listing with a version and title.
+
+### M2 — Optimistic concurrency (GO/NO-GO GATE)
+- **Goal:** two of one author's devices cannot silently clobber each other.
+- **Deliverables:** `If-Match` on `PUT`; match → bump `version`, new `ETag`;
+  mismatch → **409** with the current server snapshot in the body; missing
+  `If-Match` on an existing world → 428 (not a blind overwrite).
+- **Exit:** scripted proof — device A pushes v1, device B (stale) pushes and gets
+  409 + A's copy; a browser that has had its IndexedDB wiped pulls the world back
+  intact (JSON only — images will be broken until M3). **Evaluate here before
+  building further.**
+
+### M3 — Content-addressed assets
+- **Goal:** images and audio survive the round trip, cheaply.
+- **Deliverables:** `Asset` reference model `(userId, md5)`, bytes at
+  `var/assets/<u2>/<md5>.<ext>`; manifest exchange on `PUT` (server replies with the
+  md5s it lacks); `POST`/`GET /worlds/{worldId}/assets/{md5}` (upload idempotent);
+  reference counting or a sweep to trash an md5 no snapshot names.
+- **Exit:** a world with masks, event images and audio round-trips through the
+  server with media intact; re-uploading an unchanged world transfers zero asset
+  bytes (dedup proven).
+
+### M4 — Client integration
+- **Goal:** an author uses it without touching curl.
+- **Deliverables:** `src/lib/cloudSync.ts` (pure core: manifest diff, ETag/409
+  reconciliation) with thin fetch I/O; auth state in `AppContext`; a login control;
+  a "cloud worlds" section in the dashboard; debounced background sync + a manual
+  "Sync now"; the `StorageBanner`/`ExportWorldMenu` backup nag reworded to "last
+  cloud sync N days ago" when signed in. All behind `IS_WEB_BUILD`. Unit tests on
+  the pure core, live verification of the sync UI (maintainer's check).
+- **Exit:** log in, edit a world, watch it sync; wipe IndexedDB, reload, log in,
+  and the world restores — assets and all — with no manual export/import.
+
+### M5 — Production hardening
+- **Goal:** safe to hand to real people.
+- **Deliverables:** per-user storage quota; account + data deletion that actually
+  removes the files; off-box backups of `var/assets` and the DB; privacy note and a
+  data-export path (the snapshot *is* the export); no user enumeration on
+  register/login; password reset if it serves more than the maintainer.
+- **Exit:** a deletion request leaves nothing on disk; a restored backup brings a
+  user's worlds back; quota rejection is graceful, not a 500.
+
+### Later — collaboration (separate track, not scheduled)
+Built **on top of** M0–M5, not instead of them. Turn-based first: scene/world
+check-out leases, check-in through the M2 409 machinery. Real-time co-editing needs
+a long-running process (Messenger + Mercure or a persistent worker) and is the one
+piece shared PHP hosting cannot serve — see the multi-user section above. No
+milestone numbers until it is actually on the roadmap.
