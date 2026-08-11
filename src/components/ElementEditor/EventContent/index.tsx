@@ -33,7 +33,18 @@ import {
   inferContinuationOperand
 } from '../../../lib/contentEditor/expressionHelper'
 
-import React, { useState, useEffect, useCallback, useContext } from 'react'
+import {
+  buildTemplateVariables,
+  getExpressionErrorFlags
+} from '../../../lib/contentEditor/expressionValidation'
+
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useContext,
+  useMemo
+} from 'react'
 
 import { WINDOW_EVENT_TYPE } from '../../../lib/events'
 import {
@@ -75,6 +86,8 @@ import {
   Editor,
   Transforms,
   Text,
+  Path,
+  Range,
   BaseSelection,
   BaseRange
 } from 'slate'
@@ -180,6 +193,13 @@ const EventContent: React.FC<{
   const variables =
     useVariables(studioId, event?.worldId ?? '', [studioId, event?.worldId]) ??
     []
+
+  // Title-keyed for the live expression validator in `decorate`. Rebuilt only
+  // when the world's variables change, not on every keystroke.
+  const templateVariables = useMemo(
+    () => buildTemplateVariables(variables),
+    [variables]
+  )
 
   const [selectedExpression, setSelectedExpression] = useState({
       isInside: false,
@@ -479,35 +499,64 @@ const EventContent: React.FC<{
     []
   )
 
-  const decorate = useCallback(([node, path]) => {
-    const ranges: CustomRange[] = []
+  const decorate = useCallback(
+    ([node, path]) => {
+      const ranges: CustomRange[] = []
 
-    if (!Text.isText(node)) return ranges
+      if (!Text.isText(node)) return ranges
 
-    const expressionRanges = getTemplateExpressionRanges(node.text)
+      const expressionRanges = getTemplateExpressionRanges(node.text)
 
-    expressionRanges.map((range) => {
-      ranges.push({
-        expressionStart: true,
-        anchor: { path, offset: range.start },
-        focus: { path, offset: range.start + 1 }
+      if (expressionRanges.length === 0) return ranges
+
+      // Which expressions fail to resolve, aligned with expressionRanges.
+      const errorFlags = getExpressionErrorFlags(node.text, templateVariables)
+
+      // The caret offset on this node, or null — used to leave the expression the
+      // author is actively typing unflagged until they move out of it.
+      const { selection } = editor
+      const caret =
+        selection &&
+        Range.isCollapsed(selection) &&
+        Path.equals(selection.anchor.path, path)
+          ? selection.anchor.offset
+          : null
+
+      expressionRanges.map((range, index) => {
+        ranges.push({
+          expressionStart: true,
+          anchor: { path, offset: range.start },
+          focus: { path, offset: range.start + 1 }
+        })
+
+        ranges.push({
+          expression: true,
+          anchor: { path, offset: range.start },
+          focus: { path, offset: range.end }
+        })
+
+        ranges.push({
+          expressionEnd: true,
+          anchor: { path, offset: range.end - 1 },
+          focus: { path, offset: range.end }
+        })
+
+        const caretInside =
+          caret !== null && caret > range.start && caret < range.end
+
+        if (errorFlags[index] && !caretInside) {
+          ranges.push({
+            expressionError: true,
+            anchor: { path, offset: range.start },
+            focus: { path, offset: range.end }
+          })
+        }
       })
 
-      ranges.push({
-        expression: true,
-        anchor: { path, offset: range.start },
-        focus: { path, offset: range.end }
-      })
-
-      ranges.push({
-        expressionEnd: true,
-        anchor: { path, offset: range.end - 1 },
-        focus: { path, offset: range.end }
-      })
-    })
-
-    return ranges
-  }, [])
+      return ranges
+    },
+    [editor, templateVariables]
+  )
 
   const moveElement = useCallback((result: DropResult) => {
     composerDispatch({

@@ -69,7 +69,33 @@ the condition, moves the caret back into the first `""`.
 
 It is **guidance, not validation** — nothing stops an author writing cross-type
 nonsense that renders an ERROR span. But every snippet it *offers* is a form the
-evaluator accepts (see Tests).
+evaluator accepts (see Tests), and the validation below catches the nonsense the
+helper cannot prevent.
+
+## Live validation
+
+The picker and helper make correct expressions easy to *write*; validation makes a
+broken one *visible*. A template expression resolves a variable by its **title**,
+so a typo or a renamed variable renders as an ERROR span at play time and nowhere
+a build would notice — the exact silent-error trap the tooling exists to reduce.
+
+`src/lib/contentEditor/expressionValidation.ts` (pure, tested) is the check:
+`getExpressionErrorFlags(text, variables)` runs each `{ … }` through the real
+`lib/templates.ts` pipeline — the same `esg-error` test `EventSnippet` and the
+engine's `decorate` use — and returns a flag per expression, aligned with
+`getTemplateExpressionRanges`. It evaluates **per expression** rather than in one
+whole-string pass, because `getProcessedTemplate` drops an expression that
+resolves to a falsy value from its output, which would shift the alignment.
+
+`EventContent`'s `decorate` calls it against the world's variables (title-keyed,
+`useMemo`'d) and adds an `expressionError` range over any expression that fails —
+**except the one the caret is currently inside**, so a half-typed expression (and
+the auto-paired `{  }`, which is an "error" until it is filled) is not scolded
+mid-keystroke. It reads `editor.selection` live, so the flag appears the moment the
+caret leaves a broken expression and clears when it is fixed. `EventContentLeaf`
+renders the flag as a wavy underline in `--warning-message-color` (the spellcheck
+idiom), overlaid on the normal expression highlight. `CustomRange` and the leaf
+type carry the new `expressionError?: boolean`.
 
 ## The moving parts
 
@@ -131,3 +157,7 @@ evaluator accepts (see Tests).
   composes each into a complete expression, and runs it through the real
   `lib/templates.ts` pipeline — so the catalogue cannot drift into offering a form
   the parser rejects (the same discipline as `variableHelpExamples.test.ts`).
+- `src/__tests__/expressionValidation.test.ts` pins `getExpressionErrorFlags`:
+  resolvable forms pass, the typo / missing-conditional / unknown-method /
+  divide-by-zero cases flag, multiple expressions report independently in document
+  order, and a falsy-resolving expression does not shift the alignment.

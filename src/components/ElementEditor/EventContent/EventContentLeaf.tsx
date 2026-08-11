@@ -17,6 +17,14 @@ const EventContentLeaf: React.FC<{
     classNames = `${classNames} ${styles.expressionCap}`
   }
 
+  // An expression that does not resolve — an unknown variable (usually a typo or
+  // a rename) or a malformed form. Flagged only once the caret leaves it, so a
+  // half-typed expression is not scolded mid-keystroke. See
+  // lib/contentEditor/expressionValidation.ts.
+  if (leaf.expressionError) {
+    classNames = `${classNames} ${styles.expressionError}`
+  }
+
   if (leaf.strong) {
     children = <strong {...attributes}>{children}</strong>
   }

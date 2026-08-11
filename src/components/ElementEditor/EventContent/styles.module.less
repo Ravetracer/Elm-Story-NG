@@ -384,6 +384,16 @@
         color: var(--highlight-color-80a);
         caret-color: white;
       }
+
+      // An expression that will not resolve — flagged with a wavy underline in the
+      // warning colour (the spellcheck idiom) once the caret leaves it. Overlays
+      // the `.expression` background, so the mark reads as "expression, broken".
+      .expressionError * {
+        text-decoration: underline;
+        text-decoration-style: wavy;
+        text-decoration-color: var(--warning-message-color);
+        text-underline-offset: 2px;
+      }
     }
   }
 }
