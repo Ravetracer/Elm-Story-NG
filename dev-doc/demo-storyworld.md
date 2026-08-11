@@ -47,6 +47,10 @@ data choices, each load-bearing:
 - **Personas** set `Event.persona = [characterId, MASK, undefined]` and each speaking
   character has a mask of that type carrying an `assetId`. The default NEUTRAL mask
   has no image, so a non-neutral mood mask holds the portrait.
+- **`funds` is the world's currency** (`World.currencyVariableId = vFunds`, label
+  "Dollars"), so it shows below the inventory with a coin and moves as the grant is
+  taken (+300) and supplies are bought (−100). This is only a designation over the
+  existing NUMBER variable — see `dev-doc/currency.md`.
 
 ## No gated choice is ever a silent dead end
 

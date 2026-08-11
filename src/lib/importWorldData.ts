@@ -560,6 +560,8 @@ export default (
             copyright: _.copyright,
             coverAssetId: _.coverAssetId,
             backgroundAssetId: _.backgroundAssetId,
+            currencyVariableId: _.currencyVariableId,
+            currencyLabel: _.currencyLabel,
             description: _.description,
             designer: _.designer,
             engine: _.engine,

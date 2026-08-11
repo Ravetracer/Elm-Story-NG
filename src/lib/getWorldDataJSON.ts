@@ -71,6 +71,8 @@ export default async (
         copyright: world.copyright,
         backgroundAssetId: world.backgroundAssetId,
         coverAssetId: world.coverAssetId,
+        currencyVariableId: world.currencyVariableId,
+        currencyLabel: world.currencyLabel,
         description: world.description,
         designer: world.designer,
         engine: schemaVersion,

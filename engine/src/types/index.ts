@@ -929,6 +929,14 @@ export interface EngineWorldData {
   coverAssetId?: string
   /** ASSET_KIND.WORLD_BACKGROUND. Filled behind the reading column. */
   backgroundAssetId?: string
+  /**
+   * The NUMBER variable shown as the world's currency in the object rail, read by
+   * its id from the live event's variable state. A designation over a plain
+   * variable, not a second kind of state. Absent means no currency readout.
+   */
+  currencyVariableId?: ElementId
+  /** The word beside the currency value ("Credits", "Gold"). Absent shows just the value. */
+  currencyLabel?: string
   description?: string
   designer: string
   engine: string

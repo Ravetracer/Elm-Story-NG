@@ -270,6 +270,11 @@ export default async function saveDemoContent(
       'open it up in the composer to see exactly how it was built.',
     engine: appVersion,
     jump: null,
+    // Shows `funds` as money below the inventory, with a coin — the grant adds to
+    // it and buying supplies spends it, so the readout is live. Money is just this
+    // NUMBER variable; the world only designates which one and what to call it.
+    currencyVariableId: vFunds,
+    currencyLabel: 'Dollars',
     objectNoRecipeMessage: 'Those two do nothing together.',
     // Locks the story to the dark theme, which suits a torch-lit temple and
     // shows off the author-locked Theme setting (the player's own theme toggle is

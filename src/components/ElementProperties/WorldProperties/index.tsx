@@ -14,6 +14,7 @@ import TransitionSelect from '../../TransitionSelect'
 import StreamAlignmentSelect from '../../StreamAlignmentSelect'
 import WorldCover from './WorldCover'
 import WorldBackground from './WorldBackground'
+import WorldCurrency from './WorldCurrency'
 import WorldColors from './WorldColors'
 import ThemeSelect from '../../ThemeSelect'
 import SkinSelect from '../../SkinSelect'
@@ -189,6 +190,28 @@ const WorldProperties: React.FC<{
               <Collapse.Panel header="Background" key="background-panel">
                 <div className={parentStyles.content}>
                   <WorldBackground studioId={studioId} world={world} />
+                </div>
+              </Collapse.Panel>
+            </Collapse>
+          </div>
+
+          {/*
+            CURRENCY
+
+            Designates a NUMBER variable as the world's money, shown below the
+            inventory in the engine with a coin. A designation over a plain
+            variable, not a new kind of state. Keyed on the world id so switching
+            storyworlds remounts it with the new world's label.
+          */}
+          <div className={parentStyles.elementPropertiesNestedCollapse}>
+            <Collapse>
+              <Collapse.Panel header="Currency" key="currency-panel">
+                <div className={parentStyles.content}>
+                  <WorldCurrency
+                    key={world.id}
+                    studioId={studioId}
+                    world={world}
+                  />
                 </div>
               </Collapse.Panel>
             </Collapse>

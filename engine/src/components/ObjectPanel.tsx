@@ -446,6 +446,21 @@ const ObjectPanel: React.FC = () => {
     return await getLibraryDatabase(studioId).events.get(liveEvent.destination)
   }, [studioId, liveEvent?.destination])
 
+  /*
+   * The currency readout — a designated NUMBER variable, read by its id from the
+   * live event's state so it tracks every effect that spends or earns it. Money is
+   * a plain variable; this is only its presentation. Shows nothing unless the world
+   * names a currency variable and that variable is in state.
+   */
+  const currencyVariableId = engine.worldInfo?.currencyVariableId
+  const currencyLabel = engine.worldInfo?.currencyLabel
+  const currencyValue =
+    currencyVariableId && liveEvent?.state
+      ? liveEvent.state[currencyVariableId]?.value
+      : undefined
+  const showCurrency =
+    currencyVariableId !== undefined && currencyValue !== undefined
+
   const {
     takeObject,
     combineObjects,
@@ -777,7 +792,7 @@ const ObjectPanel: React.FC = () => {
   useEffect(() => {
     const runtime = document.getElementById('runtime')
 
-    if (!runtime || !objects || objects.length === 0) return
+    if (!runtime || ((!objects || objects.length === 0) && !showCurrency)) return
 
     runtime.style.setProperty('--object-panel-active', '1')
 
@@ -786,12 +801,13 @@ const ObjectPanel: React.FC = () => {
     return () => {
       runtime.style.removeProperty('--object-panel-active')
     }
-  }, [objects])
+  }, [objects, showCurrency])
 
-  // Nothing at all for a world without objects. Checked after every hook, so hook
-  // order does not change between renders — the rules-of-hooks pattern the editor
-  // had to be cleaned of.
-  if (!objects || objects.length === 0) return null
+  // Nothing at all for a world with neither objects nor a currency readout.
+  // Checked after every hook, so hook order does not change between renders — the
+  // rules-of-hooks pattern the editor had to be cleaned of. A currency-only world
+  // still gets the rail, for the money line alone.
+  if (!objects || (objects.length === 0 && !showCurrency)) return null
 
   const group = (title: string, contents: typeof here) => (
     <div className="object-panel-group">
@@ -850,6 +866,21 @@ const ObjectPanel: React.FC = () => {
           </p>
         )}
       </div>
+
+      {/*
+        The currency readout, below the inventory. The coin is a skinnable icon
+        drawn in front of the value; the label ("Credits", "Gold") is the author's,
+        and absent when they set none.
+      */}
+      {showCurrency && (
+        <div className="object-panel-currency">
+          <span className="object-panel-currency-coin" aria-hidden="true" />
+          <span className="object-panel-currency-value">{currencyValue}</span>
+          {currencyLabel && (
+            <span className="object-panel-currency-label">{currencyLabel}</span>
+          )}
+        </div>
+      )}
 
       {/*
         Says what the rings on the tiles mean. Passive: every action including

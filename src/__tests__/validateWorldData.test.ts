@@ -282,6 +282,8 @@ describe('0.8.0 schema', () => {
           ...base._,
           choicePresentation: 'MODAL',
           coverAssetId: 'asset-3',
+          currencyVariableId: 'variable-1',
+          currencyLabel: 'Credits',
           objectNoRecipeMessage: 'Nothing happens.'
         },
         variables: base.variables,

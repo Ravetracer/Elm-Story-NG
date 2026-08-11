@@ -65,6 +65,15 @@ interface EngineState {
     themeColors?: WorldThemeColors
     skin?: ENGINE_SKIN
     backgroundAssetId?: string
+    /**
+     * The NUMBER variable shown as currency below the inventory, read by id from
+     * the live event's state. **`Installer`'s `pick` list has to name it** or it
+     * arrives undefined and the readout never appears — the same failure mode as
+     * `interfaceText` and `choicePresentation` above.
+     */
+    currencyVariableId?: ElementId
+    /** The word beside the currency value; absent shows just the value. */
+    currencyLabel?: string
     studioId: StudioId
     studioTitle: string
     title: string

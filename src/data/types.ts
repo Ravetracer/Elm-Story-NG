@@ -215,6 +215,15 @@ export interface World extends Element {
   coverAssetId?: string
   /** ASSET_KIND.WORLD_BACKGROUND. Filled behind the engine's reading column. */
   backgroundAssetId?: string
+  /**
+   * The NUMBER variable shown as the world's currency in the engine's object
+   * rail. Money is a plain variable — effects spend and earn it, conditions gate
+   * on it, expressions print it — so this is only a *designation*, not a second
+   * kind of state. Absent means no currency readout.
+   */
+  currencyVariableId?: ElementId
+  /** The word beside the currency value ("Credits", "Gold"). Absent shows just the value. */
+  currencyLabel?: string
   description?: string
   designer: string
   engine: string

@@ -692,6 +692,42 @@
     text-transform: none;
   }
 
+  // The currency readout, below the inventory: a coin, the value, and the author's
+  // optional label. A NUMBER variable is behind it — this is only its presentation.
+  .object-panel-currency {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 0.1rem solid var(--renderer-border-color);
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // A shipped default coin, drawn in front of the value. A skin dresses the rest of
+  // the rail; it can replace this by overriding `background` in skins.less.
+  .object-panel-currency-coin {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 1.6rem;
+    background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTEiIGZpbGw9IiNlOGI1MmUiLz48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjYjM4MjFhIiBzdHJva2Utd2lkdGg9IjEuNSIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjciIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2IzODIxYSIgc3Ryb2tlLXdpZHRoPSIxIiBvcGFjaXR5PSIwLjYiLz48Y2lyY2xlIGN4PSI5IiBjeT0iOSIgcj0iMi4yIiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIwLjM1Ii8+PC9zdmc+')
+      center / contain no-repeat;
+  }
+
+  .object-panel-currency-value {
+    font-weight: 600;
+  }
+
+  // Small-caps like the selection status line, and dimmed — the value is the
+  // figure, the label is its unit.
+  .object-panel-currency-label {
+    font-size: 1.1rem;
+    letter-spacing: 0.05rem;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
   // The verbs for one object, drawn beside its tile and overhanging the rail into
   // the stream. Positioned from JavaScript for the same reason the tooltip is: the
   // groups scroll, so a CSS-only flyout would be clipped the moment it mattered.

@@ -55,6 +55,8 @@ const WORLD_INFO_FIELDS = [
   'copyright',
   'coverAssetId',
   'backgroundAssetId',
+  'currencyVariableId',
+  'currencyLabel',
   'description',
   'designer',
   'id',

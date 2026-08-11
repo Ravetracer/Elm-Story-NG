@@ -67,6 +67,8 @@ function format(worldData: WorldDataJSON): string {
         'copyright',
         'coverAssetId',
         'backgroundAssetId',
+        'currencyVariableId',
+        'currencyLabel',
         'description',
         'designer',
         'engine',

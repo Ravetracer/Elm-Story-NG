@@ -106,6 +106,8 @@ export interface RootData {
   copyright?: string
   coverAssetId?: string
   backgroundAssetId?: string
+  currencyVariableId?: string
+  currencyLabel?: string
   description?: string
   designer: string
   engine: string

@@ -112,6 +112,12 @@
         "backgroundAssetId": {
           "type": "string"
         },
+        "currencyVariableId": {
+          "type": "string"
+        },
+        "currencyLabel": {
+          "type": "string"
+        },
         "objectNoRecipeMessage": {
           "type": "string"
         }
