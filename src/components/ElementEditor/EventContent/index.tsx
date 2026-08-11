@@ -8,6 +8,7 @@ import {
   isElementEmpty,
   isLeafActive,
   showCommandMenu,
+  showVariableMenu,
   syncCharactersFromEventContentToEventData,
   syncImagesFromEventContentToEventData,
   toggleElement,
@@ -52,7 +53,7 @@ import { DragStart, DropResult } from 'react-beautiful-dnd'
 
 import { CompressOutlined, ExpandOutlined } from '@ant-design/icons'
 
-import { useEvent } from '../../../hooks'
+import { useEvent, useVariables } from '../../../hooks'
 
 import { AppContext } from '../../../contexts/AppContext'
 import {
@@ -92,6 +93,7 @@ import DragDropWrapper from '../../DragDropWrapper'
 import EventContentElement from './EventContentElement'
 import EventContentLeaf from './EventContentLeaf'
 import CommandMenu from './Tools/CommandMenu'
+import VariableMenu from './Tools/VariableMenu'
 import EventContentToolbar from './EventContentToolbar'
 
 import api from '../../../api'
@@ -106,6 +108,13 @@ const saveContent = debounce(
 )
 
 const defaultCommandMenuProps = {
+  show: false,
+  filter: undefined,
+  target: undefined,
+  index: 0
+}
+
+const defaultVariableMenuProps = {
   show: false,
   filter: undefined,
   target: undefined,
@@ -149,6 +158,13 @@ const EventContent: React.FC<{
   const { app } = useContext(AppContext),
     { composer, composerDispatch } = useContext(ComposerContext)
 
+  // The world's variables feed the `{`/Alt+Space picker. `event` may be undefined
+  // for a render or two; an undefined worldId resolves to an empty list and the
+  // query re-runs once the event loads.
+  const variables =
+    useVariables(studioId, event?.worldId ?? '', [studioId, event?.worldId]) ??
+    []
+
   const [selectedExpression, setSelectedExpression] = useState({
       isInside: false,
       outsideOffset: 0
@@ -163,6 +179,16 @@ const EventContent: React.FC<{
     }>(defaultCommandMenuProps),
     [totalCommandMenuItems, setTotalCommandMenuItems] = useState(0),
     [selectedCommandMenuItem, setSelectedCommandMenuItem] = useState<
+      string | undefined
+    >(undefined),
+    [variableMenuProps, setVariableMenuProps] = useState<{
+      show: boolean
+      filter: string | undefined
+      target: BaseRange | undefined
+      index: number
+    }>(defaultVariableMenuProps),
+    [totalVariableMenuItems, setTotalVariableMenuItems] = useState(0),
+    [selectedVariableMenuItem, setSelectedVariableMenuItem] = useState<
       string | undefined
     >(undefined),
     [ready, setReady] = useState(false),
@@ -594,6 +620,22 @@ const EventContent: React.FC<{
     [editor, commandMenuProps.target, studioId, event]
   )
 
+  const processVariableMenuOperation = useCallback(
+    (variableTitle: string) => {
+      // Replace only the partial identifier at the caret (`target`) with the
+      // chosen variable's title; the surrounding `{ … }` and any operators stay.
+      // A collapsed target (nothing typed yet) deletes nothing, so the title is
+      // simply inserted at the caret — e.g. into a freshly auto-paired `{  }`.
+      variableMenuProps.target &&
+        Transforms.delete(editor, { at: variableMenuProps.target })
+
+      setVariableMenuProps(defaultVariableMenuProps)
+
+      Transforms.insertText(editor, variableTitle)
+    },
+    [editor, variableMenuProps.target]
+  )
+
   const processHotkey = useCallback(
     (hotkey: string) => {
       let selection: BaseSelection | undefined = undefined
@@ -637,6 +679,43 @@ const EventContent: React.FC<{
           }
 
           return
+        case HOTKEY_EXPRESSION.OPEN_VARIABLE_MENU:
+          selection = editor.selection
+
+          if (!selection) return
+
+          if (selectedExpression.isInside) {
+            // Already inside an expression: no edit happens, so onChange will not
+            // fire — open the picker at the caret explicitly.
+            const [vShow, vFilter, vTarget] = showVariableMenu(editor)
+
+            setVariableMenuProps({
+              show: vShow,
+              filter: vFilter,
+              target: vTarget,
+              index: 0
+            })
+
+            return
+          }
+
+          // Outside an expression: insert an empty `{  }` and drop the caret
+          // inside, exactly as `{` does. The resulting selection change makes
+          // onChange open the picker.
+          Transforms.insertText(editor, '{  }')
+
+          // TODO: stack hack
+          setTimeout(
+            () =>
+              Transforms.move(editor, {
+                distance: 2,
+                unit: 'offset',
+                reverse: true
+              }),
+            1
+          )
+
+          return
         case HOTKEY_SELECTION.MENU_UP:
           if (
             commandMenuProps.show &&
@@ -647,6 +726,16 @@ const EventContent: React.FC<{
             setCommandMenuProps({
               ...commandMenuProps,
               index: commandMenuProps.index - 1
+            })
+          } else if (
+            variableMenuProps.show &&
+            totalVariableMenuItems > 0 &&
+            variableMenuProps.index > 0 &&
+            variableMenuProps.index + 1 <= totalVariableMenuItems
+          ) {
+            setVariableMenuProps({
+              ...variableMenuProps,
+              index: variableMenuProps.index - 1
             })
           }
 
@@ -662,6 +751,16 @@ const EventContent: React.FC<{
               ...commandMenuProps,
               index: commandMenuProps.index + 1
             })
+          } else if (
+            variableMenuProps.show &&
+            totalVariableMenuItems > 0 &&
+            variableMenuProps.index >= 0 &&
+            variableMenuProps.index + 1 < totalVariableMenuItems
+          ) {
+            setVariableMenuProps({
+              ...variableMenuProps,
+              index: variableMenuProps.index + 1
+            })
           }
 
           return
@@ -669,6 +768,8 @@ const EventContent: React.FC<{
         case HOTKEY_BASIC.ENTER:
           if (commandMenuProps.show && selectedCommandMenuItem) {
             processCommandMenuOperation(selectedCommandMenuItem)
+          } else if (variableMenuProps.show && selectedVariableMenuItem) {
+            processVariableMenuOperation(selectedVariableMenuItem)
           }
 
           return
@@ -684,6 +785,12 @@ const EventContent: React.FC<{
         case 'esc':
           if (commandMenuProps.show) {
             setCommandMenuProps(defaultCommandMenuProps)
+
+            return
+          }
+
+          if (variableMenuProps.show) {
+            setVariableMenuProps(defaultVariableMenuProps)
 
             return
           }
@@ -712,6 +819,12 @@ const EventContent: React.FC<{
       commandMenuProps,
       totalCommandMenuItems,
       selectedCommandMenuItem,
+      variableMenuProps,
+      totalVariableMenuItems,
+      selectedVariableMenuItem,
+      processVariableMenuOperation,
+      // OPEN_VARIABLE_MENU and EXIT both read the current expression state
+      selectedExpression,
       // without this the escape branch reads the mode as it was on mount and
       // closes the editor instead of stepping out of distraction-free
       composer.distractionFreeMode.active
@@ -807,8 +920,13 @@ const EventContent: React.FC<{
   }, [commandMenuProps.show])
 
   useEffect(() => {
+    !variableMenuProps.show && setSelectedVariableMenuItem(undefined)
+  }, [variableMenuProps.show])
+
+  useEffect(() => {
     if (event?.id !== composer.selectedSceneMapEvent) {
       setCommandMenuProps(defaultCommandMenuProps)
+      setVariableMenuProps(defaultVariableMenuProps)
     }
   }, [composer.selectedSceneMapEvent])
 
@@ -941,6 +1059,22 @@ const EventContent: React.FC<{
 
                   setCommandMenuProps({ show, filter, target, index: 0 })
 
+                  // The `/` and `{` triggers cannot both match at one caret, but
+                  // keep them exclusive anyway: the command menu wins, otherwise
+                  // ask whether the caret sits inside a `{ … }` expression.
+                  if (show) {
+                    setVariableMenuProps(defaultVariableMenuProps)
+                  } else {
+                    const [vShow, vFilter, vTarget] = showVariableMenu(editor)
+
+                    setVariableMenuProps({
+                      show: vShow,
+                      filter: vFilter,
+                      target: vTarget,
+                      index: 0
+                    })
+                  }
+
                   saveContent.cancel()
 
                   // elmstorygames/feedback#216
@@ -964,6 +1098,13 @@ const EventContent: React.FC<{
                 onItemTotal={(total) => setTotalCommandMenuItems(total)}
                 onItemSelect={(item) => setSelectedCommandMenuItem(item)}
                 onItemClick={(item) => processCommandMenuOperation(item)}
+              />
+              <VariableMenu
+                {...variableMenuProps}
+                variables={variables}
+                onItemTotal={(total) => setTotalVariableMenuItems(total)}
+                onItemSelect={(title) => setSelectedVariableMenuItem(title)}
+                onItemClick={(title) => processVariableMenuOperation(title)}
               />
               <EventContentToolbar />
 
@@ -998,11 +1139,28 @@ const EventContent: React.FC<{
                       return
                     }
 
+                    /*
+                     * Alt+Space opens the variable picker, IDE-style. Matched on
+                     * `event.code === 'Space'` (the physical key) rather than
+                     * through the is-hotkey/keyCode loop, so it is
+                     * layout-independent and reliably preventDefault-able — the
+                     * same reason `{` is matched on `event.key` above.
+                     */
+                    if (_event.altKey && _event.code === 'Space') {
+                      _event.preventDefault()
+                      processHotkey(HOTKEY_EXPRESSION.OPEN_VARIABLE_MENU)
+                      setIsAllSelected(false)
+
+                      return
+                    }
+
                     for (const hotkey in HOTKEYS) {
                       if (isHotkey(hotkey, _event)) {
                         if (
                           (!commandMenuProps.show ||
                             totalCommandMenuItems === 0) &&
+                          (!variableMenuProps.show ||
+                            totalVariableMenuItems === 0) &&
                           (HOTKEYS[hotkey] === HOTKEY_BASIC.ENTER ||
                             HOTKEYS[hotkey] === HOTKEY_BASIC.TAB ||
                             HOTKEYS[hotkey] === HOTKEY_SELECTION.MENU_UP ||

@@ -112,6 +112,58 @@
   }
 }
 
+:global .event-content-variable-menu {
+  .menuStyles();
+
+  :local .container {
+    section {
+      h1 {
+        padding: 0 10px;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--highlight-color);
+        margin-bottom: 6px;
+        border-bottom: 1px solid var(--primary-border-color);
+        background: hsl(0, 0%, 10%);
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: auto max-content;
+        align-items: center;
+        gap: 8px;
+        padding: 0 10px;
+
+        &:hover {
+          cursor: pointer;
+          background: hsl(0, 0%, 15%);
+        }
+
+        &.selected {
+          background: hsl(0, 0%, 25%);
+        }
+
+        &.noMatch {
+          display: block;
+          cursor: unset !important;
+          background: none !important;
+          color: hsl(0, 0%, 50%);
+        }
+
+        .variableTitle {
+          .clipTextMixin();
+        }
+
+        .variableType {
+          font-size: 10px;
+          text-transform: uppercase;
+          color: hsl(0, 0%, 50%);
+        }
+      }
+    }
+  }
+}
+
 .CharacterSelect {
   display: inline-block;
   min-width: 4px;

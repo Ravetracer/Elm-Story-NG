@@ -294,9 +294,9 @@ only runs on a real transition, so a resume stays silent while the persisted
 - **No inline sound preview in the panel** — the sound is chosen/cleared via the
   asset modal (which previews there); the panel shows only Change/Clear. An
   inline player could be added later.
-- **Template-expression variable autocomplete** is a separate, larger feature (a
-  variable picker inside `{ }` in the content editor, the inline-choice analog).
-  Tracked apart from triggers.
+- **Template-expression variable autocomplete** — **done** (2026-08-11), see
+  `dev-doc/variable-picker.md`. A variable picker inside `{ }` in the content
+  editor, plus an `Alt+Space` shortcut, modelled on the `/` command menu.
 - **AltGr `}` vs the `Ctrl+Alt+0` zoom accelerator** — see `dev-doc/keyboard.md`;
   matters little because `{` auto-pairs the closing brace.
 

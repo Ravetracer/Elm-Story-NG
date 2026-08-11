@@ -49,6 +49,22 @@ The `{` trigger is detected in `EventContent`'s `onKeyDown` by
 (`{`, `}`, `?`, `@`, `#`…), match `event.key`. Reserve `is-hotkey`/keyCode for
 `mod`/`Ctrl`/`Alt` combinations and named keys (Enter, Tab, arrows, Escape).
 
+### `Alt+Space` opens the variable picker, and is matched on `event.code`
+
+The IDE-style "open the variable picker here" shortcut (see
+`dev-doc/variable-picker.md`) is `Alt+Space`, detected in the same `onKeyDown` by
+`event.altKey && event.code === 'Space'`. `event.code` names the **physical** key,
+which is the right choice here for the opposite reason `{` uses `event.key`: the
+intent is a modifier combination on the space bar, not a printable character, and
+the space bar's `code` is `'Space'` on every layout. It is deliberately **not** in
+`HOTKEYS` — `is-hotkey`'s `'alt+space'` would work too, but keeping the match in
+`onKeyDown` lets it `preventDefault()` the space reliably and sits beside the `{`
+match it is a sibling of. It maps to `HOTKEY_EXPRESSION.OPEN_VARIABLE_MENU`.
+
+> Note: on Windows, `Alt+Space` is the OS window-menu shortcut. In the frameless
+> Electron window `preventDefault()` should suppress it, but verify on Windows if
+> that platform ever ships. On Linux (the primary target) it is free.
+
 ## The other layout collision: menu accelerators vs. AltGr
 
 `src/menu.ts` registers the UI-zoom accelerators `CmdOrCtrl+Alt+=`, `CmdOrCtrl+Alt+-`

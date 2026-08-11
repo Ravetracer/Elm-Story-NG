@@ -251,6 +251,10 @@ export enum HOTKEY_BASIC {
 export enum HOTKEY_EXPRESSION {
   OPEN_BRACKET = 'OPEN_BRACKET',
   CLOSE_BRACKET = 'CLOSE_BRACKET',
+  // Alt+Space, the IDE-style "open the variable picker here" shortcut. Not bound
+  // in HOTKEYS: it is matched on `event.code === 'Space'` in EventContent's
+  // onKeyDown, so it is layout-independent and reliably preventDefault-able.
+  OPEN_VARIABLE_MENU = 'OPEN_VARIABLE_MENU',
   EXIT = 'EXIT'
 }
 

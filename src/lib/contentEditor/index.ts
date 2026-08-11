@@ -333,6 +333,57 @@ export const showCommandMenu = (
   return [false, undefined, undefined]
 }
 
+// The `{` expression trigger's variable picker — the `{ }` analog of
+// showCommandMenu. It fires while the caret sits inside an unclosed `{ … }` (the
+// closing brace is auto-paired *ahead* of the caret, so it is not part of the
+// text scanned here), and its target range covers only the trailing partial
+// identifier: the brace and any preceding operators must survive, because the
+// picker replaces the token being typed, not the whole expression.
+export const showVariableMenu = (
+  editor: EditorType
+): [boolean, string | undefined, BaseRange | undefined] => {
+  const { selection } = editor
+
+  if (!selection || (selection && !Range.isCollapsed(selection)))
+    return [false, undefined, undefined]
+
+  const [start] = Range.edges(selection)
+  const end =
+    start &&
+    Editor.before(editor, start, {
+      unit: 'offset',
+      distance: start.offset
+    })
+  const textRange = end && Editor.range(editor, end, start)
+  const text = textRange && Editor.string(editor, textRange)
+
+  if (!text) return [false, undefined, undefined]
+
+  // Inside a `{` that no `}` (or further `{`) has closed yet, on this leaf up to
+  // the caret. This is what keeps the menu out of already-closed expressions and
+  // ordinary prose.
+  if (!/{[^{}]*$/.test(text)) return [false, undefined, undefined]
+
+  const match = text.match(/(\w*)$/)
+  const matchText = match ? match[1] : ''
+
+  // Span only the partial identifier before the caret (empty range at the caret
+  // when nothing has been typed yet, e.g. the freshly auto-paired `{  }`).
+  const entity =
+    matchText.length > 0
+      ? Editor.before(editor, start, {
+          unit: 'offset',
+          distance: matchText.length
+        })
+      : start
+
+  const targetRange = entity && Editor.range(editor, entity, start)
+
+  if (targetRange) return [true, matchText, targetRange]
+
+  return [false, undefined, undefined]
+}
+
 export const getCaretPosition = (element: HTMLElement) => {
   let position = 0
 
